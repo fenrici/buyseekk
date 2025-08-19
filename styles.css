@@ -1,0 +1,1389 @@
+/* Reset and Global Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #2C2C2C;
+    background-color: #f8f9fa;
+}
+
+a {
+    text-decoration: none;
+    color: #00BFFF;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+section {
+    padding: 70px 0;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 15px;
+}
+
+h2 {
+    font-size: 2.2rem;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.section-header h2 {
+    margin-bottom: 15px;
+}
+
+.section-header p {
+    color: #555;
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-block;
+    background-color: #00BFFF;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #009dd1;
+    transform: translateY(-2px);
+}
+
+.btn.outline {
+    background-color: transparent;
+    border: 2px solid #00BFFF;
+    color: #00BFFF;
+}
+
+.btn.outline:hover {
+    background-color: #00BFFF;
+    color: #fff;
+}
+
+.btn.login {
+    background-color: transparent;
+    color: #00BFFF;
+}
+
+.btn.signup {
+    background-color: #00BFFF;
+    color: #fff;
+}
+
+.btn.cta {
+    font-size: 18px;
+    padding: 12px 30px;
+    margin-top: 20px;
+    background-color: #2C2C2C;
+}
+
+.btn.cta:hover {
+    background-color: #3a3a3a;
+}
+
+.btn.buyer-cta {
+    background-color: #2C2C2C;
+    color: white;
+    margin-right: 15px;
+    font-weight: 600;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border: none;
+    box-sizing: border-box;
+}
+
+.btn.buyer-cta:hover {
+    background-color: #1a1a1a;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.btn.seller-cta {
+    background-color: white;
+    border: 2px solid #2C2C2C;
+    color: #2C2C2C;
+    font-weight: 600;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+.btn.seller-cta:hover {
+    background-color: #2C2C2C;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.btn.submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #00BFFF;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.btn.contact-buyer {
+    width: calc(100% - 50px);
+    margin: 15px 25px 25px;
+    background-color: #00BFFF;
+    padding: 10px 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    height: auto;
+    min-height: 45px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-buttons {
+    display: flex;
+    margin-top: 30px;
+}
+
+/* Ajustes específicos para botones en el héroe */
+.hero-btn {
+    min-width: 220px;
+    width: auto;
+    height: 48px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+/* Header Styles */
+header {
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+}
+
+.logo h1 {
+    font-size: 2rem;
+    color: #00BFFF;
+    margin: 0;
+}
+
+nav ul {
+    display: flex;
+}
+
+nav ul li {
+    margin-left: 25px;
+}
+
+nav ul li a {
+    color: #2C2C2C;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+nav ul li a:hover,
+nav ul li a.active {
+    color: #00BFFF;
+}
+
+.auth-buttons {
+    display: flex;
+}
+
+.auth-buttons .btn {
+    margin-left: 10px;
+}
+
+/* Hero Section */
+.hero {
+    background-color: #00BFFF;
+    padding: 80px 0;
+}
+
+.hero .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hero-content {
+    flex: 1;
+    padding-right: 30px;
+}
+
+.hero-content h2 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    text-align: left;
+    color: #fff;
+}
+
+.hero-content h3 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.hero-content p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tarjeta de búsqueda del héroe */
+.hero-card {
+    background-color: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    transform: perspective(1000px) rotateY(-5deg);
+    transition: all 0.3s ease;
+}
+
+.hero-card:hover {
+    transform: perspective(1000px) rotateY(0deg);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.card-content {
+    padding: 40px 30px;
+    text-align: left;
+}
+
+.card-content h3 {
+    font-size: 1.8rem;
+    color: #2C2C2C;
+    margin-bottom: 15px;
+    line-height: 1.3;
+}
+
+.card-content p {
+    font-size: 1.3rem;
+    color: #555;
+    margin-bottom: 30px;
+}
+
+.offer-btn {
+    background-color: #00BFFF;
+    color: white;
+    padding: 12px 40px;
+    border-radius: 50px;
+    font-size: 1.2rem;
+    width: 100%;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.3);
+}
+
+.offer-btn:hover {
+    background-color: #009dd1;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 191, 255, 0.4);
+}
+
+/* How It Works Section */
+.how-it-works {
+    background-color: #fff;
+}
+
+.steps {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    padding: 30px 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.step:hover {
+    transform: translateY(-10px);
+}
+
+.step-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background-color: #e6f9ff;
+    border-radius: 50%;
+    margin-bottom: 20px;
+}
+
+.step-icon i {
+    font-size: 32px;
+    color: #00BFFF;
+}
+
+.step h3 {
+    margin-bottom: 15px;
+    color: #00BFFF;
+}
+
+.step p {
+    color: #666;
+}
+
+/* User Mode Section */
+.user-mode-section {
+    background-color: #fff;
+    padding-bottom: 40px;
+}
+
+.user-mode-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #ddd;
+}
+
+.user-tab {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    padding: 15px 30px;
+    margin: 0 5px;
+    cursor: pointer;
+    position: relative;
+    color: #666;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.user-tab:after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 3px;
+    bottom: -1px;
+    left: 0;
+    background-color: #00BFFF;
+    transition: width 0.3s ease;
+}
+
+.user-tab:hover {
+    color: #00BFFF;
+}
+
+.user-tab.active {
+    color: #00BFFF;
+}
+
+.user-tab.active:after {
+    width: 100%;
+}
+
+.user-tab-content {
+    display: none;
+    animation: fadeIn 0.5s ease;
+}
+
+.user-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.buyer-examples {
+    margin-top: 60px;
+}
+
+.example-listings-small {
+    margin-bottom: 40px;
+}
+
+.example-listings-small .listings {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.example-listings-small .listing {
+    padding: 20px;
+}
+
+.example-listings-small .listing-details {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+/* Filter Section */
+
+/* Búsqueda Rápida de Vendedores */
+.quick-search-container {
+    background-color: #f0f9ff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    border-left: 4px solid #00BFFF;
+}
+
+.quick-search-intro {
+    margin-bottom: 20px;
+}
+
+.quick-search-intro h3 {
+    color: #2C2C2C;
+    margin-bottom: 8px;
+    font-size: 1.3rem;
+}
+
+.quick-search-intro p {
+    color: #666;
+}
+
+.quick-search-form {
+    display: flex;
+    gap: 15px;
+}
+
+.quick-search-form input {
+    flex: 1;
+    padding: 14px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.quick-search-form input:focus {
+    outline: none;
+    border-color: #00BFFF;
+    box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.1);
+}
+
+.quick-search-form .btn {
+    padding: 12px 25px;
+    background-color: #00BFFF;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.quick-search-form .btn:hover {
+    background-color: #009dd1;
+}
+
+/* Divisor de sección */
+.section-divider {
+    display: flex;
+    align-items: center;
+    margin: 30px 0;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.section-divider::before,
+.section-divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #ddd;
+}
+
+.section-divider span {
+    padding: 0 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Filter Container */
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    background-color: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2C2C2C;
+}
+
+.filter-group select,
+.filter-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background-color: #fff;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: #00BFFF;
+}
+
+.price-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.price-range-inputs input {
+    flex: 1;
+}
+
+.price-range-inputs span {
+    color: #666;
+    font-weight: 600;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.filter-apply {
+    background-color: #00BFFF;
+}
+
+.filter-reset {
+    background-color: transparent;
+    border: 2px solid #2C2C2C;
+    color: #2C2C2C;
+}
+
+.filter-reset:hover {
+    background-color: #2C2C2C;
+    color: #fff;
+}
+
+.active-filters {
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.active-filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-tag {
+    display: inline-block;
+    background-color: #00BFFF;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin: 5px;
+    font-size: 14px;
+}
+
+.filter-tag i {
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.filter-tag i:hover {
+    color: #2C2C2C;
+}
+
+.active-filters-container {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    display: none;
+}
+
+/* Make sure tabs content is initially displayed correctly */
+#buyer-content, #seller-content {
+    width: 100%;
+}
+
+#buyer-content {
+    display: none;
+}
+
+#seller-content {
+    display: none;
+}
+
+/* Default to buyer tab being active */
+#buyer-tab {
+    background-color: #00BFFF;
+    color: white;
+}
+
+/* Add responsive styles for mobile view */
+@media (max-width: 768px) {
+    .user-mode-section {
+        flex-direction: column;
+    }
+    
+    .user-tab {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+    }
+    
+    .filter-group {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .listing-img {
+        height: 180px;
+    }
+    
+    .listings {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+/* Listings Styles */
+.listings {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.listing {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+}
+
+.listing-img {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    position: relative;
+    border-radius: 8px 8px 0 0;
+}
+
+.listing-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+    display: block;
+}
+
+.listing:hover .listing-img img {
+    transform: scale(1.05);
+}
+
+.listing:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Destacar coincidencias de búsqueda */
+.listing.highlight-match {
+    border: 2px solid #00BFFF;
+    box-shadow: 0 5px 25px rgba(0, 191, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+.listing.highlight-match::after {
+    content: "Coincidencia";
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background-color: #00BFFF;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+}
+
+.listing.highlight-match .listing-header h3 {
+    color: #00BFFF;
+}
+
+.listing.featured {
+    border: 2px solid #2C2C2C;
+}
+
+.listing-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: #2C2C2C;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 1;
+}
+
+.listing-header, .listing-details, .listing-footer, .contact-buyer {
+    padding: 0 25px;
+}
+
+.listing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 25px 15px;
+    padding: 0;
+}
+
+.price {
+    font-weight: 600;
+    color: #00BFFF;
+    font-size: 1.1rem;
+}
+
+.listing-details {
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding: 15px 25px;
+    margin-bottom: 15px;
+}
+
+.listing-details p {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.listing-footer {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.listing-footer i {
+    margin-right: 5px;
+    color: #00BFFF;
+}
+
+.contact-buyer {
+    /* Estos estilos se transfirieron a .btn.contact-buyer */
+}
+
+.see-more {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Form Styles */
+form {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #f8f9fa;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2C2C2C;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #00BFFF;
+}
+
+.budget-input {
+    position: relative;
+}
+
+.currency {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 600;
+    color: #2C2C2C;
+}
+
+.budget-input input {
+    padding-left: 30px;
+}
+
+.form-actions {
+    text-align: center;
+}
+
+/* Testimonials Section */
+.testimonials {
+    background-color: #e6f9ff;
+}
+
+.testimonial-slider {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.testimonial {
+    text-align: center;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.quote {
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-bottom: 20px;
+    color: #2C2C2C;
+}
+
+.author {
+    font-weight: 600;
+    color: #00BFFF;
+}
+
+.testimonial-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.testimonial-nav span {
+    width: 12px;
+    height: 12px;
+    background-color: #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.testimonial-nav span.active {
+    background-color: #00BFFF;
+}
+
+/* Footer */
+footer {
+    background-color: #2C2C2C;
+    color: #fff;
+    padding: 70px 0 20px;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+}
+
+.footer-logo h2 {
+    font-size: 2rem;
+    color: #00BFFF;
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.footer-logo p {
+    color: #ccc;
+}
+
+.footer-links {
+    display: flex;
+    gap: 50px;
+}
+
+.link-group h3 {
+    color: #fff;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.link-group ul li {
+    margin-bottom: 10px;
+}
+
+.link-group ul li a {
+    color: #ccc;
+    transition: color 0.3s ease;
+}
+
+.link-group ul li a:hover {
+    color: #00BFFF;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #555;
+    color: #999;
+}
+
+.social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.social-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: #444;
+    border-radius: 50%;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.social-links a:hover {
+    background-color: #00BFFF;
+    transform: translateY(-3px);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: #fff;
+    max-width: 500px;
+    margin: 80px auto;
+    padding: 40px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+}
+
+.close-modal:hover {
+    color: #2C2C2C;
+}
+
+.modal h2 {
+    margin-bottom: 30px;
+}
+
+.form-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.form-footer a {
+    color: #00BFFF;
+    font-weight: 500;
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+    .hero .container {
+        flex-direction: column;
+    }
+    
+    .hero-content {
+        padding-right: 0;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+    
+    .hero-buttons {
+        justify-content: center;
+    }
+    
+    .hero-content h2 {
+        text-align: center;
+    }
+    
+    .steps {
+        flex-direction: column;
+    }
+    
+    .step {
+        margin-bottom: 20px;
+    }
+    
+    .listings {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+    }
+    
+    .footer-logo {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .link-group h3 {
+        text-align: center;
+    }
+    
+    .link-group ul {
+        text-align: center;
+    }
+    
+    .footer-bottom {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .filter-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .user-mode-tabs {
+        flex-direction: column;
+    }
+    
+    .user-tab {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    header .container {
+        flex-direction: column;
+    }
+    
+    .logo {
+        margin-bottom: 15px;
+    }
+    
+    nav {
+        margin-bottom: 15px;
+    }
+    
+    form, .filter-container {
+        padding: 20px;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .hero-btn {
+        margin-bottom: 15px;
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .btn.buyer-cta {
+        margin-right: 0;
+    }
+}
+
+/* Mensaje de No Resultados */
+.no-results-message {
+    text-align: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin: 20px 0;
+    animation: fadeIn 0.5s ease;
+}
+
+.no-results-message p {
+    margin: 10px 0;
+    color: #2C2C2C;
+}
+
+.no-results-message .btn {
+    margin-top: 10px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Highlight styles for search matches */
+.highlight-match {
+    border: 2px solid #00BFFF !important;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.2) !important;
+    transform: translateY(-3px);
+    transition: all 0.3s ease;
+}
+
+/* Seller quick search styles */
+.seller-search {
+    display: flex;
+    align-items: center;
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.seller-search h4 {
+    margin: 0 0 10px 0;
+    color: #2C2C2C;
+    font-size: 18px;
+}
+
+.seller-search .search-container {
+    display: flex;
+    width: 100%;
+}
+
+.seller-search input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    font-size: 16px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    transition: border-color 0.3s;
+}
+
+.seller-search input:focus {
+    outline: none;
+    border-color: #00BFFF;
+}
+
+.seller-search button {
+    background-color: #00BFFF;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.seller-search button:hover {
+    background-color: #0099cc;
+}
+
+.seller-search button i {
+    margin-right: 5px;
+}
+
+/* Estilos para el resaltado de coincidencias */
+.highlight-match {
+    background-color: rgba(0, 191, 255, 0.2);
+    padding: 2px 0;
+    border-radius: 2px;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(0, 191, 255, 0.3);
+    transition: background-color 0.3s;
+}
+
+/* Estilos para mensaje de no resultados */
+.no-results-message {
+    text-align: center;
+    padding: 30px;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    margin: 20px 0;
+    color: #666;
+    border: 1px dashed #ddd;
+}
+
+.no-results-message p {
+    margin: 10px 0;
+}
+
+.no-results-message strong {
+    color: #2C2C2C;
+}
+
+/* Asegurar que los filtros y búsqueda se muestren correctamente */
+.seller-search-container {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.seller-search-container input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    font-size: 1rem;
+}
+
+.seller-search-container button {
+    border-radius: 0 4px 4px 0;
+    padding: 0 20px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Ajustes para el modo active de la pestaña */
+.user-tab.active {
+    background-color: #00BFFF;
+    color: white;
+}
+
+/* Ajustes específicos para la sección de vendedor */
+#seller-content .section-header {
+    margin-bottom: 20px;
+}
+
+#seller-content .seller-search {
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+#seller-content .section-divider {
+    margin: 25px 0;
+}
+
+/* Estilos para los elementos de negociación */
+.negotiable {
+    color: #00a650;
+    font-weight: 600;
+    padding: 2px 8px;
+    background-color: rgba(0, 166, 80, 0.1);
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.non-negotiable {
+    color: #e63946;
+    font-weight: 600;
+    padding: 2px 8px;
+    background-color: rgba(230, 57, 70, 0.1);
+    border-radius: 4px;
+    display: inline-block;
+} 

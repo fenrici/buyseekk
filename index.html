@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuySeek - Deja que los vendedores te encuentren</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>BuySeek</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">Inicio</a></li>
+                    <li><a href="#">Cómo Funciona</a></li>
+                    <li><a href="#">Nosotros</a></li>
+                    <li><a href="#">Contacto</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button class="btn login">Iniciar Sesión</button>
+                <button class="btn signup">Registrarse</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h2>Mercado Invertido</h2>
+                <h3>Deja que los vendedores te encuentren</h3>
+                <p>Publica lo que quieres comprar y los vendedores te contactarán con sus mejores ofertas.</p>
+                <div class="hero-buttons">
+                    <button class="btn cta buyer-cta hero-btn">Quiero Comprar</button>
+                    <button class="btn cta seller-cta hero-btn">Quiero Vender</button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="hero-card">
+                    <div class="card-content">
+                        <h3>Busco Ferrari 488 2019, hasta 10.000 millas</h3>
+                        <p>Pago USD 230000 dispuesto a negociar</p>
+                        <button class="btn offer-btn">Ofrecer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2>Cómo Funciona</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-edit"></i></div>
+                    <h3>Publica</h3>
+                    <p>Crea una publicación describiendo lo que quieres comprar, con el mayor detalle posible.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-comments"></i></div>
+                    <h3>Conéctate</h3>
+                    <p>Los vendedores te contactarán con ofertas que coincidan con tus requisitos.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon"><i class="fas fa-handshake"></i></div>
+                    <h3>Cierra el Trato</h3>
+                    <p>Elige la mejor oferta y cierra el trato en tus términos.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="user-mode-section">
+        <div class="container">
+            <div class="user-mode-tabs">
+                <button class="user-tab active" data-tab="buyer">Soy Comprador</button>
+                <button class="user-tab" data-tab="seller">Soy Vendedor</button>
+            </div>
+
+            <!-- CONTENIDO PARA COMPRADORES -->
+            <div class="user-tab-content active" id="buyer-content">
+                <div class="section-header">
+                    <h2>Publica Tu Solicitud de Compra</h2>
+                    <p>Describe lo que buscas comprar y deja que los vendedores vengan a ti con sus mejores ofertas</p>
+                </div>
+                
+                <form id="buy-request-form">
+                    <div class="form-group">
+                        <label for="category">Categoría *</label>
+                        <select id="category" required>
+                            <option value="">Selecciona una categoría</option>
+                            <option value="autos">Automóviles de Lujo</option>
+                            <option value="relojes">Relojes de Lujo</option>
+                            <option value="inmobiliaria">Inmobiliaria</option>
+                            <option value="tech">Tecnología</option>
+                            <option value="arte">Arte y Antigüedades</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group operation-type" style="display: none;">
+                        <label for="operation-type">Tipo de Operación *</label>
+                        <select id="operation-type" required>
+                            <option value="compra">Compra</option>
+                            <option value="alquiler">Alquiler</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">¿Qué estás buscando comprar? *</label>
+                        <input type="text" id="title" placeholder="ej., Ferrari 458 2018" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget">Presupuesto Máximo *</label>
+                        <div class="budget-input">
+                            <span class="currency">$</span>
+                            <input type="number" id="budget" placeholder="ej., 210000" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="requirements">Requisitos y Detalles *</label>
+                        <textarea id="requirements" rows="5" placeholder="Describe lo que buscas en detalle. Sé específico sobre requisitos, condición, características, etc." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Tu Ubicación *</label>
+                        <input type="text" id="location" placeholder="ej., Miami, FL" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">Email de Contacto *</label>
+                        <input type="email" id="contact" placeholder="tunombre@ejemplo.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deadline">Fecha límite para recibir ofertas</label>
+                        <input type="date" id="deadline">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn submit">Publicar Mi Solicitud</button>
+                    </div>
+                </form>
+                
+                <div class="section-header buyer-examples">
+                    <h2>Ejemplos de Solicitudes de Compra</h2>
+                    <p>Mira cómo otros compradores han creado sus solicitudes</p>
+                </div>
+                
+                <div class="example-listings-small">
+                    <div class="listings">
+                        <div class="listing">
+                            <div class="listing-header">
+                                <h3>Ferrari 458 2018</h3>
+                                <span class="price">Pago hasta $210,000</span>
+                            </div>
+                            <div class="listing-details">
+                                <p><strong>Requisitos:</strong> Máximo 10,000 millas, excelente estado, preferiblemente rojo o negro, historial de servicio completo.</p>
+                                <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                            </div>
+                        </div>
+                        <div class="listing">
+                            <div class="listing-header">
+                                <h3>Apartamento en Miami Beach</h3>
+                                <span class="price">Pago hasta $850,000</span>
+                            </div>
+                            <div class="listing-details">
+                                <p><strong>Requisitos:</strong> 2-3 dormitorios, vista al mar, mínimo 120m², área de piscina, estacionamiento.</p>
+                                <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                            </div>
+                        </div>
+                        <div class="listing">
+                            <div class="listing-header">
+                                <h3>Rolex Daytona</h3>
+                                <span class="price">Pago hasta $35,000</span>
+                            </div>
+                            <div class="listing-details">
+                                <p><strong>Requisitos:</strong> Modelo reciente, esfera blanca o negra, con documentación completa y caja original.</p>
+                                <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENIDO PARA VENDEDORES -->
+            <div class="user-tab-content" id="seller-content">
+                <div class="section-header">
+                    <h2>Encuentra Solicitudes de Compra</h2>
+                    <p>Utiliza los filtros para encontrar personas interesadas en comprar lo que tú vendes</p>
+                </div>
+                
+                <!-- Quick Search -->
+                <div class="seller-search">
+                    <h3>Búsqueda Rápida</h3>
+                    <div class="seller-search-container">
+                        <input type="text" id="quick-search" placeholder="Buscar por marca, modelo, ubicación...">
+                        <button class="btn seller-cta" id="search-button">Buscar</button>
+                    </div>
+                </div>
+
+                <div class="section-divider">
+                    <span>o utiliza filtros avanzados</span>
+                </div>
+                
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label for="category-filter">Categoría</label>
+                        <select id="category-filter">
+                            <option value="all">Todas las categorías</option>
+                            <option value="autos">Automóviles de Lujo</option>
+                            <option value="relojes">Relojes de Lujo</option>
+                            <option value="inmobiliaria">Inmobiliaria</option>
+                            <option value="tech">Tecnología</option>
+                            <option value="arte">Arte y Antigüedades</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group operation-type-container" style="display: none;">
+                        <label for="operation-type-filter">Tipo de Operación</label>
+                        <select id="operation-type-filter">
+                            <option value="all">Todas las operaciones</option>
+                            <option value="compra">Compra</option>
+                            <option value="alquiler">Alquiler</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="brand-filter">Marca</label>
+                        <select id="brand-filter">
+                            <option value="all">Todas las marcas</option>
+                            <option value="porsche">Porsche</option>
+                            <option value="ferrari">Ferrari</option>
+                            <option value="lamborghini">Lamborghini</option>
+                            <option value="rolex">Rolex</option>
+                            <option value="apple">Apple</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="model-filter">Modelo</label>
+                        <select id="model-filter">
+                            <option value="all">Todos los modelos</option>
+                            <option value="911">Porsche 911</option>
+                            <option value="cayman">Porsche Cayman</option>
+                            <option value="458">Ferrari 458</option>
+                            <option value="submariner">Rolex Submariner</option>
+                            <option value="daytona">Rolex Daytona</option>
+                            <option value="macbook">MacBook Pro</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="location-filter">Ubicación</label>
+                        <select id="location-filter">
+                            <option value="all">Todas las ubicaciones</option>
+                            <option value="miami">Miami, FL</option>
+                            <option value="newyork">Nueva York, NY</option>
+                            <option value="losangeles">Los Ángeles, CA</option>
+                            <option value="chicago">Chicago, IL</option>
+                            <option value="otros">Otros</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="price-range">Rango de Precio</label>
+                        <div class="price-range-inputs">
+                            <input type="number" id="min-price" placeholder="Mínimo" min="0">
+                            <span>-</span>
+                            <input type="number" id="max-price" placeholder="Máximo" min="0">
+                        </div>
+                    </div>
+
+                    <div class="filter-group filter-buttons">
+                        <button class="btn filter-apply">Aplicar Filtros</button>
+                        <button class="btn filter-reset outline">Restablecer</button>
+                    </div>
+                </div>
+                
+                <div class="active-filters">
+                    <div class="active-filter-tags" id="active-filter-tags">
+                        <!-- Las etiquetas de filtros activos se mostrarán aquí -->
+                    </div>
+                </div>
+                
+                <div class="section-header">
+                    <h2>Solicitudes de Compra</h2>
+                </div>
+                
+                <div class="listings">
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://cdn.soulauto.com/wp-content/uploads/2024/03/00_01_Ferrari-488-gtb_01-0495.jpg?x32428" alt="Ferrari 488 GTB Rojo">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Ferrari 488 GTB Rojo</h3>
+                            <span class="price">Pago hasta $240,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo reciente, color rojo Ferrari (Rosso Corsa), carrocería coupé, impecable estado exterior e interior, documentación completa, servicio reciente.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 1 día</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 48 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 5 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://imagenes.km77.com/fotos/bbtcontent/clipping/KM7KPH20121026_0029/5.jpg" alt="Porsche 911 Carrera Negro">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Porsche 911 Carrera Negro</h3>
+                            <span class="price">Pago hasta $180,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo reciente, color negro, carrocería coupé, interior negro o gris oscuro, llantas deportivas, paquetes premium si disponibles.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 1 día</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 56 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 7 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://newsroom.porsche.com/.imaging/mte/porsche-templating-theme/image_1290x726/dam/pnr/2021/Products/911-GT3-Technik/Gallery-2/S21_0771_fine.jpeg/jcr:content/S21_0771_fine.jpeg" alt="Porsche 911 GT3 Azul">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Porsche 911 GT3 Azul</h3>
+                            <span class="price">Pago hasta $195,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo GT3 en color azul (Miami Blue o similar), con alerón trasero deportivo, llantas oscuras, escape deportivo, impecable estado.</p>
+                            <p><strong>Ubicación:</strong> Los Ángeles, CA</p>
+                            <p><strong>Publicado:</strong> hace 3 días</p>
+                            <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 38 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 5 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <!-- MOTOS DE LUJO -->
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://images.ctfassets.net/x7j9qwvpvr5s/6ijjwnyfDKL0uT7CIYwRqs/63c5eaba99cd91f318b3a109979854b7/Model-Menu-MY20-Panigale-V4-Red.png" alt="Ducati Panigale Roja">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Ducati Panigale Roja</h3>
+                            <span class="price">Pago hasta $32,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo deportivo en rojo Ducati, con carenado completo, tubos de escape Akrapovic si es posible, buenas condiciones generales, pocos kilómetros.</p>
+                            <p><strong>Ubicación:</strong> Nueva York, NY</p>
+                            <p><strong>Publicado:</strong> hace 2 días</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 29 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 4 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://www.bmw-motorrad.com.ar/content/dam/bmwmotorradnsc/common/multiimages/images/models/heritage/rninet_scrambler_2020/productstage/nsc-master-rninet-scrambler-P0NA2_2560x1440.jpg.asset.1732627412249.jpg" alt="BMW R NineT Scrambler">
+                        </div>
+                        <div class="listing-header">
+                            <h3>BMW R NineT Scrambler</h3>
+                            <span class="price">Pago hasta $22,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo BMW R NineT Scrambler o similar, estilo retro, en color negro o gris oscuro, neumáticos todo terreno, buenas condiciones.</p>
+                            <p><strong>Ubicación:</strong> Chicago, IL</p>
+                            <p><strong>Publicado:</strong> hace 4 días</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 34 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 6 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <!-- RELOJES DE LUJO -->
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://media.rolex.com/image/upload/q_auto:eco/f_auto/t_v7-majesty/c_limit,w_3840/v1/catalogue/2025/upright-c/m126505-0001" alt="Rolex Daytona Oro Rosa">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Rolex Daytona Oro Rosa</h3>
+                            <span class="price">Pago hasta $45,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Rolex Daytona en oro rosa con esfera oscura, cronógrafo funcional, correa de cuero marrón, excelente estado, con documentación y caja original.</p>
+                            <p><strong>Ubicación:</strong> Nueva York, NY</p>
+                            <p><strong>Publicado:</strong> hace 3 días</p>
+                            <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 35 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 4 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://img.chrono24.com/images/uhren/20102692-yybvdt899jnhe5fjqw87e72c-ExtraLarge.jpg" alt="Rolex Submariner Verde">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Rolex Submariner Verde Hulk</h3>
+                            <span class="price">Pago hasta $30,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo reciente, certificado de autenticidad, full set con caja y documentos, excelente estado de conservación, preferencia por el modelo con bisel verde "Hulk".</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 1 día</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 45 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 7 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://www.watch-test.com/wp-content/uploads/2020/07/Grandes-Complicaciones-de-Patek-Philippe-cover-1600x733.jpg" alt="Patek Philippe Complicaciones">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Patek Philippe Complicaciones</h3>
+                            <span class="price">Pago hasta $100,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo de complicaciones con calendario y fases lunares, esfera blanca o plateada como en la imagen, correa de cuero negro, excelente estado.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 6 días</p>
+                            <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 52 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 3 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <!-- YATES -->
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://astondoa.com/wp-content/uploads/2023/09/Astondoa_66Flybridge_07-1-scaled.jpg" alt="Yate con Flybridge Amplio">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Yate con Flybridge Amplio</h3>
+                            <span class="price">Pago hasta $6,500,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Yate motor blanco con líneas elegantes, flybridge grande como el mostrado en la imagen, espacio de cubierta trasera amplio, buenas condiciones.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 5 días</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 21 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 2 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                    
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://alquilerdeyatesenibiza.com/wp-content/uploads/2020/10/MANGUSTA1.jpg" alt="Yate Deportivo">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Yate Deportivo de Lujo</h3>
+                            <span class="price">Pago hasta $4,800,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Yate deportivo de diseño moderno, preferiblemente de color oscuro, con amplio espacio de cubierta para tomar el sol, cabina lujosa, mínimo 4 camarotes.</p>
+                            <p><strong>Ubicación:</strong> Los Ángeles, CA</p>
+                            <p><strong>Publicado:</strong> hace 8 días</p>
+                            <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 18 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 1 Oferta</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://www.miamiinmuebles.com/images/mls/A/11510560/13.jpg" alt="Apartamento de Lujo en Sunny Isles">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Apartamento de Lujo en Sunny Isles</h3>
+                            <span class="price">Pago hasta $2,200,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> 3 habitaciones, vista directa al mar (no lateral), balcón amplio frontal al océano, acabados de lujo, cocina equipada, mínimo 150m², preferiblemente en pisos altos.</p>
+                            <p><strong>Ubicación:</strong> Sunny Isles Beach, FL</p>
+                            <p><strong>Publicado:</strong> hace 2 días</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 52 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 4 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://frg-fwm.azurewebsites.net/asset/fwm/Upload/Models/Images/PhotoGallery/Pershing/Zoom/71449.jpg" alt="Yate Deportivo Pershing">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Yate Deportivo Pershing Luxury</h3>
+                            <span class="price">Pago hasta $5,800,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo Pershing reciente (2020+), eslora mínima 25 metros, velocidad máxima superior a 40 nudos, al menos 3 camarotes, sistema de estabilizadores, acabados de lujo, poco uso, documentación completa.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 1 día</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 38 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 3 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://www.api.cat/noticias/wp-content/uploads/2014/07/casa_minimalista.jpg" alt="Casa Estilo Minimalista">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Casa Minimalista en Weston</h3>
+                            <span class="price">Pago hasta $1,850,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Casa de diseño minimalista con líneas limpias y espacios abiertos, 4 dormitorios, amplio jardín, preferiblemente con piscina, acabados en tonos neutros, iluminación natural, materiales de alta calidad, construcción reciente o renovada, en una comunidad tranquila.</p>
+                            <p><strong>Ubicación:</strong> Weston, FL</p>
+                            <p><strong>Publicado:</strong> hace 4 días</p>
+                            <p><strong>Negociación:</strong> <span class="non-negotiable">No negociable</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 41 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 6 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+
+                    <div class="listing">
+                        <div class="listing-img">
+                            <img src="https://propertymngt.homeselect.es/pics/1648/detail/3/1675342857_A7404947-HDR.jpg" alt="Apartamento de Lujo para Alquiler">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Alquilo Apartamento en Brickell</h3>
+                            <span class="price">Pago hasta $8,000/mes</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Apartamento de 2-3 dormitorios, amueblado, vista al mar o ciudad, edificio con amenidades (gimnasio, piscina), contrato por 12 meses, disponibilidad inmediata.</p>
+                            <p><strong>Ubicación:</strong> Brickell, Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 2 días</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 33 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 4 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+
+                    <div class="listing featured">
+                        <div class="listing-badge">Destacado</div>
+                        <div class="listing-img">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/69/N975QS_2002_Cessna_750_C-N_750-0175_Citation_X_%287039507775%29.jpg" alt="Cessna Citation X">
+                        </div>
+                        <div class="listing-header">
+                            <h3>Cessna Citation X</h3>
+                            <span class="price">Pago hasta $9,500,000</span>
+                        </div>
+                        <div class="listing-details">
+                            <p><strong>Requisitos:</strong> Modelo Citation X de 2015 o más reciente, menos de 2,000 horas de vuelo, excelente estado de conservación, full aviónica, interior de lujo preferiblemente en tonos claros, historial de mantenimiento completo y documentado.</p>
+                            <p><strong>Ubicación:</strong> Miami, FL</p>
+                            <p><strong>Publicado:</strong> hace 1 día</p>
+                            <p><strong>Negociación:</strong> <span class="negotiable">Dispuesto a negociar</span></p>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="views"><i class="fas fa-eye"></i> 15 Vendedores Vieron</span>
+                            <span class="offers"><i class="fas fa-comment-dollar"></i> 2 Ofertas</span>
+                        </div>
+                        <button class="btn contact-buyer">¡Lo Tengo!</button>
+                    </div>
+                </div>
+                <div class="see-more">
+                    <button class="btn outline">Ver Más Anuncios</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <div class="container">
+            <h2>Historias de Éxito</h2>
+            <div class="testimonial-slider">
+                <div class="testimonial">
+                    <div class="quote">"Encontré el auto de mis sueños en solo 3 días! Recibí 5 ofertas y ahorré $12,000 comparado con los precios de concesionarios."</div>
+                    <div class="author">- Michael T., Miami</div>
+                </div>
+                <div class="testimonial">
+                    <div class="quote">"Como vendedor, BuySeek me ayuda a encontrar compradores serios que saben exactamente lo que quieren. ¡No más curiosos sin intención de compra!"</div>
+                    <div class="author">- Sarah K., Concesionaria de Autos</div>
+                </div>
+                <div class="testimonial">
+                    <div class="quote">"Necesitaba un lente de cámara específico que estaba agotado en todas partes. Lo publiqué en BuySeek y lo tuve en una semana!"</div>
+                    <div class="author">- James L., Fotógrafo</div>
+                </div>
+            </div>
+            <div class="testimonial-nav">
+                <span class="active"></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>BuySeek</h2>
+                    <p>El Mercado Invertido</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h3>Empresa</h3>
+                        <ul>
+                            <li><a href="#">Nosotros</a></li>
+                            <li><a href="#">Carreras</a></li>
+                            <li><a href="#">Prensa</a></li>
+                        </ul>
+                    </div>
+                    <div class="link-group">
+                        <h3>Recursos</h3>
+                        <ul>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Preguntas Frecuentes</a></li>
+                            <li><a href="#">Contactar Soporte</a></li>
+                        </ul>
+                    </div>
+                    <div class="link-group">
+                        <h3>Legal</h3>
+                        <ul>
+                            <li><a href="#">Términos de Servicio</a></li>
+                            <li><a href="#">Política de Privacidad</a></li>
+                            <li><a href="#">Política de Cookies</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 BuySeek. Todos los derechos reservados.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Iniciar Sesión en BuySeek</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn submit">Iniciar Sesión</button>
+                </div>
+                <div class="form-footer">
+                    <a href="#">¿Olvidaste tu contraseña?</a>
+                    <p>¿No tienes una cuenta? <a href="#" class="switch-to-signup">Regístrate</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="signup-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Regístrate en BuySeek</h2>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name">Nombre Completo</label>
+                    <input type="text" id="signup-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Contraseña</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-confirm">Confirmar Contraseña</label>
+                    <input type="password" id="signup-confirm" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn submit">Crear Cuenta</button>
+                </div>
+                <div class="form-footer">
+                    <p>¿Ya tienes una cuenta? <a href="#" class="switch-to-login">Iniciar Sesión</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
