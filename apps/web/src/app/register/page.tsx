@@ -8,9 +8,11 @@ import { User } from '@/lib/types';
 import { getDashboardPath } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { setStoredLocale, useT } from '@/lib/i18n';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const t = useT();
   const [form, setForm] = useState({
     email: '',
@@ -42,6 +44,7 @@ export default function RegisterPage() {
       });
       setToken(res.token);
       setStoredLocale(res.user.locale);
+      await refresh();
       router.push(getDashboardPath(res.user.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
