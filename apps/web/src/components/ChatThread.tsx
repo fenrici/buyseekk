@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { api } from '@/lib/api';
-import { ChatDetail } from '@/lib/types';
+import { api, getToken } from '@/lib/api';
+import { getChatSocket } from '@/lib/socket';
+import { ChatDetail, ChatMessage } from '@/lib/types';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -18,24 +19,48 @@ function initials(name: string) {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
+function appendMessage(prev: ChatDetail | null, msg: ChatMessage): ChatDetail | null {
+  if (!prev || prev.messages.some((m) => m.id === msg.id)) return prev;
+  return { ...prev, messages: [...prev.messages, msg] };
+}
+
 export function ChatThread({ chatId }: { chatId: string }) {
   const [chat, setChat] = useState<ChatDetail | null>(null);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
+  const [live, setLive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  async function load() {
-    const data = await api<ChatDetail>(`/chats/${chatId}`);
-    setChat(data);
-  }
+  useEffect(() => {
+    api<ChatDetail>(`/chats/${chatId}`)
+      .then(setChat)
+      .catch((e) => setError(e.message));
+  }, [chatId]);
 
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-    const interval = setInterval(() => {
-      load().catch(() => {});
-    }, 4000);
-    return () => clearInterval(interval);
+    const socket = getChatSocket();
+    socket.auth = { token: getToken() };
+    socket.connect();
+    socket.emit('join', chatId);
+
+    const onMessage = (msg: ChatMessage) => {
+      setChat((c) => appendMessage(c, msg));
+    };
+    const onConnect = () => setLive(true);
+    const onDisconnect = () => setLive(false);
+
+    socket.on('message', onMessage);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    if (socket.connected) setLive(true);
+
+    return () => {
+      socket.off('message', onMessage);
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.disconnect();
+    };
   }, [chatId]);
 
   useEffect(() => {
@@ -47,15 +72,31 @@ export function ChatThread({ chatId }: { chatId: string }) {
     if (!text.trim() || sending) return;
     setSending(true);
     setError('');
-    try {
-      const msg = await api<ChatDetail['messages'][0]>(`/chats/${chatId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ text }),
+    const payload = text.trim();
+    setText('');
+
+    const socket = getChatSocket();
+    if (socket.connected) {
+      socket.emit('send', { chatId, text: payload }, (res: ChatMessage | { message?: string }) => {
+        setSending(false);
+        if (res && 'id' in res) {
+          setChat((c) => appendMessage(c, res));
+        } else if (res && 'message' in res) {
+          setError(String(res.message));
+        }
       });
-      setText('');
-      setChat((c) => (c ? { ...c, messages: [...c.messages, msg] } : c));
+      return;
+    }
+
+    try {
+      const msg = await api<ChatMessage>(`/chats/${chatId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ text: payload }),
+      });
+      setChat((c) => appendMessage(c, msg));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al enviar');
+      setText(payload);
     } finally {
       setSending(false);
     }
@@ -71,10 +112,13 @@ export function ChatThread({ chatId }: { chatId: string }) {
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
           {initials(chat.partner.name)}
         </div>
-        <div>
+        <div className="flex-1">
           <p className="font-semibold">{chat.partner.name}</p>
           <p className="text-xs text-slate-500">{chat.requestTitle}</p>
         </div>
+        <span className={`text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>
+          {live ? '● En vivo' : 'Reconectando...'}
+        </span>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -105,17 +149,13 @@ export function ChatThread({ chatId }: { chatId: string }) {
 
       <form onSubmit={handleSend} className="flex gap-2 border-t p-4">
         <input
-          className="flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
+          className="input flex-1"
           placeholder="Escribí un mensaje..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={2000}
         />
-        <button
-          type="submit"
-          disabled={sending || !text.trim()}
-          className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-        >
+        <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary">
           Enviar
         </button>
       </form>
