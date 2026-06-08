@@ -18,10 +18,16 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
+  console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
   app.setGlobalPrefix('api');
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port, '0.0.0.0');
