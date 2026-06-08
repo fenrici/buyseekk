@@ -4,18 +4,23 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { useT } from '@/lib/i18n';
+import { getToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, refresh } = useAuth();
   const t = useT();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
+    if (loading) return;
+    if (user) return;
+    if (getToken()) {
+      refresh();
+      return;
     }
-  }, [user, loading, router]);
+    router.replace('/login');
+  }, [user, loading, router, refresh]);
 
   if (loading) {
     return (

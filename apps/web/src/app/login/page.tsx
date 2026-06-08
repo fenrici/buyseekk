@@ -17,7 +17,7 @@ const DEMOS = {
 
 function LoginForm() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { setSession } = useAuth();
   const searchParams = useSearchParams();
   const roleHint = searchParams.get('role');
   const t = useT();
@@ -53,8 +53,8 @@ function LoginForm() {
       });
       setToken(res.token);
       setStoredLocale(res.user.locale);
-      await refresh();
-      router.push(getDashboardPath(res.user.role));
+      setSession(res.user);
+      router.replace(getDashboardPath(res.user.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
