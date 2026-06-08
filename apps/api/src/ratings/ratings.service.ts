@@ -1,0 +1,168 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OfferStatus, RatingType } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateRatingDto } from './ratings.dto';
+
+export type UserRatingStats = {
+  avgStars: number | null;
+  reviewCount: number;
+  noResponseCount: number;
+};
+
+@Injectable()
+export class RatingsService {
+  constructor(private prisma: PrismaService) {}
+
+  async getStats(userId: string): Promise<UserRatingStats> {
+    const reviews = await this.prisma.rating.findMany({
+      where: { toUserId: userId, type: RatingType.REVIEW, stars: { not: null } },
+      select: { stars: true },
+    });
+    const noResponseCount = await this.prisma.rating.count({
+      where: { toUserId: userId, type: RatingType.NO_RESPONSE },
+    });
+    const reviewCount = reviews.length;
+    const avgStars =
+      reviewCount > 0
+        ? Math.round((reviews.reduce((s, r) => s + (r.stars ?? 0), 0) / reviewCount) * 10) / 10
+        : null;
+    return { avgStars, reviewCount, noResponseCount };
+  }
+
+  private async getOfferContext(offerId: string, userId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: {
+        chat: { include: { messages: { select: { fromRole: true } } } },
+        request: { select: { userId: true } },
+      },
+    });
+    if (!offer) throw new NotFoundException('Oferta no encontrada');
+    if (offer.status !== OfferStatus.ACEPTADA) {
+      throw new BadRequestException('Solo podés valorar después de aceptar una oferta');
+    }
+    if (!offer.chat) {
+      throw new BadRequestException('Se requiere contacto por chat (oferta aceptada)');
+    }
+
+    const isBuyer = offer.request.userId === userId;
+    const isSeller = offer.sellerId === userId;
+    if (!isBuyer && !isSeller) throw new ForbiddenException();
+
+    const toUserId = isBuyer ? offer.sellerId : offer.request.userId;
+    return { offer, isBuyer, isSeller, toUserId, chat: offer.chat };
+  }
+
+  async create(fromUserId: string, dto: CreateRatingDto) {
+    const existing = await this.prisma.rating.findUnique({
+      where: { fromUserId_offerId: { fromUserId, offerId: dto.offerId } },
+    });
+    if (existing) throw new ConflictException('Ya valoraste esta oferta');
+
+    const { offer, isBuyer, isSeller, toUserId, chat } = await this.getOfferContext(
+      dto.offerId,
+      fromUserId,
+    );
+
+    if (dto.type === RatingType.NO_RESPONSE) {
+      if (!isSeller) {
+        throw new ForbiddenException('Solo el vendedor puede marcar falta de respuesta');
+      }
+      const buyerReplied = chat.messages.some((m) => m.fromRole === 'buyer');
+      if (buyerReplied) {
+        throw new BadRequestException('El comprador respondió en el chat — usá una valoración con estrellas');
+      }
+      return this.prisma.rating.create({
+        data: {
+          fromUserId,
+          toUserId,
+          offerId: dto.offerId,
+          type: RatingType.NO_RESPONSE,
+          comment: dto.comment?.trim() || 'El comprador no respondió en el chat',
+        },
+      });
+    }
+
+    if (!dto.stars || dto.stars < 1 || dto.stars > 5) {
+      throw new BadRequestException('Las valoraciones requieren entre 1 y 5 estrellas');
+    }
+
+    return this.prisma.rating.create({
+      data: {
+        fromUserId,
+        toUserId,
+        offerId: dto.offerId,
+        type: RatingType.REVIEW,
+        stars: dto.stars,
+        comment: dto.comment?.trim(),
+      },
+    });
+  }
+
+  async pending(userId: string) {
+    const offers = await this.prisma.offer.findMany({
+      where: {
+        status: OfferStatus.ACEPTADA,
+        chat: { isNot: null },
+        OR: [{ sellerId: userId }, { request: { userId } }],
+      },
+      include: {
+        chat: { select: { id: true } },
+        seller: { select: { id: true, name: true } },
+        request: { include: { user: { select: { id: true, name: true } } } },
+      },
+      orderBy: { acceptedAt: 'desc' },
+    });
+
+    const rated = await this.prisma.rating.findMany({
+      where: { fromUserId: userId, offerId: { in: offers.map((o) => o.id) } },
+      select: { offerId: true },
+    });
+    const ratedSet = new Set(rated.map((r) => r.offerId));
+
+    return offers
+      .filter((o) => !ratedSet.has(o.id))
+      .map((o) => {
+        const isBuyer = o.request.userId === userId;
+        return {
+          offerId: o.id,
+          requestTitle: o.requestTitle,
+          chatId: o.chat?.id,
+          partner: isBuyer
+            ? { id: o.seller.id, name: o.seller.name, role: 'seller' as const }
+            : { id: o.request.user.id, name: o.request.user.name, role: 'buyer' as const },
+          myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
+        };
+      });
+  }
+
+  async forOffer(offerId: string, userId: string) {
+    const { offer, isBuyer, toUserId, chat } = await this.getOfferContext(offerId, userId);
+    const partner = await this.prisma.user.findUnique({
+      where: { id: toUserId },
+      select: { id: true, name: true },
+    });
+    if (!partner) throw new NotFoundException();
+
+    const mine = await this.prisma.rating.findUnique({
+      where: { fromUserId_offerId: { fromUserId: userId, offerId } },
+    });
+    const partnerStats = await this.getStats(toUserId);
+    const buyerReplied = chat.messages.some((m) => m.fromRole === 'buyer');
+
+    return {
+      offerId,
+      myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
+      partner: { ...partner, stats: partnerStats },
+      myRating: mine,
+      canMarkNoResponse: !isBuyer && !buyerReplied && !mine,
+      canReview: !mine,
+    };
+  }
+}
