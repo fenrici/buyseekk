@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build -w @buyseekk/shared
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate -w @buyseekk/api
+
+      - name: Build API
+        run: npm run build -w @buyseekk/api
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema apps/api/prisma/schema.prisma
+
+      - name: Build web
+        run: npm run build -w @buyseekk/web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000

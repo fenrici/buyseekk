@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+dist/
+.next/
+.turbo/
+coverage/
+apps/api/dist/
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+apps/web/.next/

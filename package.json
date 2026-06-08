@@ -1,0 +1,29 @@
+{
+  "name": "buyseekk",
+  "version": "3.0.0",
+  "private": true,
+  "description": "BuySeek — Mercado invertido de autos e inmuebles",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build -w @buyseekk/shared && concurrently -n api,web -c blue,green \"npm run dev -w @buyseekk/api\" \"npm run dev -w @buyseekk/web\"",
+    "dev:api": "npm run dev -w @buyseekk/api",
+    "dev:web": "npm run dev -w @buyseekk/web",
+    "dev:legacy": "live-server legacy --port=3000 --open=/index.html",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate -w @buyseekk/api",
+    "db:migrate:deploy": "npm run prisma:migrate:deploy -w @buyseekk/api",
+    "db:seed": "npm run prisma:seed -w @buyseekk/api",
+    "build": "npm run build -w @buyseekk/shared && npm run build -w @buyseekk/api && npm run build -w @buyseekk/web"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "live-server": "^1.2.2"
+  }
+}

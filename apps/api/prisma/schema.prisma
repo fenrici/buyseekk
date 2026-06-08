@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  BOTH
+}
+
+enum Country {
+  AR
+  US
+}
+
+enum Currency {
+  ARS
+  USD
+}
+
+enum Locale {
+  ES
+  EN
+}
+
+enum RequestCategory {
+  AUTOS
+  INMOBILIARIA
+}
+
+enum OperationType {
+  COMPRA
+  ALQUILER
+}
+
+enum OfferStatus {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+enum RatingType {
+  REVIEW
+  NO_RESPONSE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(BOTH)
+  country      Country
+  locale       Locale
+  currency     Currency
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  requests         Request[]
+  offers           Offer[]
+  ratingsGiven     Rating[] @relation("RatingsGiven")
+  ratingsReceived  Rating[] @relation("RatingsReceived")
+}
+
+model Request {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     RequestCategory
+  operation    OperationType   @default(COMPRA)
+  title        String
+  requirements String
+  budget       Int
+  budgetPeriod String?
+  currency     Currency
+  location     String
+  zone         String?
+  bedrooms     Int?
+  minSqm       Int?
+  maxSqm       Int?
+  country      Country
+  imageUrls    String[]        @default([])
+  carBrand     String?
+  carModel     String?
+  carColor     String?
+  maxMileage   Int?
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  offers Offer[]
+
+  @@index([userId, active])
+  @@index([category, active])
+  @@index([category, country, carBrand, carModel])
+  @@index([category, country, location, zone])
+  @@index([category, country, bedrooms, minSqm, maxSqm])
+}
+
+model Offer {
+  id                    String      @id @default(cuid())
+  requestId             String
+  request               Request     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sellerId              String
+  seller                User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  price                 Int
+  currency              Currency
+  message               String
+  imageUrls             String[]    @default([])
+  status                OfferStatus @default(PENDIENTE)
+  requestTitle          String
+  requestBudget         Int
+  requestBudgetPeriod   String?
+  requestRequirements   String
+  requestLocation       String
+  createdAt             DateTime    @default(now())
+  acceptedAt            DateTime?
+
+  chat Chat?
+
+  @@unique([requestId, sellerId])
+  @@index([sellerId])
+  @@index([requestId, status])
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  offerId   String    @unique
+  offer     Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  fromRole  String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+}
+
+model Rating {
+  id         String     @id @default(cuid())
+  fromUserId String
+  fromUser   User       @relation("RatingsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User       @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  offerId    String
+  type       RatingType @default(REVIEW)
+  stars      Int?
+  comment    String?
+  createdAt  DateTime   @default(now())
+
+  @@unique([fromUserId, offerId])
+  @@index([toUserId])
+  @@index([toUserId, type])
+}
