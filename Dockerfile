@@ -33,6 +33,7 @@ COPY --from=build /app/apps/api/prisma apps/api/prisma
 
 WORKDIR /app/apps/api
 RUN mkdir -p uploads
+RUN npx prisma generate
 
 ENV PORT=4000
 EXPOSE 4000
