@@ -1,6 +1,6 @@
 import { Currency } from '@prisma/client';
 import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
-import { MAX_IMAGES_PER_ENTITY } from '../lib/business-rules';
+import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
 
 export class CreateOfferDto {
   @IsString()

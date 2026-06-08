@@ -19,20 +19,54 @@ export type UserRatingStats = {
 export class RatingsService {
   constructor(private prisma: PrismaService) {}
 
+  private emptyStats(): UserRatingStats {
+    return { avgStars: null, reviewCount: 0, noResponseCount: 0 };
+  }
+
   async getStats(userId: string): Promise<UserRatingStats> {
+    const map = await this.getStatsForUsers([userId]);
+    return map[userId] ?? this.emptyStats();
+  }
+
+  async getStatsForUsers(userIds: string[]): Promise<Record<string, UserRatingStats>> {
+    const unique = [...new Set(userIds)];
+    if (unique.length === 0) return {};
+
     const reviews = await this.prisma.rating.findMany({
-      where: { toUserId: userId, type: RatingType.REVIEW, stars: { not: null } },
-      select: { stars: true },
+      where: { toUserId: { in: unique }, type: RatingType.REVIEW, stars: { not: null } },
+      select: { toUserId: true, stars: true },
     });
-    const noResponseCount = await this.prisma.rating.count({
-      where: { toUserId: userId, type: RatingType.NO_RESPONSE },
+    const noResponses = await this.prisma.rating.groupBy({
+      by: ['toUserId'],
+      where: { toUserId: { in: unique }, type: RatingType.NO_RESPONSE },
+      _count: { _all: true },
     });
-    const reviewCount = reviews.length;
-    const avgStars =
-      reviewCount > 0
-        ? Math.round((reviews.reduce((s, r) => s + (r.stars ?? 0), 0) / reviewCount) * 10) / 10
-        : null;
-    return { avgStars, reviewCount, noResponseCount };
+
+    const result: Record<string, UserRatingStats> = {};
+    for (const id of unique) {
+      result[id] = this.emptyStats();
+    }
+
+    const reviewBuckets = new Map<string, number[]>();
+    for (const r of reviews) {
+      const bucket = reviewBuckets.get(r.toUserId) ?? [];
+      bucket.push(r.stars ?? 0);
+      reviewBuckets.set(r.toUserId, bucket);
+    }
+    for (const [id, stars] of reviewBuckets) {
+      const reviewCount = stars.length;
+      result[id] = {
+        avgStars: Math.round((stars.reduce((s, n) => s + n, 0) / reviewCount) * 10) / 10,
+        reviewCount,
+        noResponseCount: result[id]?.noResponseCount ?? 0,
+      };
+    }
+    for (const row of noResponses) {
+      const current = result[row.toUserId] ?? this.emptyStats();
+      result[row.toUserId] = { ...current, noResponseCount: row._count._all };
+    }
+
+    return result;
   }
 
   private async getOfferContext(offerId: string, userId: string) {

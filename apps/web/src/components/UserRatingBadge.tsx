@@ -1,3 +1,6 @@
+'use client';
+
+import { useT } from '@/lib/i18n';
 import { StarRating } from './StarRating';
 
 type Stats = {
@@ -7,13 +10,14 @@ type Stats = {
 };
 
 export function UserRatingBadge({ stats, compact }: { stats?: Stats; compact?: boolean }) {
+  const t = useT();
   if (!stats) return null;
 
   const hasReviews = stats.reviewCount > 0 && stats.avgStars !== null;
   const hasFlags = stats.noResponseCount > 0;
 
   if (!hasReviews && !hasFlags) {
-    return <span className="text-xs text-slate-400">Sin valoraciones aún</span>;
+    return <span className="text-xs text-slate-400">{t('rating.noRatings')}</span>;
   }
 
   return (
@@ -26,7 +30,7 @@ export function UserRatingBadge({ stats, compact }: { stats?: Stats; compact?: b
       )}
       {hasFlags && (
         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-          {stats.noResponseCount} sin respuesta
+          {stats.noResponseCount} {t('rating.noResponse')}
         </span>
       )}
     </div>

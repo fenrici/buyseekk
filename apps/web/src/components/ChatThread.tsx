@@ -2,17 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { api, getToken } from '@/lib/api';
+import { dateLocale, useLocale, useT } from '@/lib/i18n';
 import { getChatSocket } from '@/lib/socket';
 import { ChatDetail, ChatMessage } from '@/lib/types';
 
-function formatTime(iso: string) {
+function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
   const d = new Date(iso);
   const now = new Date();
+  const loc = dateLocale(locale);
   const sameDay = d.toDateString() === now.toDateString();
   if (sameDay) {
-    return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
   }
-  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function initials(name: string) {
@@ -25,6 +27,8 @@ function appendMessage(prev: ChatDetail | null, msg: ChatMessage): ChatDetail | 
 }
 
 export function ChatThread({ chatId }: { chatId: string }) {
+  const t = useT();
+  const locale = useLocale();
   const [chat, setChat] = useState<ChatDetail | null>(null);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
@@ -95,7 +99,7 @@ export function ChatThread({ chatId }: { chatId: string }) {
       });
       setChat((c) => appendMessage(c, msg));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar');
+      setError(err instanceof Error ? err.message : t('common.error'));
       setText(payload);
     } finally {
       setSending(false);
@@ -103,7 +107,7 @@ export function ChatThread({ chatId }: { chatId: string }) {
   }
 
   if (!chat) {
-    return <div className="flex h-96 items-center justify-center text-slate-500">Cargando chat...</div>;
+    return <div className="flex h-96 items-center justify-center text-slate-500">{t('chat.loading')}</div>;
   }
 
   return (
@@ -117,7 +121,7 @@ export function ChatThread({ chatId }: { chatId: string }) {
           <p className="text-xs text-slate-500">{chat.requestTitle}</p>
         </div>
         <span className={`text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>
-          {live ? '● En vivo' : 'Reconectando...'}
+          {live ? t('chat.live') : t('chat.reconnecting')}
         </span>
       </div>
 
@@ -136,7 +140,7 @@ export function ChatThread({ chatId }: { chatId: string }) {
               <div className={`max-w-[80%] px-4 py-2 ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}`}>
                 <p className="text-sm">{m.text}</p>
                 <p className={`mt-1 text-[10px] ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}>
-                  {formatTime(m.createdAt)}
+                  {formatTime(m.createdAt, locale)}
                 </p>
               </div>
             </div>
@@ -150,13 +154,13 @@ export function ChatThread({ chatId }: { chatId: string }) {
       <form onSubmit={handleSend} className="flex gap-2 border-t p-4">
         <input
           className="input flex-1"
-          placeholder="Escribí un mensaje..."
+          placeholder={t('chat.placeholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={2000}
         />
         <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary">
-          Enviar
+          {t('chat.send')}
         </button>
       </form>
     </div>

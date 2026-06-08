@@ -1,6 +1,6 @@
 import { Country, Currency, OperationType, RequestCategory } from '@prisma/client';
-import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
-import { MAX_IMAGES_PER_ENTITY } from '../lib/business-rules';
+import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
 
 export class CreateRequestDto {
   @IsEnum(RequestCategory)
@@ -10,9 +10,10 @@ export class CreateRequestDto {
   @IsEnum(OperationType)
   operation?: OperationType;
 
+  @IsOptional()
   @IsString()
   @MinLength(5)
-  title!: string;
+  title?: string;
 
   @IsString()
   @MinLength(10)
@@ -41,4 +42,44 @@ export class CreateRequestDto {
   @ArrayMaxSize(MAX_IMAGES_PER_ENTITY)
   @IsString({ each: true })
   imageUrls?: string[];
+
+  @IsOptional()
+  @IsString()
+  zone?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(5000)
+  minSqm?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(5000)
+  maxSqm?: number;
+
+  @IsOptional()
+  @IsString()
+  carBrand?: string;
+
+  @IsOptional()
+  @IsString()
+  carModel?: string;
+
+  @IsOptional()
+  @IsString()
+  carColor?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(500000)
+  maxMileage?: number;
 }

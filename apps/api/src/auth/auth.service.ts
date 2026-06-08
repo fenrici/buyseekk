@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Country, Currency, Locale, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { defaultCurrencyForCountry, defaultLocaleForCountry } from '../lib/business-rules';
+import { defaultCurrencyForCountry, defaultLocaleForCountry } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, RegisterDto } from './auth.dto';
 

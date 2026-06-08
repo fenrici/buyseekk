@@ -77,6 +77,10 @@ npm run dev
 - Se puede eliminar (desactivar) solicitud con ofertas
 - Al aceptar: rechaza otras ofertas pendientes + crea chat
 
+## Deploy (Railway + Vercel)
+
+Guía completa: [docs/DEPLOY.md](docs/DEPLOY.md)
+
 ## Demo legacy (HTML estático)
 
 ```bash

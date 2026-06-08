@@ -6,47 +6,55 @@ import {
   Param,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
-import { RequestCategory } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { AuthUser } from '../common/types/auth-user';
 import { CreateRequestDto } from './requests.dto';
+import { ListRequestsQueryDto } from './list-requests.query.dto';
 import { RequestsService } from './requests.service';
 
 @Controller('requests')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RequestsController {
   constructor(private requests: RequestsService) {}
 
   @Get()
-  list(
-    @Query('category') category?: RequestCategory,
-    @Query('country') country?: string,
-    @Query('search') search?: string,
-  ) {
-    return this.requests.list({ category, country, search });
+  @Roles('seller')
+  list(@CurrentUser() user: AuthUser, @Query() query: ListRequestsQueryDto) {
+    return this.requests.listForSeller(user, query);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('mine')
-  mine(@Req() req: { user: { id: string } }) {
-    return this.requests.mine(req.user.id);
+  @Roles('buyer')
+  mine(@CurrentUser() user: AuthUser) {
+    return this.requests.mine(user.id);
+  }
+
+  @Get('locations')
+  @Roles('seller')
+  locations(@CurrentUser() user: AuthUser) {
+    return this.requests.locationsForSeller(user);
   }
 
   @Get(':id')
-  one(@Param('id') id: string) {
-    return this.requests.getOne(id);
+  @Roles('seller')
+  one(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requests.getOne(id, user);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Req() req: { user: { id: string } }, @Body() dto: CreateRequestDto) {
-    return this.requests.create(req.user.id, dto);
+  @Roles('buyer')
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
+    return this.requests.create(user.id, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.requests.remove(req.user.id, id);
+  @Roles('buyer')
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requests.remove(user.id, id);
   }
 }

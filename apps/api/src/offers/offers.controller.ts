@@ -1,40 +1,50 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { AuthUser } from '../common/types/auth-user';
 import { CreateOfferDto } from './offers.dto';
 import { OffersService } from './offers.service';
 
 @Controller('offers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OffersController {
   constructor(private offers: OffersService) {}
 
   @Post()
-  create(@Req() req: { user: { id: string } }, @Body() dto: CreateOfferDto) {
-    return this.offers.create(req.user.id, dto);
+  @Roles('seller')
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateOfferDto) {
+    return this.offers.create(user.id, dto);
   }
 
   @Get('received')
-  received(@Req() req: { user: { id: string } }) {
-    return this.offers.received(req.user.id);
+  @Roles('buyer')
+  received(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {
+    return this.offers.received(user.id, query.page, query.limit);
   }
 
   @Get('sent')
-  sent(@Req() req: { user: { id: string } }) {
-    return this.offers.sent(req.user.id);
+  @Roles('seller')
+  sent(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {
+    return this.offers.sent(user.id, query.page, query.limit);
   }
 
   @Get(':id/comparison')
-  comparison(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.offers.getComparison(id, req.user.id);
+  comparison(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.getComparison(id, user.id);
   }
 
   @Patch(':id/accept')
-  accept(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.offers.accept(id, req.user.id);
+  @Roles('buyer')
+  accept(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.accept(id, user.id);
   }
 
   @Patch(':id/reject')
-  reject(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.offers.reject(id, req.user.id);
+  @Roles('buyer')
+  reject(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.reject(id, user.id);
   }
 }

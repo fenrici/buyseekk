@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/.next
+**/dist
+.git
+.github
+**/.env
+**/.env.*
+!.env.example
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+legacy
+*.md
+!docs/DEPLOY.md
+.DS_Store
+coverage
+.cursor

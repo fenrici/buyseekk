@@ -1,4 +1,7 @@
+'use client';
+
 import { getImageUrl } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 type Props = {
   urls?: string[] | null;
@@ -10,6 +13,7 @@ const frameBase =
   'flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100';
 
 export function ImageGallery({ urls, alt, className = 'h-48' }: Props) {
+  const t = useT();
   const images = (urls ?? []).map(getImageUrl).filter(Boolean) as string[];
   if (images.length === 0) return null;
 
@@ -33,7 +37,7 @@ export function ImageGallery({ urls, alt, className = 'h-48' }: Props) {
           <img src={src} alt={`${alt} ${i + 1}`} className={imgClass} />
           {i === 0 && (
             <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-              {images.length} fotos
+              {t('nav.photoCount', { count: images.length })}
             </span>
           )}
         </div>

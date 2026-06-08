@@ -4,31 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OfferStatus } from '@prisma/client';
+import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendMessageDto } from './chats.dto';
 
 @Injectable()
 export class ChatsService {
   constructor(private prisma: PrismaService) {}
-
-  private async getParticipantRole(chatId: string, userId: string) {
-    const chat = await this.prisma.chat.findUnique({
-      where: { id: chatId },
-      include: {
-        offer: {
-          include: { request: { select: { userId: true } } },
-        },
-      },
-    });
-    if (!chat) throw new NotFoundException('Chat no encontrado');
-    if (chat.offer.status !== OfferStatus.ACEPTADA) {
-      throw new ForbiddenException('El chat solo está disponible para ofertas aceptadas');
-    }
-
-    if (chat.offer.request.userId === userId) return { chat, role: 'buyer' as const };
-    if (chat.offer.sellerId === userId) return { chat, role: 'seller' as const };
-    throw new ForbiddenException();
-  }
 
   private formatPartner(
     offer: {
@@ -43,27 +25,54 @@ export class ChatsService {
     return { id: offer.request.user.id, name: offer.request.user.name, role: 'buyer' as const };
   }
 
-  async list(userId: string) {
-    const chats = await this.prisma.chat.findMany({
-      where: {
-        offer: {
-          status: OfferStatus.ACEPTADA,
-          OR: [{ sellerId: userId }, { request: { userId } }],
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        offer: {
-          include: {
-            seller: { select: { id: true, name: true } },
-            request: { include: { user: { select: { id: true, name: true } } } },
-          },
-        },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-    });
+  private assertParticipant(
+    chat: {
+      offer: {
+        status: OfferStatus;
+        sellerId: string;
+        request: { userId: string };
+      };
+    },
+    userId: string,
+  ) {
+    if (chat.offer.status !== OfferStatus.ACEPTADA) {
+      throw new ForbiddenException('El chat solo está disponible para ofertas aceptadas');
+    }
+    if (chat.offer.request.userId === userId) return 'buyer' as const;
+    if (chat.offer.sellerId === userId) return 'seller' as const;
+    throw new ForbiddenException();
+  }
 
-    return chats.map((chat) => {
+  async list(userId: string, page?: number, limit?: number) {
+    const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
+
+    const where = {
+      offer: {
+        status: OfferStatus.ACEPTADA,
+        OR: [{ sellerId: userId }, { request: { userId } }],
+      },
+    };
+
+    const [chats, total] = await Promise.all([
+      this.prisma.chat.findMany({
+        where,
+        skip,
+        take: safeLimit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          offer: {
+            include: {
+              seller: { select: { id: true, name: true } },
+              request: { include: { user: { select: { id: true, name: true } } } },
+            },
+          },
+          messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      }),
+      this.prisma.chat.count({ where }),
+    ]);
+
+    const items = chats.map((chat) => {
       const myRole =
         chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
       const last = chat.messages[0];
@@ -78,12 +87,13 @@ export class ChatsService {
         updatedAt: last?.createdAt ?? chat.createdAt,
       };
     });
+
+    return toPaginatedResult(items, total, safePage, safeLimit);
   }
 
   async getOne(chatId: string, userId: string) {
-    const { chat, role } = await this.getParticipantRole(chatId, userId);
     const full = await this.prisma.chat.findUnique({
-      where: { id: chat.id },
+      where: { id: chatId },
       include: {
         offer: {
           include: {
@@ -95,6 +105,8 @@ export class ChatsService {
       },
     });
     if (!full) throw new NotFoundException('Chat no encontrado');
+
+    const role = this.assertParticipant(full, userId);
 
     return {
       id: full.id,
@@ -112,7 +124,15 @@ export class ChatsService {
   }
 
   async send(chatId: string, userId: string, dto: SendMessageDto) {
-    const { role } = await this.getParticipantRole(chatId, userId);
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        offer: { include: { request: { select: { userId: true } } } },
+      },
+    });
+    if (!chat) throw new NotFoundException('Chat no encontrado');
+
+    const role = this.assertParticipant(chat, userId);
     const message = await this.prisma.message.create({
       data: { chatId, fromRole: role, text: dto.text.trim() },
     });

@@ -2,8 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { getImageUrl, uploadImage } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
-const MAX_IMAGES = 5;
+import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
+
+const MAX_IMAGES = MAX_IMAGES_PER_ENTITY;
 const MAX_MB = 10;
 
 type Props = {
@@ -23,6 +26,7 @@ export function ImageUpload({
   required,
   maxImages = MAX_IMAGES,
 }: Props) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -31,7 +35,7 @@ export function ImageUpload({
     if (!fileList?.length) return;
     const remaining = maxImages - value.length;
     if (remaining <= 0) {
-      setError(`Máximo ${maxImages} imágenes`);
+      setError(t('images.maxHint', { max: String(maxImages), mb: String(MAX_MB) }));
       return;
     }
 
@@ -47,7 +51,7 @@ export function ImageUpload({
       }
       onChange([...value, ...uploaded]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al subir imagen');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -69,7 +73,7 @@ export function ImageUpload({
       </label>
       {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
       <p className="mt-0.5 text-xs text-slate-400">
-        Hasta {maxImages} fotos · JPG, PNG, WebP · máx. {MAX_MB} MB c/u
+        {t('images.maxHint', { max: String(maxImages), mb: String(MAX_MB) })}
       </p>
 
       {value.length > 0 && (
@@ -79,7 +83,7 @@ export function ImageUpload({
               key={`${url}-${i}`}
               className="group relative flex h-36 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
             >
-              <img src={getImageUrl(url)} alt={`Foto ${i + 1}`} className="max-h-full max-w-full object-contain" />
+              <img src={getImageUrl(url)} alt={`${t('images.photo')} ${i + 1}`} className="max-h-full max-w-full object-contain" />
               <button
                 type="button"
                 onClick={() => removeAt(i)}
@@ -101,10 +105,10 @@ export function ImageUpload({
           className="mt-2 flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500 transition hover:border-indigo-300 hover:bg-indigo-50/50"
         >
           {uploading
-            ? 'Subiendo...'
+            ? t('images.uploading')
             : value.length === 0
-              ? `📷 Elegir fotos (${maxImages} máx.)`
-              : `+ Agregar foto (${value.length}/${maxImages})`}
+              ? t('images.pick', { max: String(maxImages) })
+              : t('images.add', { n: String(value.length), max: String(maxImages) })}
         </button>
       )}
 

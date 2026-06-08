@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "npm run build -w @buyseekk/shared && tsc -p tsconfig.build.json",
     "start": "node dist/main",
+    "start:prod": "prisma migrate deploy && node dist/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@buyseekk/shared": "*",
     "@nestjs/common": "^11.0.12",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.12",

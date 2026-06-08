@@ -79,8 +79,16 @@ model Request {
   budgetPeriod String?
   currency     Currency
   location     String
+  zone         String?
+  bedrooms     Int?
+  minSqm       Int?
+  maxSqm       Int?
   country      Country
   imageUrls    String[]        @default([])
+  carBrand     String?
+  carModel     String?
+  carColor     String?
+  maxMileage   Int?
   active       Boolean         @default(true)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -89,6 +97,9 @@ model Request {
 
   @@index([userId, active])
   @@index([category, active])
+  @@index([category, country, carBrand, carModel])
+  @@index([category, country, location, zone])
+  @@index([category, country, bedrooms, minSqm, maxSqm])
 }
 
 model Offer {

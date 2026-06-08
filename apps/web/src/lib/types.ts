@@ -1,3 +1,11 @@
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -16,10 +24,18 @@ export interface RequestItem {
   budgetPeriod?: string | null;
   currency: string;
   location: string;
+  zone?: string | null;
+  bedrooms?: number | null;
+  minSqm?: number | null;
+  maxSqm?: number | null;
   country: string;
   category: string;
   operation: string;
   imageUrls?: string[];
+  carBrand?: string | null;
+  carModel?: string | null;
+  carColor?: string | null;
+  maxMileage?: number | null;
   offersCount: number;
   pendingOffersCount: number;
   hasOffers: boolean;
