@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BuySeek — El mercado invertido para autos e inmuebles. Publica lo que buscas y recibe ofertas de vendedores verificados.">
+    <title>BuySeek — Mercado Invertido | Autos e Inmuebles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="container header-inner">
+            <a href="#hero" class="logo">
+                <i class="fas fa-exchange-alt"></i>
+                <span>BuySeek</span>
+            </a>
+            <nav class="nav-desktop">
+                <a href="#hero">Inicio</a>
+                <a href="#how-it-works">Cómo funciona</a>
+                <a href="#marketplace">Solicitudes</a>
+                <a href="#trust">Confianza</a>
+            </nav>
+            <div class="header-actions">
+                <button class="btn btn-ghost login-btn">Iniciar sesión</button>
+                <button class="btn btn-primary signup-btn">Registrarse</button>
+            </div>
+            <button class="menu-toggle" aria-label="Menú">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <nav class="nav-mobile">
+            <a href="#hero">Inicio</a>
+            <a href="#how-it-works">Cómo funciona</a>
+            <a href="#marketplace">Solicitudes</a>
+            <a href="#trust">Confianza</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- HERO -->
+        <section class="hero" id="hero">
+            <div class="hero-bg-pattern"></div>
+            <div class="container hero-grid">
+                <div class="hero-content">
+                    <span class="badge"><i class="fas fa-bolt"></i> Mercado invertido</span>
+                    <h1>Publica lo que buscas.<br>Recibe ofertas reales.</h1>
+                    <p>En BuySeek el comprador publica su necesidad y los vendedores compiten por ofrecer la mejor opción en <strong>autos</strong> e <strong>inmuebles</strong>.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-lg buyer-cta">
+                            <i class="fas fa-plus-circle"></i> Crear solicitud
+                        </button>
+                        <button class="btn btn-outline btn-lg seller-cta">
+                            <i class="fas fa-search"></i> Ver solicitudes
+                        </button>
+                    </div>
+                    <div class="hero-stats">
+                        <div><strong id="stat-requests">12</strong><span>Solicitudes activas</span></div>
+                        <div><strong>4</strong><span>Agencias verificadas</span></div>
+                        <div><strong>4.8</strong><span>Valoración media</span></div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-card-preview">
+                        <div class="hero-card-img">
+                            <img src="images/ferrari-488.jpg" alt="Solicitud de compra Ferrari 488">
+                            <span class="hero-card-live"><i class="fas fa-circle"></i> 5 ofertas</span>
+                        </div>
+                        <div class="hero-card-body">
+                            <span class="tag tag-autos"><i class="fas fa-car"></i> Autos</span>
+                            <h3>Busco Ferrari 488 GTB 2019+</h3>
+                            <p class="budget">Presupuesto: $240,000</p>
+                            <div class="buyer-mini">
+                                <div class="avatar">CM</div>
+                                <div>
+                                    <span>Carlos M. <i class="fas fa-check-circle verified-icon"></i></span>
+                                    <div class="stars" data-rating="4.9"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CÓMO FUNCIONA -->
+        <section class="how-it-works" id="how-it-works">
+            <div class="container">
+                <div class="section-head">
+                    <span class="section-label">Proceso simple</span>
+                    <h2>¿Cómo funciona?</h2>
+                    <p>Tres pasos para conectar compradores y vendedores sin perder tiempo</p>
+                </div>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <div class="step-icon-wrap"><i class="fas fa-edit"></i></div>
+                        <h3>Publica tu búsqueda</h3>
+                        <p>Indica qué auto o inmueble necesitas, tu presupuesto y requisitos.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <div class="step-icon-wrap"><i class="fas fa-inbox"></i></div>
+                        <h3>Recibe ofertas</h3>
+                        <p>Vendedores y agencias te contactan con propuestas que encajan.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <div class="step-icon-wrap"><i class="fas fa-comments"></i></div>
+                        <h3>Cierra el trato</h3>
+                        <p>Acepta la mejor oferta, chatea con el vendedor y coordina la operación.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MARKETPLACE -->
+        <section class="marketplace" id="marketplace">
+            <div class="container">
+                <div class="section-head">
+                    <span class="section-label">Plataforma</span>
+                    <h2>Explora el marketplace</h2>
+                    <p>Elige tu rol y empieza en segundos</p>
+                </div>
+
+                <div class="user-mode-tabs">
+                    <button class="user-tab active" data-tab="buyer">
+                        <i class="fas fa-shopping-cart"></i> Soy comprador
+                    </button>
+                    <button class="user-tab" data-tab="seller">
+                        <i class="fas fa-store"></i> Soy vendedor
+                    </button>
+                </div>
+
+                <!-- COMPRADOR -->
+                <div class="user-tab-content active" id="buyer-content">
+                    <div class="buyer-subtabs">
+                        <button class="buyer-subtab active" data-buyer-panel="publish">
+                            <i class="fas fa-plus"></i> Publicar
+                        </button>
+                        <button class="buyer-subtab" data-buyer-panel="offers">
+                            <i class="fas fa-inbox"></i> Ofertas recibidas
+                            <span class="badge-count" id="offers-badge">0</span>
+                        </button>
+                        <button class="buyer-subtab" data-buyer-panel="chats">
+                            <i class="fas fa-comments"></i> Mis chats
+                            <span class="badge-count" id="chats-badge">0</span>
+                        </button>
+                    </div>
+
+                    <div class="buyer-panel active" id="buyer-panel-publish">
+                        <div class="panel-head">
+                            <h3>Publica tu solicitud de compra</h3>
+                            <p>Describe lo que buscas y deja que los vendedores vengan a ti</p>
+                        </div>
+                        <form id="buy-request-form" class="form-card">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="category">Categoría *</label>
+                                    <select id="category" required>
+                                        <option value="">Seleccionar</option>
+                                        <option value="autos">Automóviles</option>
+                                        <option value="inmobiliaria">Inmuebles</option>
+                                    </select>
+                                </div>
+                                <div class="form-group operation-type" style="display:none">
+                                    <label for="operation-type">Operación *</label>
+                                    <select id="operation-type">
+                                        <option value="compra">Compra</option>
+                                        <option value="alquiler">Alquiler</option>
+                                    </select>
+                                </div>
+                                <div class="form-group span-2">
+                                    <label for="title">¿Qué estás buscando? *</label>
+                                    <input type="text" id="title" placeholder="ej. BMW Serie 3 2019+ automático" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="budget">Presupuesto máximo *</label>
+                                    <div class="input-prefix">
+                                        <span>$</span>
+                                        <input type="number" id="budget" placeholder="32000" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location">Ubicación *</label>
+                                    <input type="text" id="location" placeholder="Buenos Aires" required>
+                                </div>
+                                <div class="form-group span-2">
+                                    <label for="requirements">Requisitos y detalles *</label>
+                                    <textarea id="requirements" rows="4" placeholder="Año mínimo, km máximo, características..." required></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Publicar solicitud
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="buyer-panel" id="buyer-panel-offers">
+                        <div class="panel-head">
+                            <h3>Ofertas recibidas</h3>
+                            <p>Compara cada oferta con tu solicitud y elige la mejor</p>
+                        </div>
+                        <div id="received-offers-list" class="offers-list"></div>
+                        <div class="empty-state" id="no-offers-state" style="display:none">
+                            <i class="fas fa-inbox"></i>
+                            <h3>Sin ofertas aún</h3>
+                            <p>Cuando un vendedor envíe una propuesta, aparecerá aquí</p>
+                        </div>
+                    </div>
+
+                    <div class="buyer-panel" id="buyer-panel-chats">
+                        <div class="panel-head">
+                            <h3>Mis conversaciones</h3>
+                            <p>Chats activos con vendedores tras aceptar una oferta</p>
+                        </div>
+                        <div id="chats-list" class="chats-list"></div>
+                        <div class="empty-state" id="no-chats-state" style="display:none">
+                            <i class="fas fa-comments"></i>
+                            <h3>Sin chats activos</h3>
+                            <p>Acepta una oferta para iniciar una conversación</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VENDEDOR -->
+                <div class="user-tab-content" id="seller-content">
+                    <div class="panel-head">
+                        <h3>Solicitudes de compradores</h3>
+                        <p>Encuentra compradores activos y envía tu mejor oferta</p>
+                    </div>
+
+                    <div class="category-switcher">
+                        <button class="category-pill active" data-category="autos">
+                            <i class="fas fa-car"></i> Autos
+                            <span class="pill-count" id="count-autos">6</span>
+                        </button>
+                        <button class="category-pill" data-category="inmobiliaria">
+                            <i class="fas fa-building"></i> Inmuebles
+                            <span class="pill-count" id="count-inm">6</span>
+                        </button>
+                    </div>
+
+                    <div class="filters-bar">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="quick-search" placeholder="Buscar por título, ubicación...">
+                        </div>
+                        <select id="location-filter">
+                            <option value="all">Todas las ubicaciones</option>
+                            <option value="miami">Miami</option>
+                            <option value="newyork">Nueva York</option>
+                            <option value="losangeles">Los Ángeles</option>
+                            <option value="buenosaires">Buenos Aires</option>
+                            <option value="chicago">Chicago</option>
+                        </select>
+                        <div class="price-range">
+                            <input type="number" id="min-price" placeholder="Min $">
+                            <span>—</span>
+                            <input type="number" id="max-price" placeholder="Max $">
+                        </div>
+                        <button class="btn btn-primary filter-apply">Filtrar</button>
+                        <button class="btn btn-ghost filter-reset">Limpiar</button>
+                    </div>
+
+                    <div class="active-filters" id="active-filter-tags"></div>
+
+                    <div class="results-info">
+                        <span id="results-count">6 solicitudes</span>
+                        <span id="active-category-label">en Autos</span>
+                    </div>
+
+                    <div class="listings-grid" id="listings-container"></div>
+
+                    <div class="empty-state" id="empty-state" style="display:none">
+                        <i class="fas fa-search"></i>
+                        <h3>No hay solicitudes</h3>
+                        <p>Prueba con otros filtros o cambia de categoría</p>
+                    </div>
+
+                    <div class="seller-offers-section">
+                        <div class="panel-head">
+                            <h3>Mis ofertas enviadas</h3>
+                            <p>Seguimiento de las propuestas que enviaste</p>
+                        </div>
+                        <div id="sent-offers-list" class="offers-list"></div>
+                        <div class="empty-state" id="no-sent-offers" style="display:none">
+                            <i class="fas fa-paper-plane"></i>
+                            <h3>No enviaste ofertas aún</h3>
+                            <p>Busca una solicitud y haz clic en "Enviar oferta"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONFIANZA -->
+        <section class="trust-section" id="trust">
+            <div class="container">
+                <div class="section-head">
+                    <span class="section-label">Red verificada</span>
+                    <h2>Vendedores de confianza</h2>
+                    <p>Agencias con historial comprobado en la plataforma</p>
+                </div>
+                <div class="trust-stats">
+                    <div class="trust-stat">
+                        <strong>4.8</strong>
+                        <span>Valoración promedio</span>
+                    </div>
+                    <div class="trust-stat">
+                        <strong>515+</strong>
+                        <span>Operaciones cerradas</span>
+                    </div>
+                    <div class="trust-stat">
+                        <strong>100%</strong>
+                        <span>Perfiles verificados</span>
+                    </div>
+                </div>
+                <div class="sellers-row" id="top-sellers"></div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section">
+            <div class="container cta-inner">
+                <h2>¿Listo para probar BuySeek?</h2>
+                <p>Publica gratis o explora solicitudes activas. Sin comisiones ocultas.</p>
+                <div class="cta-actions">
+                    <button class="btn btn-white btn-lg buyer-cta">
+                        <i class="fas fa-plus-circle"></i> Crear solicitud
+                    </button>
+                    <button class="btn btn-outline-white btn-lg seller-cta">
+                        <i class="fas fa-search"></i> Explorar solicitudes
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <div class="logo"><i class="fas fa-exchange-alt"></i><span>BuySeek</span></div>
+                <p>El mercado invertido para autos e inmuebles. Compradores publican, vendedores compiten.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Plataforma</h4>
+                <a href="#how-it-works">Cómo funciona</a>
+                <a href="#marketplace">Solicitudes</a>
+                <a href="#trust">Confianza</a>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <a href="#">Términos</a>
+                <a href="#">Privacidad</a>
+                <a href="#">Contacto</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 BuySeek. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL ENVIAR OFERTA -->
+    <div class="modal" id="offer-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <h2>Enviar oferta</h2>
+            <p id="offer-modal-subtitle">Propuesta para el comprador</p>
+            <form id="offer-form">
+                <input type="hidden" id="offer-request-id">
+                <div class="form-group">
+                    <label>Tu nombre / Agencia *</label>
+                    <input type="text" id="offer-seller-name" placeholder="ej. Luxury Motors Miami" required>
+                </div>
+                <div class="form-group">
+                    <label>Precio ofertado ($) *</label>
+                    <input type="number" id="offer-price" placeholder="230000" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Mensaje para el comprador *</label>
+                    <textarea id="offer-message" rows="4" placeholder="Describe tu propuesta, condiciones, disponibilidad..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    <i class="fas fa-paper-plane"></i> Enviar oferta
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CHAT -->
+    <div class="modal" id="chat-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel modal-chat">
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <div class="avatar" id="chat-avatar">BS</div>
+                    <div>
+                        <strong id="chat-partner-name">Vendedor</strong>
+                        <span id="chat-request-title">Solicitud</span>
+                    </div>
+                </div>
+                <button class="modal-close chat-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="chat-status" id="chat-status-bar">
+                <i class="fas fa-check-circle"></i> Oferta aceptada — Chat activo
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <form class="chat-input-bar" id="chat-form">
+                <input type="hidden" id="chat-id">
+                <input type="text" id="chat-input" placeholder="Escribe un mensaje..." autocomplete="off" required>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL COMPARAR -->
+    <div class="modal" id="compare-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel modal-lg">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div id="compare-content"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE -->
+    <div class="modal" id="detail-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel modal-lg">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div id="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGIN -->
+    <div class="modal" id="login-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div class="modal-icon"><i class="fas fa-user"></i></div>
+            <h2>Iniciar sesión</h2>
+            <p class="modal-desc">Accede a tu cuenta de BuySeek</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL SIGNUP -->
+    <div class="modal" id="signup-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div class="modal-icon"><i class="fas fa-rocket"></i></div>
+            <h2>Crear cuenta</h2>
+            <p class="modal-desc">Únete al mercado invertido en minutos</p>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" placeholder="Tu nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de cuenta</label>
+                    <select required>
+                        <option value="buyer">Comprador</option>
+                        <option value="seller">Vendedor</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Registrarse</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
