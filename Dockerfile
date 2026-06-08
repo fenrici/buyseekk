@@ -1,15 +1,17 @@
 # BuySeek API — monorepo production image
 FROM node:22-slim AS base
-RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y \
+    openssl ca-certificates python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
+COPY apps/api/prisma apps/api/prisma
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
-# --ignore-scripts: postinstall (prisma generate) corre en build con schema presente
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
@@ -17,7 +19,6 @@ COPY package.json package-lock.json ./
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 RUN npm run build -w @buyseekk/shared
-RUN npm run prisma:generate -w @buyseekk/api
 RUN npm run build -w @buyseekk/api
 
 FROM base AS production
@@ -31,6 +32,8 @@ COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/prisma apps/api/prisma
 
+WORKDIR /app
+RUN npm rebuild bcrypt
 WORKDIR /app/apps/api
 RUN mkdir -p uploads
 RUN npx prisma generate
