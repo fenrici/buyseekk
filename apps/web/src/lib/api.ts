@@ -1,4 +1,10 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+function normalizeApiUrl(raw?: string) {
+  const value = raw?.trim() || 'http://localhost:4000';
+  if (value.startsWith('http://') || value.startsWith('https://')) return value.replace(/\/$/, '');
+  return `https://${value.replace(/\/$/, '')}`;
+}
+
+export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;

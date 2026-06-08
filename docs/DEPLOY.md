@@ -99,7 +99,7 @@ O desde el dashboard: servicio API → **Shell** → `npm run db:seed`.
 
 | Variable | Valor |
 |----------|-------|
-| `NEXT_PUBLIC_API_URL` | URL de Railway **sin** `/api` al final |
+| `NEXT_PUBLIC_API_URL` | `https://tu-api.up.railway.app` (**con** `https://`, sin `/api` al final) |
 
 Ejemplo: `https://buyseekk-api-production.up.railway.app`
 

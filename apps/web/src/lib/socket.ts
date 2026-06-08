@@ -1,7 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { getToken } from './api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+import { API_URL } from './api';
 
 let socket: Socket | null = null;
 
