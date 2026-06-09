@@ -4,6 +4,7 @@ export interface PaginatedResult<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNextPage?: boolean;
 }
 
 export interface User {
@@ -75,6 +76,14 @@ export interface ChatDetail {
   myRole: 'buyer' | 'seller';
   partner: { id: string; name: string; role: 'buyer' | 'seller' };
   messages: ChatMessage[];
+  messagesMeta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasOlderPage: boolean;
+  };
 }
 
 export interface OfferItem {

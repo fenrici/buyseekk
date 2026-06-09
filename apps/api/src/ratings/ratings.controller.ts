@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 import { CreateRatingDto } from './ratings.dto';
 import { RatingsService } from './ratings.service';
 
@@ -14,8 +15,8 @@ export class RatingsController {
   }
 
   @Get('pending')
-  pending(@Req() req: { user: { id: string } }) {
-    return this.ratings.pending(req.user.id);
+  pending(@Req() req: { user: { id: string } }, @Query() query: PaginationQueryDto) {
+    return this.ratings.pending(req.user.id, query.page, query.limit);
   }
 
   @Get('user/:userId/stats')

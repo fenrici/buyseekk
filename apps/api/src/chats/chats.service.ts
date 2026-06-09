@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { OfferStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
+import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { PrismaService } from '../prisma/prisma.service';
+import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
 
 @Injectable()
@@ -91,7 +93,7 @@ export class ChatsService {
     return toPaginatedResult(items, total, safePage, safeLimit);
   }
 
-  async getOne(chatId: string, userId: string) {
+  async getOne(chatId: string, userId: string, query: ChatDetailQueryDto = {}) {
     const full = await this.prisma.chat.findUnique({
       where: { id: chatId },
       include: {
@@ -101,12 +103,27 @@ export class ChatsService {
             request: { include: { user: { select: { id: true, name: true } } } },
           },
         },
-        messages: { orderBy: { createdAt: 'asc' } },
       },
     });
     if (!full) throw new NotFoundException('Chat no encontrado');
 
     const role = this.assertParticipant(full, userId);
+
+    const totalMessages = await this.prisma.message.count({ where: { chatId } });
+    const { page, limit, skip } = resolveMessagesPagination(
+      totalMessages,
+      query.messagesPage,
+      query.messagesLimit,
+    );
+
+    const messages = await this.prisma.message.findMany({
+      where: { chatId },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: limit,
+    });
+
+    const totalPages = totalMessages === 0 ? 0 : Math.ceil(totalMessages / limit);
 
     return {
       id: full.id,
@@ -114,12 +131,20 @@ export class ChatsService {
       requestTitle: full.offer.requestTitle,
       myRole: role,
       partner: this.formatPartner(full.offer, role),
-      messages: full.messages.map((m) => ({
+      messages: messages.map((m) => ({
         id: m.id,
         fromRole: m.fromRole,
         text: m.text,
         createdAt: m.createdAt,
       })),
+      messagesMeta: {
+        total: totalMessages,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasOlderPage: page > 1,
+      },
     };
   }
 

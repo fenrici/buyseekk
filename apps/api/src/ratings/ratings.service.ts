@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OfferStatus, RatingType } from '@prisma/client';
+import { parsePagination } from '@buyseekk/shared';
+import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRatingDto } from './ratings.dto';
 
@@ -139,7 +141,9 @@ export class RatingsService {
     });
   }
 
-  async pending(userId: string) {
+  async pending(userId: string, page?: number, limit?: number) {
+    const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
+
     const offers = await this.prisma.offer.findMany({
       where: {
         status: OfferStatus.ACEPTADA,
@@ -160,7 +164,7 @@ export class RatingsService {
     });
     const ratedSet = new Set(rated.map((r) => r.offerId));
 
-    return offers
+    const pending = offers
       .filter((o) => !ratedSet.has(o.id))
       .map((o) => {
         const isBuyer = o.request.userId === userId;
@@ -174,6 +178,10 @@ export class RatingsService {
           myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
         };
       });
+
+    const total = pending.length;
+    const items = pending.slice(skip, skip + safeLimit);
+    return toPaginatedResponse(items, total, safePage, safeLimit);
   }
 
   async forOffer(offerId: string, userId: string) {

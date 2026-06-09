@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -15,6 +16,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthUser } from '../common/types/auth-user';
 import { CreateRequestDto } from './requests.dto';
 import { ListRequestsQueryDto } from './list-requests.query.dto';
+import { MineRequestsQueryDto } from './mine-requests.query.dto';
+import { UpdateRequestDto } from './update-request.dto';
 import { RequestsService } from './requests.service';
 
 @Controller('requests')
@@ -30,8 +33,8 @@ export class RequestsController {
 
   @Get('mine')
   @Roles('buyer')
-  mine(@CurrentUser() user: AuthUser) {
-    return this.requests.mine(user.id);
+  mine(@CurrentUser() user: AuthUser, @Query() query: MineRequestsQueryDto) {
+    return this.requests.mine(user.id, query);
   }
 
   @Get('locations')
@@ -50,6 +53,16 @@ export class RequestsController {
   @Roles('buyer')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
     return this.requests.create(user.id, dto);
+  }
+
+  @Patch(':id')
+  @Roles('buyer')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateRequestDto,
+  ) {
+    return this.requests.update(user.id, id, dto);
   }
 
   @Delete(':id')

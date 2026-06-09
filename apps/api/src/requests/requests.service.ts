@@ -19,8 +19,33 @@ import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { CreateRequestDto } from './requests.dto';
 import { ListRequestsQueryDto } from './list-requests.query.dto';
+import { MineRequestsQueryDto } from './mine-requests.query.dto';
+import { UpdateRequestDto } from './update-request.dto';
+
+const LIMITED_EDIT_FIELDS = new Set([
+  'title',
+  'requirements',
+  'budget',
+  'budgetPeriod',
+  'imageUrls',
+]);
+
+const STRUCTURAL_FIELDS = new Set([
+  'location',
+  'zone',
+  'operation',
+  'currency',
+  'carBrand',
+  'carModel',
+  'carColor',
+  'maxMileage',
+  'bedrooms',
+  'minSqm',
+  'maxSqm',
+]);
 
 @Injectable()
 export class RequestsService {
@@ -254,16 +279,186 @@ export class RequestsService {
     return merged.sort((a, b) => a.localeCompare(b));
   }
 
-  async mine(userId: string) {
-    const items = await this.prisma.request.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
+  async mine(userId: string, query: MineRequestsQueryDto) {
+    const { page, limit, skip } = parsePagination(query.page, query.limit);
+    const where: { userId: string; active?: boolean } = { userId };
+    if (query.active !== undefined) where.active = query.active;
+
+    const [items, total] = await Promise.all([
+      this.prisma.request.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, country: true, currency: true } },
+          offers: { select: { id: true, status: true, sellerId: true, price: true } },
+        },
+      }),
+      this.prisma.request.count({ where }),
+    ]);
+
+    return toPaginatedResponse(
+      items.map((r) => this.formatRequest(r)!),
+      total,
+      page,
+      limit,
+    );
+  }
+
+  async update(userId: string, id: string, dto: UpdateRequestDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ForbiddenException();
+    if (!isBuyerCapable(user.role)) {
+      throw new ForbiddenException('Solo compradores pueden editar solicitudes');
+    }
+
+    const provided = Object.entries(dto).filter(([, v]) => v !== undefined);
+    if (!provided.length) {
+      throw new BadRequestException('No hay campos para actualizar');
+    }
+
+    const req = await this.prisma.request.findUnique({
+      where: { id },
+      include: { offers: { select: { id: true, status: true } } },
+    });
+    if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
+    if (req.userId !== userId) throw new ForbiddenException();
+
+    const hasAccepted = req.offers.some((o) => o.status === OfferStatus.ACEPTADA);
+    if (hasAccepted) {
+      throw new BadRequestException('No podés editar una solicitud con una oferta aceptada');
+    }
+
+    const hasPending = req.offers.some((o) => o.status === OfferStatus.PENDIENTE);
+    if (hasPending) {
+      const blocked = provided.filter(([key]) => STRUCTURAL_FIELDS.has(key));
+      if (blocked.length) {
+        throw new BadRequestException(
+          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto e imágenes',
+        );
+      }
+      const invalid = provided.filter(([key]) => !LIMITED_EDIT_FIELDS.has(key));
+      if (invalid.length) {
+        throw new BadRequestException(
+          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto e imágenes',
+        );
+      }
+    }
+
+    if (dto.imageUrls !== undefined) validateImageUrls(dto.imageUrls);
+
+    const location = dto.location ?? req.location;
+    if (dto.location !== undefined) {
+      const allowedCities = citiesForCountry(user.country);
+      if (!allowedCities.includes(dto.location)) {
+        throw new BadRequestException('Ciudad no válida para tu país');
+      }
+    }
+
+    if (req.category === RequestCategory.AUTOS) {
+      const carBrand = dto.carBrand ?? req.carBrand;
+      const carModel = dto.carModel ?? req.carModel;
+      const carColor = dto.carColor ?? req.carColor;
+      const maxMileage = dto.maxMileage ?? req.maxMileage;
+      const zone = dto.zone ?? req.zone;
+
+      if (!hasPending) {
+        if (dto.carBrand !== undefined && !isValidBrand(dto.carBrand)) {
+          throw new BadRequestException('Marca no válida');
+        }
+        if (dto.carModel !== undefined && carBrand && !isValidModel(carBrand, dto.carModel)) {
+          throw new BadRequestException('Modelo no válido');
+        }
+        if (dto.carColor !== undefined && !isValidColor(dto.carColor)) {
+          throw new BadRequestException('Color no válido');
+        }
+        if (dto.maxMileage !== undefined && (dto.maxMileage < 0 || dto.maxMileage > 500000)) {
+          throw new BadRequestException('Millaje no válido');
+        }
+        if (dto.zone !== undefined) {
+          const autoZones = zonesForCountryAndCity(user.country, location);
+          if (!autoZones.includes(dto.zone)) {
+            throw new BadRequestException('Zona no válida para tu país y ciudad');
+          }
+        }
+      }
+
+      if (!carBrand || !carModel || !carColor || maxMileage == null || !zone) {
+        throw new BadRequestException('Datos de auto incompletos');
+      }
+    } else if (req.category === RequestCategory.INMOBILIARIA) {
+      const zone = dto.zone ?? req.zone;
+      const bedrooms = dto.bedrooms ?? req.bedrooms;
+      const minSqm = dto.minSqm !== undefined ? dto.minSqm : req.minSqm;
+      const maxSqm = dto.maxSqm !== undefined ? dto.maxSqm : req.maxSqm;
+
+      if (!hasPending) {
+        if (dto.zone !== undefined) {
+          const allowedZones = zonesForCountryAndCity(user.country, location);
+          if (!allowedZones.includes(dto.zone)) {
+            throw new BadRequestException('Zona no válida para tu país y ciudad');
+          }
+        }
+        if (dto.bedrooms !== undefined && (dto.bedrooms < 1 || dto.bedrooms > 10)) {
+          throw new BadRequestException('Cantidad de habitaciones no válida');
+        }
+        if (dto.minSqm != null && (dto.minSqm < 10 || dto.minSqm > 5000)) {
+          throw new BadRequestException('Metros cuadrados mínimos no válidos');
+        }
+        if (dto.maxSqm != null && (dto.maxSqm < 10 || dto.maxSqm > 5000)) {
+          throw new BadRequestException('Metros cuadrados máximos no válidos');
+        }
+        if (minSqm != null && maxSqm != null && minSqm > maxSqm) {
+          throw new BadRequestException('El mínimo de m² no puede superar el máximo');
+        }
+        if (dto.carBrand || dto.carModel || dto.carColor || dto.maxMileage != null) {
+          throw new BadRequestException('Los campos de auto solo aplican a solicitudes de autos');
+        }
+      }
+
+      if (!zone || bedrooms == null) {
+        throw new BadRequestException('Datos de inmueble incompletos');
+      }
+    }
+
+    let title = req.title;
+    if (dto.title !== undefined) {
+      const trimmed = dto.title.trim();
+      title =
+        trimmed ||
+        (req.category === RequestCategory.AUTOS && req.carBrand && req.carModel
+          ? `Busco ${req.carBrand} ${req.carModel}`
+          : req.title);
+    }
+
+    const updated = await this.prisma.request.update({
+      where: { id },
+      data: {
+        ...(dto.title !== undefined ? { title } : {}),
+        ...(dto.requirements !== undefined ? { requirements: dto.requirements } : {}),
+        ...(dto.budget !== undefined ? { budget: dto.budget } : {}),
+        ...(dto.budgetPeriod !== undefined ? { budgetPeriod: dto.budgetPeriod } : {}),
+        ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
+        ...(dto.location !== undefined ? { location: dto.location } : {}),
+        ...(dto.zone !== undefined ? { zone: dto.zone } : {}),
+        ...(dto.operation !== undefined ? { operation: dto.operation } : {}),
+        ...(dto.imageUrls !== undefined ? { imageUrls: dto.imageUrls } : {}),
+        ...(dto.bedrooms !== undefined ? { bedrooms: dto.bedrooms } : {}),
+        ...(dto.minSqm !== undefined ? { minSqm: dto.minSqm } : {}),
+        ...(dto.maxSqm !== undefined ? { maxSqm: dto.maxSqm } : {}),
+        ...(dto.carBrand !== undefined ? { carBrand: dto.carBrand } : {}),
+        ...(dto.carModel !== undefined ? { carModel: dto.carModel } : {}),
+        ...(dto.carColor !== undefined ? { carColor: dto.carColor } : {}),
+        ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
+      },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true } },
         offers: { select: { id: true, status: true, sellerId: true, price: true } },
       },
     });
-    return items.map((r) => this.formatRequest(r));
+
+    return this.formatRequest(updated);
   }
 
   async getOne(

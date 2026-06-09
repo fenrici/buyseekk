@@ -30,8 +30,8 @@ export function BuyerPanel() {
   }, [searchParams]);
 
   async function loadMine() {
-    const data = await api<RequestItem[]>('/requests/mine');
-    setMyRequests(data);
+    const data = await api<PaginatedResult<RequestItem>>('/requests/mine');
+    setMyRequests(data.items);
   }
 
   async function loadOffers() {

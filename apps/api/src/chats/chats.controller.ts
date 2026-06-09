@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 import { AuthUser } from '../common/types/auth-user';
+import { ChatDetailQueryDto } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
 import { ChatsService } from './chats.service';
 
@@ -18,8 +19,12 @@ export class ChatsController {
   }
 
   @Get(':id')
-  getOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.chats.getOne(id, user.id);
+  getOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() query: ChatDetailQueryDto,
+  ) {
+    return this.chats.getOne(id, user.id, query);
   }
 
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
