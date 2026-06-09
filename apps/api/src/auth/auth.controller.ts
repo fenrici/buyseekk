@@ -9,13 +9,13 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private auth: AuthService) {}
 
-  @Throttle({ register: THROTTLE_LIMITS.register })
+  @Throttle({ default: THROTTLE_LIMITS.register })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
   }
 
-  @Throttle({ login: THROTTLE_LIMITS.login })
+  @Throttle({ default: THROTTLE_LIMITS.login })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto);

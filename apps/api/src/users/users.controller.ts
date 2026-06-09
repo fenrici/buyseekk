@@ -7,7 +7,7 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private users: UsersService) {}
 
-  @Throttle({ search: THROTTLE_LIMITS.search })
+  @Throttle({ default: THROTTLE_LIMITS.search })
   @Get(':id/ratings')
   ratings(@Param('id') id: string) {
     return this.users.getRatingSummary(id);

@@ -20,6 +20,8 @@ export const THROTTLE_LIMITS = {
 export type ThrottleProfile = keyof typeof THROTTLE_LIMITS;
 
 export function buildThrottlerDefinitions() {
-  return (Object.entries(THROTTLE_LIMITS) as [ThrottleProfile, { ttl: number; limit: number }][])
-    .map(([name, cfg]) => ({ name, ttl: cfg.ttl, limit: cfg.limit }));
+  // NestJS valida todos los throttlers registrados en cada request. Perfiles nombrados
+  // (login, write, etc.) solo se aplican vía @Throttle({ default: THROTTLE_LIMITS.xxx }).
+  const { ttl, limit } = THROTTLE_LIMITS.default;
+  return [{ name: 'default', ttl, limit }];
 }

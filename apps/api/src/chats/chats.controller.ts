@@ -28,7 +28,7 @@ export class ChatsController {
     return this.chats.getOne(id, user.id, query);
   }
 
-  @Throttle({ chat: THROTTLE_LIMITS.chat })
+  @Throttle({ default: THROTTLE_LIMITS.chat })
   @Post(':id/messages')
   send(
     @CurrentUser() user: AuthUser,

@@ -19,7 +19,7 @@ import { STORAGE_SERVICE, StorageService } from '../storage/storage.interface';
 export class UploadsController {
   constructor(@Inject(STORAGE_SERVICE) private storage: StorageService) {}
 
-  @Throttle({ upload: THROTTLE_LIMITS.upload })
+  @Throttle({ default: THROTTLE_LIMITS.upload })
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File) {

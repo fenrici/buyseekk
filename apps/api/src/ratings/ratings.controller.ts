@@ -11,7 +11,7 @@ import { RatingsService } from './ratings.service';
 export class RatingsController {
   constructor(private ratings: RatingsService) {}
 
-  @Throttle({ write: THROTTLE_LIMITS.write })
+  @Throttle({ default: THROTTLE_LIMITS.write })
   @Post()
   create(@Req() req: { user: { id: string } }, @Body() dto: CreateRatingDto) {
     return this.ratings.create(req.user.id, dto);
@@ -22,7 +22,7 @@ export class RatingsController {
     return this.ratings.pending(req.user.id, query.page, query.limit);
   }
 
-  @Throttle({ search: THROTTLE_LIMITS.search })
+  @Throttle({ default: THROTTLE_LIMITS.search })
   @Get('user/:userId/stats')
   stats(@Param('userId') userId: string) {
     return this.ratings.getStats(userId);

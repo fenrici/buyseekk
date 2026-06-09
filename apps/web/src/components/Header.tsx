@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, clearToken, normalizePaginated } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -10,6 +11,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { isBuyerRole, isSellerRole } from '@/lib/auth';
 
 export function Header() {
+  const pathname = usePathname();
   const { user, loading } = useAuth();
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,10 +33,11 @@ export function Header() {
       setPendingRatings(0);
       return;
     }
+    if (pathname === '/ratings') return;
     api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>('/ratings/pending?limit=1')
       .then((raw) => setPendingRatings(normalizePaginated(raw).total))
       .catch(() => setPendingRatings(0));
-  }, [user?.id]);
+  }, [user?.id, pathname]);
 
   const navLinks = (
     <>
