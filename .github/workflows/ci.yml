@@ -30,6 +30,8 @@ jobs:
 
       - name: Validate Prisma schema
         run: npx prisma validate --schema apps/api/prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://buyseekk:buyseekk@localhost:5432/buyseekk
 
       - name: Build web
         run: npm run build -w @buyseekk/web
