@@ -56,6 +56,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   R2_BUCKET_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  REDIS_URL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

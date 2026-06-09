@@ -7,6 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
@@ -23,6 +24,8 @@ type AuthedSocket = Socket & { data: { userId: string } };
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(ChatGateway.name);
+
   @WebSocketServer() server!: Server;
 
   constructor(
@@ -35,24 +38,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth?.token as string | undefined;
-      if (!token) throw new Error('no token');
+      if (!token) throw new Error('missing token');
+
       const payload = this.jwt.verify<{ sub: string }>(token, {
         secret: this.config.get('JWT_SECRET', 'dev-secret-change-me'),
       });
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-      if (!user) throw new Error('no user');
+      if (!user) throw new Error('user not found');
+
       (client as AuthedSocket).data.userId = user.id;
-    } catch {
+      this.logger.log(`connected user=${user.id} socket=${client.id}`);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'auth failed';
+      this.logger.warn(`rejected socket=${client.id} reason=${reason}`);
       client.disconnect();
     }
   }
 
-  handleDisconnect() {}
+  handleDisconnect(client: Socket) {
+    const userId = (client as AuthedSocket).data?.userId;
+    this.logger.log(`disconnected user=${userId ?? 'unknown'} socket=${client.id}`);
+  }
 
   @SubscribeMessage('join')
   async join(@ConnectedSocket() client: AuthedSocket, @MessageBody() chatId: string) {
     await this.chats.getOne(chatId, client.data.userId);
-    client.join(this.room(chatId));
+    const room = this.room(chatId);
+    client.join(room);
+    this.logger.debug(`join user=${client.data.userId} room=${room}`);
     return { ok: true };
   }
 
@@ -62,7 +75,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() body: { chatId: string; text: string },
   ) {
     const message = await this.chats.send(body.chatId, client.data.userId, { text: body.text });
-    this.server.to(this.room(body.chatId)).emit('message', message);
+    const room = this.room(body.chatId);
+    this.server.to(room).emit('message', message);
+    this.logger.debug(
+      `message chat=${body.chatId} user=${client.data.userId} msg=${message.id}`,
+    );
     return message;
   }
 

@@ -3,9 +3,11 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { configureApp } from './bootstrap';
+import { configureWebSocket } from './chats/configure-websocket';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  await configureWebSocket(app);
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },

@@ -81,6 +81,42 @@ Sin R2, las imágenes viven en disco efímero del container y **se pierden en ca
 
 Las migraciones corren en **pre-deploy** (`railway.toml`), no al arrancar el container — seguro con múltiples réplicas.
 
+#### 2.4.2 Redis para chat en tiempo real (requerido con 2+ réplicas)
+
+Sin Redis, Socket.IO guarda rooms y conexiones **en memoria de cada instancia**. Con 2+ réplicas de Railway, un usuario en la instancia A no recibe mensajes emitidos desde la instancia B.
+
+1. En Railway → **+ New** → **Database** → **Redis** (o plugin Redis).
+2. En el servicio **API** → **Variables** → **Add Reference** → `REDIS_URL` del servicio Redis.
+3. Redeploy. En los logs deberías ver:
+   ```
+   Socket.IO Redis adapter enabled — ready for multiple instances
+   ```
+
+| Variable | Ejemplo | Notas |
+|----------|---------|-------|
+| `REDIS_URL` | `redis://default:pass@redis.railway.internal:6379` | Referencia al servicio Redis |
+
+> Sin `REDIS_URL`, el chat funciona con **una sola instancia** (adapter en memoria). El fallback HTTP (`POST /api/chats/:id/messages`) sigue funcionando siempre.
+
+**Probar localmente con Redis:**
+
+```bash
+docker compose up -d redis
+REDIS_URL=redis://localhost:6379 npm run dev -w @buyseekk/api
+```
+
+**Probar multi-instancia local** (dos terminales, mismo Redis y DB):
+
+```bash
+# Terminal 1
+REDIS_URL=redis://localhost:6379 API_PORT=4000 npm run dev -w @buyseekk/api
+
+# Terminal 2
+REDIS_URL=redis://localhost:6379 API_PORT=4001 npm run dev -w @buyseekk/api
+```
+
+Abrí dos navegadores (o normal + incógnito), entrá al mismo chat aceptado, y enviá mensajes cruzados. Con Redis, ambos deberían ver los mensajes en tiempo real aunque cada uno pegue a un puerto distinto (configurá `NEXT_PUBLIC_API_URL` al puerto correspondiente para esa prueba).
+
 ### 2.5 Dominio público
 
 1. Servicio API → **Settings** → **Networking** → **Generate Domain**.
