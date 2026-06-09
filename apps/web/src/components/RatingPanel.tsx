@@ -25,6 +25,7 @@ export function RatingPanel({ offerId }: { offerId: string }) {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
 
   async function load() {
@@ -33,8 +34,12 @@ export function RatingPanel({ offerId }: { offerId: string }) {
   }
 
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-  }, [offerId]);
+    setFetching(true);
+    setError('');
+    load()
+      .catch((e) => setError(e instanceof Error ? e.message : t('rating.loadError')))
+      .finally(() => setFetching(false));
+  }, [offerId, t]);
 
   async function submitReview() {
     if (!stars) return;
@@ -67,6 +72,22 @@ export function RatingPanel({ offerId }: { offerId: string }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (fetching) {
+    return (
+      <div className="card mt-4 p-4 text-sm text-slate-500">
+        {t('common.loading')}
+      </div>
+    );
+  }
+
+  if (error && !ctx) {
+    return (
+      <div className="card mt-4 p-4">
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
   }
 
   if (!ctx) return null;

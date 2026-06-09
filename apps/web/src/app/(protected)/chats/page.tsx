@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { ChatPreview, PaginatedResult } from '@/lib/types';
 import { Header } from '@/components/Header';
+import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { dateLocale, useLocale, useT } from '@/lib/i18n';
 
@@ -28,14 +29,19 @@ export default function ChatsPage() {
   const t = useT();
   const locale = useLocale();
   const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!user) return;
-    api<PaginatedResult<ChatPreview>>('/chats')
-      .then((res) => setChats(res.items))
+    api<PaginatedResult<ChatPreview>>(`/chats?page=${page}`)
+      .then((res) => {
+        setChats(res.items);
+        setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
+      })
       .catch((e) => setError(e.message));
-  }, [user]);
+  }, [user, page]);
 
   if (!user) return null;
 
@@ -77,6 +83,13 @@ export default function ChatsPage() {
               </div>
             </Link>
           ))}
+          <PaginationControls
+            page={meta.page}
+            totalPages={meta.totalPages}
+            total={meta.total}
+            onPageChange={setPage}
+            itemLabel={t('nav.messages').toLowerCase()}
+          />
         </div>
       </main>
     </>

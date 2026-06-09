@@ -40,6 +40,7 @@ export interface RequestItem {
   offersCount: number;
   pendingOffersCount: number;
   hasOffers: boolean;
+  offers?: { id: string; status: string }[];
   user: {
     id: string;
     name: string;
@@ -84,6 +85,14 @@ export interface ChatDetail {
     hasNextPage: boolean;
     hasOlderPage: boolean;
   };
+}
+
+export interface PendingRatingItem {
+  offerId: string;
+  requestTitle: string;
+  chatId?: string | null;
+  partner: { id: string; name: string; role: 'buyer' | 'seller' };
+  myRole: 'buyer' | 'seller';
 }
 
 export interface OfferItem {

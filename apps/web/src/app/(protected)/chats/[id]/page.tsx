@@ -1,13 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ChatThread } from '@/components/ChatThread';
 import { RatingPanel } from '@/components/RatingPanel';
-import { api } from '@/lib/api';
-import { ChatDetail } from '@/lib/types';
 import { useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -16,11 +14,6 @@ export default function ChatDetailPage() {
   const { user } = useAuth();
   const t = useT();
   const [offerId, setOfferId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    api<ChatDetail>(`/chats/${id}`).then((c) => setOfferId(c.offerId)).catch(() => {});
-  }, [id, user]);
 
   if (!user) return null;
 
@@ -32,7 +25,7 @@ export default function ChatDetailPage() {
           {t('chat.back')}
         </Link>
         <div className="mt-4">
-          <ChatThread chatId={id} />
+          <ChatThread chatId={id} onLoaded={(c) => setOfferId(c.offerId)} />
           {offerId && <RatingPanel offerId={offerId} />}
         </div>
       </main>

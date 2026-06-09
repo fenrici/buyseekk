@@ -26,21 +26,38 @@ function appendMessage(prev: ChatDetail | null, msg: ChatMessage): ChatDetail | 
   return { ...prev, messages: [...prev.messages, msg] };
 }
 
-export function ChatThread({ chatId }: { chatId: string }) {
+function prependMessages(prev: ChatDetail, older: ChatMessage[]): ChatDetail {
+  const existing = new Set(prev.messages.map((m) => m.id));
+  const unique = older.filter((m) => !existing.has(m.id));
+  return { ...prev, messages: [...unique, ...prev.messages] };
+}
+
+export function ChatThread({
+  chatId,
+  onLoaded,
+}: {
+  chatId: string;
+  onLoaded?: (chat: ChatDetail) => void;
+}) {
   const t = useT();
   const locale = useLocale();
   const [chat, setChat] = useState<ChatDetail | null>(null);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [live, setLive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const skipScrollRef = useRef(false);
 
   useEffect(() => {
     api<ChatDetail>(`/chats/${chatId}`)
-      .then(setChat)
+      .then((data) => {
+        setChat(data);
+        onLoaded?.(data);
+      })
       .catch((e) => setError(e.message));
-  }, [chatId]);
+  }, [chatId, onLoaded]);
 
   useEffect(() => {
     const socket = getChatSocket();
@@ -68,8 +85,36 @@ export function ChatThread({ chatId }: { chatId: string }) {
   }, [chatId]);
 
   useEffect(() => {
+    if (skipScrollRef.current) {
+      skipScrollRef.current = false;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat?.messages.length]);
+
+  async function loadOlderMessages() {
+    if (!chat?.messagesMeta?.hasOlderPage || loadingOlder) return;
+    const prevPage = chat.messagesMeta.page - 1;
+    setLoadingOlder(true);
+    setError('');
+    try {
+      const limit = chat.messagesMeta.limit;
+      const data = await api<ChatDetail>(`/chats/${chatId}?messagesPage=${prevPage}&messagesLimit=${limit}`);
+      skipScrollRef.current = true;
+      setChat((c) => {
+        if (!c) return data;
+        return {
+          ...c,
+          messages: prependMessages(c, data.messages).messages,
+          messagesMeta: data.messagesMeta,
+        };
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -130,6 +175,18 @@ export function ChatThread({ chatId }: { chatId: string }) {
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        {chat.messagesMeta?.hasOlderPage && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              className="btn btn-ghost border text-xs"
+            >
+              {loadingOlder ? t('chat.loadingOlder') : t('chat.loadOlder')}
+            </button>
+          </div>
+        )}
         {chat.messages.map((m) => {
           if (m.fromRole === 'system') {
             return (

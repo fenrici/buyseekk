@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, formatMoney } from '@/lib/api';
+import { api } from '@/lib/api';
 import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { CompareBlock } from '@/components/CompareBlock';
+import { PaginationControls } from '@/components/PaginationControls';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { CreateRequestForm } from '@/components/CreateRequestForm';
 import { RequestCard } from '@/components/RequestCard';
@@ -21,7 +23,11 @@ export function BuyerPanel() {
   const t = useT();
   const [tab, setTab] = useState<Tab>('publish');
   const [myRequests, setMyRequests] = useState<RequestItem[]>([]);
+  const [minePage, setMinePage] = useState(1);
+  const [mineMeta, setMineMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [offers, setOffers] = useState<OfferItem[]>([]);
+  const [offersPage, setOffersPage] = useState(1);
+  const [offersMeta, setOffersMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -29,22 +35,26 @@ export function BuyerPanel() {
     if (t === 'publish' || t === 'mine' || t === 'offers') setTab(t);
   }, [searchParams]);
 
-  async function loadMine() {
-    const data = await api<PaginatedResult<RequestItem>>('/requests/mine');
+  async function loadMine(page = minePage) {
+    const data = await api<PaginatedResult<RequestItem>>(`/requests/mine?page=${page}`);
     setMyRequests(data.items);
+    setMineMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
+    setMinePage(data.page);
   }
 
-  async function loadOffers() {
-    const data = await api<PaginatedResult<OfferItem>>('/offers/received');
+  async function loadOffers(page = offersPage) {
+    const data = await api<PaginatedResult<OfferItem>>(`/offers/received?page=${page}`);
     setOffers(data.items);
+    setOffersMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
+    setOffersPage(data.page);
   }
 
   useEffect(() => {
     if (!user) return;
     setError('');
-    if (tab === 'mine') loadMine().catch((e) => setError(e.message));
-    if (tab === 'offers') loadOffers().catch((e) => setError(e.message));
-  }, [tab, user]);
+    if (tab === 'mine') loadMine(minePage).catch((e) => setError(e.message));
+    if (tab === 'offers') loadOffers(offersPage).catch((e) => setError(e.message));
+  }, [tab, user, minePage, offersPage]);
 
   async function accept(id: string) {
     try {
@@ -53,7 +63,7 @@ export function BuyerPanel() {
         router.push(`/chats/${res.chatId}`);
         return;
       }
-      loadOffers();
+      loadOffers(offersPage);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
     }
@@ -62,15 +72,19 @@ export function BuyerPanel() {
   async function reject(id: string) {
     try {
       await api(`/offers/${id}/reject`, { method: 'PATCH' });
-      loadOffers();
+      loadOffers(offersPage);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
     }
   }
 
   async function removeRequest(id: string) {
-    await api(`/requests/${id}`, { method: 'DELETE' });
-    loadMine();
+    try {
+      await api(`/requests/${id}`, { method: 'DELETE' });
+      await loadMine(minePage);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
   }
 
   if (!user) return null;
@@ -111,7 +125,7 @@ export function BuyerPanel() {
 
         {tab === 'publish' && (
           <div className="mt-8">
-            <CreateRequestForm user={user} onSuccess={() => { setTab('mine'); loadMine(); }} />
+            <CreateRequestForm user={user} onSuccess={() => { setTab('mine'); loadMine(1); }} />
           </div>
         )}
 
@@ -125,8 +139,16 @@ export function BuyerPanel() {
                 request={r}
                 locale={user.locale}
                 onDelete={removeRequest}
+                onUpdated={() => loadMine(minePage)}
               />
             ))}
+            <PaginationControls
+              page={mineMeta.page}
+              totalPages={mineMeta.totalPages}
+              total={mineMeta.total}
+              onPageChange={setMinePage}
+              itemLabel={t('buyer.tabMine').toLowerCase()}
+            />
           </div>
         )}
 
@@ -157,8 +179,23 @@ export function BuyerPanel() {
                     <button onClick={() => reject(o.id)} className="btn btn-ghost text-red-600">{t('buyer.reject')}</button>
                   </div>
                 )}
+                {o.status === 'ACEPTADA' && o.chatId && (
+                  <Link
+                    href={`/chats/${o.chatId}`}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    💬 {t('buyer.openChat')}
+                  </Link>
+                )}
               </article>
             ))}
+            <PaginationControls
+              page={offersMeta.page}
+              totalPages={offersMeta.totalPages}
+              total={offersMeta.total}
+              onPageChange={setOffersPage}
+              itemLabel={t('buyer.tabOffers').toLowerCase()}
+            />
           </div>
         )}
       </main>

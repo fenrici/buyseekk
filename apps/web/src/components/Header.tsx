@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { clearToken } from '@/lib/api';
+import { api, clearToken } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { clearStoredLocale, useT } from '@/lib/i18n';
+import { PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { isBuyerRole, isSellerRole } from '@/lib/auth';
 
@@ -12,6 +13,7 @@ export function Header() {
   const { user, loading } = useAuth();
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingRatings, setPendingRatings] = useState(0);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -23,6 +25,16 @@ export function Header() {
       document.body.style.overflow = '';
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!user) {
+      setPendingRatings(0);
+      return;
+    }
+    api<PaginatedResult<PendingRatingItem>>('/ratings/pending?limit=1')
+      .then((res) => setPendingRatings(res.total))
+      .catch(() => setPendingRatings(0));
+  }, [user?.id]);
 
   const navLinks = (
     <>
@@ -39,6 +51,16 @@ export function Header() {
       {!loading && user && (
         <Link href="/chats" className="transition hover:text-[var(--primary)]" onClick={() => setMenuOpen(false)}>
           {t('nav.messages')}
+        </Link>
+      )}
+      {!loading && user && (
+        <Link href="/ratings" className="transition hover:text-[var(--primary)]" onClick={() => setMenuOpen(false)}>
+          {t('nav.ratings')}
+          {pendingRatings > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {pendingRatings}
+            </span>
+          )}
         </Link>
       )}
     </>

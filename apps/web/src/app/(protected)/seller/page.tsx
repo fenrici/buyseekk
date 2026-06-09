@@ -10,6 +10,7 @@ import { RealEstateFilters, RealEstateFilterValues } from '@/components/RealEsta
 import { ZoneChips } from '@/components/ZoneChips';
 import { Header } from '@/components/Header';
 import { CompareBlock } from '@/components/CompareBlock';
+import { PaginationControls } from '@/components/PaginationControls';
 import { RequestCard } from '@/components/RequestCard';
 import { useAuth } from '@/providers/AuthProvider';
 import { offerStatusLabel, useT } from '@/lib/i18n';
@@ -22,6 +23,8 @@ export default function SellerPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
+  const [sentPage, setSentPage] = useState(1);
+  const [sentMeta, setSentMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [category, setCategory] = useState('');
   const [operation, setOperation] = useState('');
   const [location, setLocation] = useState('');
@@ -63,13 +66,14 @@ export default function SellerPage() {
 
       const [reqs, offers] = await Promise.all([
         api<PaginatedResult<RequestItem>>(`/requests${q}`),
-        api<PaginatedResult<OfferItem>>('/offers/sent'),
+        api<PaginatedResult<OfferItem>>(`/offers/sent?page=${sentPage}`),
       ]);
       setRequests(reqs.items);
       setPage(reqs.page);
       setTotalPages(reqs.totalPages);
       setTotal(reqs.total);
       setSentOffers(offers.items);
+      setSentMeta({ total: offers.total, totalPages: offers.totalPages, page: offers.page });
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
@@ -82,7 +86,7 @@ export default function SellerPage() {
 
   useEffect(() => {
     if (user) load(page);
-  }, [user, page, category, operation, location, zone, estateFilters, autoFilters]);
+  }, [user, page, sentPage, category, operation, location, zone, estateFilters, autoFilters]);
 
   if (!user) return null;
 
@@ -268,6 +272,13 @@ export default function SellerPage() {
                 )}
               </article>
             ))}
+            <PaginationControls
+              page={sentMeta.page}
+              totalPages={sentMeta.totalPages}
+              total={sentMeta.total}
+              onPageChange={setSentPage}
+              itemLabel={t('seller.sentTitle').toLowerCase()}
+            />
           </div>
         </section>
       </main>
