@@ -50,6 +50,7 @@ En **Variables** del servicio API, agregá:
 | `JWT_EXPIRES_IN` | `7d` | Opcional |
 | `NODE_ENV` | `production` | Obligatorio |
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
+| `STORAGE_PROVIDER` | `local` o `r2` | En prod usar `r2` (ver 2.4.1) |
 
 **Generar JWT_SECRET** (en tu terminal):
 
@@ -58,6 +59,27 @@ openssl rand -base64 32
 ```
 
 > `PORT` lo inyecta Railway automáticamente — no hace falta setearlo.
+
+#### 2.4.1 Storage de imágenes (Cloudflare R2 — recomendado en prod)
+
+Sin R2, las imágenes viven en disco efímero del container y **se pierden en cada redeploy**. Con 2+ instancias, cada una tiene su propio disco.
+
+1. Creá un bucket en [Cloudflare R2](https://dash.cloudflare.com/) → habilitá acceso público (custom domain o `r2.dev`).
+2. Creá API token con permiso de escritura al bucket.
+3. En Railway (servicio API), agregá:
+
+| Variable | Ejemplo |
+|----------|---------|
+| `STORAGE_PROVIDER` | `r2` |
+| `STORAGE_PUBLIC_URL` | `https://pub-xxxx.r2.dev` o tu dominio |
+| `R2_ACCOUNT_ID` | ID de cuenta Cloudflare |
+| `R2_ACCESS_KEY_ID` | Access key del token |
+| `R2_SECRET_ACCESS_KEY` | Secret del token |
+| `R2_BUCKET_NAME` | nombre del bucket |
+
+4. En Vercel, si usás dominio custom de R2, agregá `NEXT_PUBLIC_STORAGE_HOST` (opcional, para `next/image`).
+
+Las migraciones corren en **pre-deploy** (`railway.toml`), no al arrancar el container — seguro con múltiples réplicas.
 
 ### 2.5 Dominio público
 
@@ -76,7 +98,9 @@ railway link          # elegí el proyecto y servicio API
 railway run npm run db:seed
 ```
 
-O desde el dashboard: servicio API → **Shell** → `npm run db:seed`.
+O desde el dashboard: servicio API → **Shell** → `ALLOW_PRODUCTION_SEED=true npm run db:seed`.
+
+> El seed está **bloqueado en producción** por defecto (evita borrar datos reales). Solo usá `ALLOW_PRODUCTION_SEED=true` en entornos controlados.
 
 ---
 

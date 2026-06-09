@@ -107,7 +107,11 @@ export function ChatThread({ chatId }: { chatId: string }) {
   }
 
   if (!chat) {
-    return <div className="flex h-96 items-center justify-center text-slate-500">{t('chat.loading')}</div>;
+    return (
+      <div className="flex h-96 items-center justify-center text-slate-500">
+        {error || t('chat.loading')}
+      </div>
+    );
   }
 
   return (

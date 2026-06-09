@@ -47,17 +47,25 @@ export function BuyerPanel() {
   }, [tab, user]);
 
   async function accept(id: string) {
-    const res = await api<{ chatId?: string }>(`/offers/${id}/accept`, { method: 'PATCH' });
-    if (res.chatId) {
-      router.push(`/chats/${res.chatId}`);
-      return;
+    try {
+      const res = await api<{ chatId?: string }>(`/offers/${id}/accept`, { method: 'PATCH' });
+      if (res.chatId) {
+        router.push(`/chats/${res.chatId}`);
+        return;
+      }
+      loadOffers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
     }
-    loadOffers();
   }
 
   async function reject(id: string) {
-    await api(`/offers/${id}/reject`, { method: 'PATCH' });
-    loadOffers();
+    try {
+      await api(`/offers/${id}/reject`, { method: 'PATCH' });
+      loadOffers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
   }
 
   async function removeRequest(id: string) {

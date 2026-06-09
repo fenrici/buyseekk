@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
@@ -21,6 +22,7 @@ export class ChatsController {
     return this.chats.getOne(id, user.id);
   }
 
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post(':id/messages')
   send(
     @CurrentUser() user: AuthUser,

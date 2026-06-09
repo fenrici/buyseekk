@@ -1,5 +1,13 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, MinLength, validateSync } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  validateSync,
+} from 'class-validator';
+import { STORAGE_PROVIDER } from '../storage/storage.interface';
 
 class EnvironmentVariables {
   @IsString()
@@ -24,6 +32,30 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   NODE_ENV?: string;
+
+  @IsOptional()
+  @IsIn([STORAGE_PROVIDER.LOCAL, STORAGE_PROVIDER.R2])
+  STORAGE_PROVIDER?: string;
+
+  @IsOptional()
+  @IsString()
+  STORAGE_PUBLIC_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  R2_ACCOUNT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  R2_ACCESS_KEY_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  R2_SECRET_ACCESS_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  R2_BUCKET_NAME?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
@@ -41,6 +73,20 @@ export function validateEnv(config: Record<string, unknown>) {
 
   if (validated.JWT_SECRET === 'dev-secret-change-me' && validated.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET no puede usar el valor por defecto en producción');
+  }
+
+  if (validated.STORAGE_PROVIDER === STORAGE_PROVIDER.R2) {
+    const required = [
+      ['STORAGE_PUBLIC_URL', validated.STORAGE_PUBLIC_URL],
+      ['R2_ACCOUNT_ID', validated.R2_ACCOUNT_ID],
+      ['R2_ACCESS_KEY_ID', validated.R2_ACCESS_KEY_ID],
+      ['R2_SECRET_ACCESS_KEY', validated.R2_SECRET_ACCESS_KEY],
+      ['R2_BUCKET_NAME', validated.R2_BUCKET_NAME],
+    ] as const;
+    const missing = required.filter(([, value]) => !value).map(([name]) => name);
+    if (missing.length) {
+      throw new Error(`STORAGE_PROVIDER=r2 requiere: ${missing.join(', ')}`);
+    }
   }
 
   return validated;

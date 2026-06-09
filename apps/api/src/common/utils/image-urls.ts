@@ -1,17 +1,23 @@
 import { BadRequestException } from '@nestjs/common';
 import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
 
-const ALLOWED_PREFIXES = ['/api/uploads/'];
+function getAllowedPrefixes(): string[] {
+  const prefixes = ['/api/uploads/'];
+  const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim().replace(/\/$/, '');
+  if (publicUrl) prefixes.push(`${publicUrl}/`);
+  return prefixes;
+}
 
 function validateEachUrl(urls: string[]) {
   if (urls.length > MAX_IMAGES_PER_ENTITY) {
     throw new BadRequestException(`Máximo ${MAX_IMAGES_PER_ENTITY} imágenes`);
   }
+  const prefixes = getAllowedPrefixes();
   for (const url of urls) {
     if (!url || typeof url !== 'string') {
       throw new BadRequestException('URL de imagen inválida');
     }
-    if (!ALLOWED_PREFIXES.some((prefix) => url.startsWith(prefix))) {
+    if (!prefixes.some((prefix) => url.startsWith(prefix))) {
       throw new BadRequestException('Solo se permiten imágenes subidas a la plataforma');
     }
     if (url.includes('..')) {

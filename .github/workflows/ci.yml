@@ -35,3 +35,62 @@ jobs:
         run: npm run build -w @buyseekk/web
         env:
           NEXT_PUBLIC_API_URL: http://localhost:4000
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: buyseekk
+          POSTGRES_PASSWORD: buyseekk
+          POSTGRES_DB: buyseekk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U buyseekk -d buyseekk"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build -w @buyseekk/shared
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate -w @buyseekk/api
+
+      - name: Run e2e tests
+        run: npm run test:e2e -w @buyseekk/api
+        env:
+          DATABASE_URL: postgresql://buyseekk:buyseekk@localhost:5432/buyseekk
+          JWT_SECRET: ci-test-jwt-secret-key-32chars
+          NODE_ENV: test
+          STORAGE_PROVIDER: local
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

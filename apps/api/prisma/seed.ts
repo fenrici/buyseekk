@@ -10,6 +10,13 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+  console.error(
+    'Seed bloqueado en producción. Seteá ALLOW_PRODUCTION_SEED=true solo si sabés lo que hacés.',
+  );
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 type DemoRequest = Omit<Prisma.RequestCreateManyInput, 'userId'> & { title: string };

@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(me);
       setStoredLocale(me.locale);
     } catch {
+      clearToken();
       setUser(null);
     } finally {
       setLoading(false);
