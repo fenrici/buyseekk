@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, normalizePaginated } from '@/lib/api';
 import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { CompareBlock } from '@/components/CompareBlock';
@@ -36,14 +36,16 @@ export function BuyerPanel() {
   }, [searchParams]);
 
   async function loadMine(page = minePage) {
-    const data = await api<PaginatedResult<RequestItem>>(`/requests/mine?page=${page}`);
+    const raw = await api<PaginatedResult<RequestItem> | RequestItem[]>(`/requests/mine?page=${page}`);
+    const data = normalizePaginated(raw);
     setMyRequests(data.items);
     setMineMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
     setMinePage(data.page);
   }
 
   async function loadOffers(page = offersPage) {
-    const data = await api<PaginatedResult<OfferItem>>(`/offers/received?page=${page}`);
+    const raw = await api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/received?page=${page}`);
+    const data = normalizePaginated(raw);
     setOffers(data.items);
     setOffersMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
     setOffersPage(data.page);

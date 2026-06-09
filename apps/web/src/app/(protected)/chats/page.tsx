@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, normalizePaginated } from '@/lib/api';
 import { ChatPreview, PaginatedResult } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -35,8 +35,9 @@ export default function ChatsPage() {
 
   useEffect(() => {
     if (!user) return;
-    api<PaginatedResult<ChatPreview>>(`/chats?page=${page}`)
-      .then((res) => {
+    api<PaginatedResult<ChatPreview> | ChatPreview[]>(`/chats?page=${page}`)
+      .then((raw) => {
+        const res = normalizePaginated(raw);
         setChats(res.items);
         setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
       })

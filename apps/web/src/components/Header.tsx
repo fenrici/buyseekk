@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api, clearToken } from '@/lib/api';
+import { api, clearToken, normalizePaginated } from '@/lib/api';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { clearStoredLocale, useT } from '@/lib/i18n';
 import { PaginatedResult, PendingRatingItem } from '@/lib/types';
@@ -31,8 +31,8 @@ export function Header() {
       setPendingRatings(0);
       return;
     }
-    api<PaginatedResult<PendingRatingItem>>('/ratings/pending?limit=1')
-      .then((res) => setPendingRatings(res.total))
+    api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>('/ratings/pending?limit=1')
+      .then((raw) => setPendingRatings(normalizePaginated(raw).total))
       .catch(() => setPendingRatings(0));
   }, [user?.id]);
 

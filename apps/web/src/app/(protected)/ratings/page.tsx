@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, normalizePaginated } from '@/lib/api';
 import { PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -19,8 +19,9 @@ export default function RatingsPage() {
 
   useEffect(() => {
     if (!user) return;
-    api<PaginatedResult<PendingRatingItem>>(`/ratings/pending?page=${page}`)
-      .then((res) => {
+    api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>(`/ratings/pending?page=${page}`)
+      .then((raw) => {
+        const res = normalizePaginated(raw);
         setItems(res.items);
         setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
       })

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { citiesForCountry } from '@buyseekk/shared';
-import { api, formatMoney } from '@/lib/api';
+import { api, formatMoney, normalizePaginated } from '@/lib/api';
 import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
 import { AutoFilters, AutoFilterValues } from '@/components/AutoFilters';
 import { RealEstateFilters, RealEstateFilterValues } from '@/components/RealEstateFilters';
@@ -64,10 +64,12 @@ export default function SellerPage() {
       }
       const q = params.toString() ? `?${params}` : '';
 
-      const [reqs, offers] = await Promise.all([
-        api<PaginatedResult<RequestItem>>(`/requests${q}`),
-        api<PaginatedResult<OfferItem>>(`/offers/sent?page=${sentPage}`),
+      const [reqsRaw, offersRaw] = await Promise.all([
+        api<PaginatedResult<RequestItem> | RequestItem[]>(`/requests${q}`),
+        api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/sent?page=${sentPage}`),
       ]);
+      const reqs = normalizePaginated(reqsRaw);
+      const offers = normalizePaginated(offersRaw);
       setRequests(reqs.items);
       setPage(reqs.page);
       setTotalPages(reqs.totalPages);

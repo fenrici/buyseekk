@@ -1,3 +1,5 @@
+import type { PaginatedResult } from './types';
+
 function normalizeApiUrl(raw?: string) {
   const value = raw?.trim() || 'http://localhost:4000';
   if (value.startsWith('http://') || value.startsWith('https://')) return value.replace(/\/$/, '');
@@ -17,6 +19,35 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem('buyseekk_token');
+}
+
+/** Acepta respuesta paginada o array legacy (compatibilidad API pre-P0). */
+export function normalizePaginated<T>(data: PaginatedResult<T> | T[]): PaginatedResult<T> {
+  if (Array.isArray(data)) {
+    const total = data.length;
+    return {
+      items: data,
+      total,
+      page: 1,
+      limit: total || 20,
+      totalPages: total === 0 ? 0 : 1,
+      hasNextPage: false,
+    };
+  }
+  const items = data.items ?? [];
+  const total = data.total ?? items.length;
+  const limit = data.limit ?? 20;
+  const page = data.page ?? 1;
+  const totalPages =
+    data.totalPages ?? (total === 0 ? 0 : Math.max(1, Math.ceil(total / limit)));
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages,
+    hasNextPage: data.hasNextPage ?? page < totalPages,
+  };
 }
 
 export async function api<T>(
