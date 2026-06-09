@@ -9,11 +9,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthUser } from '../common/types/auth-user';
+import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateRequestDto } from './requests.dto';
 import { ListRequestsQueryDto } from './list-requests.query.dto';
 import { MineRequestsQueryDto } from './mine-requests.query.dto';
@@ -25,6 +27,7 @@ import { RequestsService } from './requests.service';
 export class RequestsController {
   constructor(private requests: RequestsService) {}
 
+  @Throttle({ search: THROTTLE_LIMITS.search })
   @Get()
   @Roles('seller')
   list(@CurrentUser() user: AuthUser, @Query() query: ListRequestsQueryDto) {
@@ -49,12 +52,14 @@ export class RequestsController {
     return this.requests.getOne(id, user);
   }
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Post()
   @Roles('buyer')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
     return this.requests.create(user.id, dto);
   }
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Patch(':id')
   @Roles('buyer')
   update(
@@ -65,6 +70,7 @@ export class RequestsController {
     return this.requests.update(user.id, id, dto);
   }
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Delete(':id')
   @Roles('buyer')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {

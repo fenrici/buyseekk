@@ -6,6 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthUser } from '../common/types/auth-user';
+import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateOfferDto } from './offers.dto';
 import { OffersService } from './offers.service';
 
@@ -14,7 +15,7 @@ import { OffersService } from './offers.service';
 export class OffersController {
   constructor(private offers: OffersService) {}
 
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle({ offer: THROTTLE_LIMITS.offer })
   @Post()
   @Roles('seller')
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateOfferDto) {
@@ -38,12 +39,14 @@ export class OffersController {
     return this.offers.getComparison(id, user.id);
   }
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Patch(':id/accept')
   @Roles('buyer')
   accept(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offers.accept(id, user.id);
   }
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Patch(':id/reject')
   @Roles('buyer')
   reject(@CurrentUser() user: AuthUser, @Param('id') id: string) {

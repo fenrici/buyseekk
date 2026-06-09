@@ -60,6 +60,34 @@ openssl rand -base64 32
 
 > `PORT` lo inyecta Railway automáticamente — no hace falta setearlo.
 
+#### 2.4.0 Rate limiting y seguridad (opcional)
+
+La API incluye rate limiting y Helmet por defecto. Solo override si necesitás ajustar límites (requests por minuto):
+
+| Variable | Default | Endpoint |
+|----------|---------|----------|
+| `THROTTLE_LOGIN_LIMIT` | 10 | `POST /auth/login` |
+| `THROTTLE_REGISTER_LIMIT` | 5 | `POST /auth/register` |
+| `THROTTLE_UPLOAD_LIMIT` | 15 | `POST /uploads` |
+| `THROTTLE_OFFER_LIMIT` | 30 | `POST /offers` |
+| `THROTTLE_CHAT_LIMIT` | 60 | chat REST + WebSocket `send` |
+| `THROTTLE_SEARCH_LIMIT` | 90 | marketplace `GET /requests`, ratings públicos |
+| `THROTTLE_WRITE_LIMIT` | 10 | crear request, accept/reject, ratings |
+| `THROTTLE_DEFAULT_LIMIT` | 120 | resto de endpoints autenticados |
+
+Al superar el límite: HTTP `429` con mensaje `Demasiadas solicitudes. Esperá un momento e intentá de nuevo.`
+
+**Probar rate limit (login):**
+
+```bash
+for i in $(seq 1 12); do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST https://TU-API/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"test@test.com","password":"wrong"}'
+done
+# Las últimas respuestas deberían ser 429
+```
+
 #### 2.4.1 Storage de imágenes (Cloudflare R2 — recomendado en prod)
 
 Sin R2, las imágenes viven en disco efímero del container y **se pierden en cada redeploy**. Con 2+ instancias, cada una tiene su propio disco.

@@ -10,7 +10,9 @@ import {
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { ChatsService } from './chats.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -25,6 +27,7 @@ type AuthedSocket = Socket & { data: { userId: string } };
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
+  private readonly sendTimestamps = new Map<string, number[]>();
 
   @WebSocketServer() server!: Server;
 
@@ -74,6 +77,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() body: { chatId: string; text: string },
   ) {
+    this.assertMessageRate(client.data.userId);
     const message = await this.chats.send(body.chatId, client.data.userId, { text: body.text });
     const room = this.room(body.chatId);
     this.server.to(room).emit('message', message);
@@ -85,5 +89,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private room(chatId: string) {
     return `chat:${chatId}`;
+  }
+
+  private assertMessageRate(userId: string) {
+    const { ttl, limit } = THROTTLE_LIMITS.chat;
+    const now = Date.now();
+    const recent = (this.sendTimestamps.get(userId) ?? []).filter((t) => now - t < ttl);
+    if (recent.length >= limit) {
+      throw new WsException('Demasiados mensajes. Esperá un momento e intentá de nuevo.');
+    }
+    recent.push(now);
+    this.sendTimestamps.set(userId, recent);
   }
 }

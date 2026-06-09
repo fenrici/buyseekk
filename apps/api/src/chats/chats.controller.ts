@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 import { AuthUser } from '../common/types/auth-user';
+import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { ChatDetailQueryDto } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
 import { ChatsService } from './chats.service';
@@ -27,7 +28,7 @@ export class ChatsController {
     return this.chats.getOne(id, user.id, query);
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ chat: THROTTLE_LIMITS.chat })
   @Post(':id/messages')
   send(
     @CurrentUser() user: AuthUser,

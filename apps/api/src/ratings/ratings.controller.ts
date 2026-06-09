@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
+import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateRatingDto } from './ratings.dto';
 import { RatingsService } from './ratings.service';
 
@@ -9,6 +11,7 @@ import { RatingsService } from './ratings.service';
 export class RatingsController {
   constructor(private ratings: RatingsService) {}
 
+  @Throttle({ write: THROTTLE_LIMITS.write })
   @Post()
   create(@Req() req: { user: { id: string } }, @Body() dto: CreateRatingDto) {
     return this.ratings.create(req.user.id, dto);
@@ -19,6 +22,7 @@ export class RatingsController {
     return this.ratings.pending(req.user.id, query.page, query.limit);
   }
 
+  @Throttle({ search: THROTTLE_LIMITS.search })
   @Get('user/:userId/stats')
   stats(@Param('userId') userId: string) {
     return this.ratings.getStats(userId);

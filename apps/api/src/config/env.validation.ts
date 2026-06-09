@@ -79,6 +79,10 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error('JWT_SECRET no puede usar el valor por defecto en producción');
   }
 
+  if (validated.NODE_ENV === 'production' && !validated.CORS_ORIGIN?.trim()) {
+    throw new Error('CORS_ORIGIN es obligatorio en producción');
+  }
+
   if (validated.STORAGE_PROVIDER === STORAGE_PROVIDER.R2) {
     const required = [
       ['STORAGE_PUBLIC_URL', validated.STORAGE_PUBLIC_URL],
