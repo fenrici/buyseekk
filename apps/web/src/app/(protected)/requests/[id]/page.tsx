@@ -10,6 +10,7 @@ import { ImageGallery } from '@/components/ImageGallery';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/providers/AuthProvider';
 import { RequestMeta } from '@/components/RequestMeta';
+import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { useT } from '@/lib/i18n';
 
 export default function RequestDetailPage() {
@@ -69,6 +70,9 @@ export default function RequestDetailPage() {
               <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
             </div>
           )}
+          <div className="mb-2">
+            <RequestStatusBadge status={request.status} />
+          </div>
           <RequestMeta request={request} locale={user.locale} size="md" />
           <p className="mt-2 text-sm text-slate-400">
             {request.location}
@@ -77,6 +81,12 @@ export default function RequestDetailPage() {
               {request.user.name}
             </Link>
           </p>
+          <RequestActivity
+            offersCount={request.offersCount}
+            conversationsCount={request.conversationsCount}
+            lastActivityAt={request.lastActivityAt}
+            className="mt-1"
+          />
         </div>
         <form onSubmit={sendOffer} className="card h-fit p-6">
           <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>

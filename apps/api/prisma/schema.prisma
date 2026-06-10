@@ -54,6 +54,13 @@ enum RatingType {
   NO_RESPONSE
 }
 
+/// Estados almacenados. INACTIVA y ARCHIVADA se derivan de lastActivityAt.
+enum RequestStatus {
+  ACTIVA
+  NEGOCIANDO
+  CERRADA
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -104,12 +111,16 @@ model Request {
   carColor     String?
   maxMileage   Int?
   active       Boolean         @default(true)
+  status         RequestStatus @default(ACTIVA)
+  lastActivityAt DateTime      @default(now())
+  closedAt       DateTime?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
   offers Offer[]
 
   @@index([userId, active])
+  @@index([country, active, lastActivityAt])
   @@index([category, active])
   @@index([category, country, carBrand, carModel])
   @@index([category, country, location, zone])

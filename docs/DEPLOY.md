@@ -8,7 +8,7 @@ Guía paso a paso. **Vos** creás las cuentas y conectás el repo; el código ya
 
 | Servicio | Plataforma | URL ejemplo |
 |----------|------------|-------------|
-| API + WebSocket + DB | Railway | `https://buyseekk-api-production.up.railway.app` |
+| API + WebSocket + DB | Railway | `https://buyseekk-production.up.railway.app` |
 | Frontend | Vercel | `https://buyseekk.vercel.app` |
 
 ---
@@ -148,7 +148,7 @@ Abrí dos navegadores (o normal + incógnito), entrá al mismo chat aceptado, y 
 ### 2.5 Dominio público
 
 1. Servicio API → **Settings** → **Networking** → **Generate Domain**.
-2. Copiá la URL, ej: `https://buyseekk-api-production.up.railway.app`.
+2. Copiá la URL, ej: `https://buyseekk-production.up.railway.app`.
 3. Verificá: `https://TU-URL/api/health` debe responder `{"status":"ok","db":"ok",...}`.
 
 ### 2.6 Seed (datos demo) — una sola vez
@@ -189,7 +189,7 @@ O desde el dashboard: servicio API → **Shell** → `ALLOW_PRODUCTION_SEED=true
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://tu-api.up.railway.app` (**con** `https://`, sin `/api` al final) |
 
-Ejemplo: `https://buyseekk-api-production.up.railway.app`
+Ejemplo: `https://buyseekk-production.up.railway.app`
 
 ### 3.3 Deploy
 

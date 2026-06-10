@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Country, OfferStatus, OperationType, RequestCategory, UserRole } from '@prisma/client';
+import { Country, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
 import {
   citiesForCountry,
   isValidBrand,
@@ -23,6 +23,11 @@ import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { CreateRequestDto } from './requests.dto';
 import { ListRequestsQueryDto } from './list-requests.query.dto';
 import { MineRequestsQueryDto } from './mine-requests.query.dto';
+import {
+  archiveCutoff,
+  effectiveRequestStatus,
+  visibleToSellersWhere,
+} from './request-status';
 import { UpdateRequestDto } from './update-request.dto';
 
 const LIMITED_EDIT_FIELDS = new Set([
@@ -60,8 +65,10 @@ export class RequestsService {
     const pendingOffers = req.offers.filter((o) => o.status === OfferStatus.PENDIENTE).length;
     return {
       ...req,
+      status: effectiveRequestStatus(req),
       offersCount: req.offers.length,
       pendingOffersCount: pendingOffers,
+      conversationsCount: req.offers.filter((o) => o.chat).length,
       hasOffers: req.offers.length > 0,
     };
   }
@@ -71,7 +78,7 @@ export class RequestsService {
       where: { id },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true } },
+        offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
       },
     });
   }
@@ -140,7 +147,7 @@ export class RequestsService {
     }
 
     const activeCount = await this.prisma.request.count({
-      where: { userId, active: true },
+      where: { userId, active: true, ...visibleToSellersWhere() },
     });
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
       throw new BadRequestException(`Máximo ${MAX_ACTIVE_REQUESTS} solicitudes activas`);
@@ -183,7 +190,7 @@ export class RequestsService {
       },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true } },
+        offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
       },
     });
 
@@ -213,6 +220,7 @@ export class RequestsService {
       active: true,
       country: user.country,
       userId: { not: user.id },
+      ...visibleToSellersWhere(),
     };
 
     if (user.sellerCategory) {
@@ -256,10 +264,11 @@ export class RequestsService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        // Las inactivas pierden visibilidad: quedan al final del listado
+        orderBy: { lastActivityAt: 'desc' },
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-          offers: { select: { id: true, status: true } },
+          offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
         },
       }),
       this.prisma.request.count({ where }),
@@ -288,7 +297,7 @@ export class RequestsService {
   }) {
     const { page, limit, skip } = parsePagination(filters.page, filters.limit);
 
-    const where: Record<string, unknown> = { active: true };
+    const where: Record<string, unknown> = { active: true, ...visibleToSellersWhere() };
     if (filters.category) where.category = filters.category;
     if (filters.country) where.country = filters.country;
     if (filters.location) where.location = filters.location;
@@ -298,10 +307,10 @@ export class RequestsService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { lastActivityAt: 'desc' },
         include: {
           user: { select: { name: true } },
-          offers: { select: { id: true } },
+          offers: { select: { id: true, chat: { select: { id: true } } } },
         },
       }),
       this.prisma.request.count({ where }),
@@ -309,6 +318,9 @@ export class RequestsService {
 
     const sanitized = items.map((r) => ({
       id: r.id,
+      status: effectiveRequestStatus(r),
+      lastActivityAt: r.lastActivityAt,
+      conversationsCount: r.offers.filter((o) => o.chat).length,
       category: r.category,
       operation: r.operation,
       title: r.title,
@@ -348,9 +360,10 @@ export class RequestsService {
   }) {
     this.assertSellerRole(user.role);
 
-    const where: { active: boolean; country: Country; category?: RequestCategory } = {
+    const where: Record<string, unknown> = {
       active: true,
       country: user.country,
+      ...visibleToSellersWhere(),
     };
     if (user.sellerCategory) where.category = user.sellerCategory;
 
@@ -367,18 +380,33 @@ export class RequestsService {
 
   async mine(userId: string, query: MineRequestsQueryDto) {
     const { page, limit, skip } = parsePagination(query.page, query.limit);
-    const where: { userId: string; active?: boolean } = { userId };
+    const where: Record<string, unknown> = { userId };
     if (query.active !== undefined) where.active = query.active;
+
+    if (query.scope === 'open') {
+      where.active = true;
+      where.status = { not: RequestStatus.CERRADA };
+      where.lastActivityAt = { gte: archiveCutoff() };
+    } else if (query.scope === 'closed') {
+      where.active = true;
+      where.status = RequestStatus.CERRADA;
+    } else if (query.scope === 'archived') {
+      where.active = true;
+      where.status = { not: RequestStatus.CERRADA };
+      where.lastActivityAt = { lt: archiveCutoff() };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.request.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { lastActivityAt: 'desc' },
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-          offers: { select: { id: true, status: true, sellerId: true, price: true } },
+          offers: {
+            select: { id: true, status: true, sellerId: true, price: true, chat: { select: { id: true } } },
+          },
         },
       }),
       this.prisma.request.count({ where }),
@@ -410,6 +438,9 @@ export class RequestsService {
     });
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
     if (req.userId !== userId) throw new ForbiddenException();
+    if (req.status === RequestStatus.CERRADA) {
+      throw new BadRequestException('No podés editar una solicitud cerrada');
+    }
 
     const hasAccepted = req.offers.some((o) => o.status === OfferStatus.ACEPTADA);
     if (hasAccepted) {
@@ -540,10 +571,13 @@ export class RequestsService {
         ...(dto.carModel !== undefined ? { carModel: dto.carModel } : {}),
         ...(dto.carColor !== undefined ? { carColor: dto.carColor } : {}),
         ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
+        lastActivityAt: new Date(),
       },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true, sellerId: true, price: true } },
+        offers: {
+          select: { id: true, status: true, sellerId: true, price: true, chat: { select: { id: true } } },
+        },
       },
     });
 
@@ -562,6 +596,12 @@ export class RequestsService {
     const req = await this.findByIdRaw(id);
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
 
+    // Cerradas y archivadas dejan de ser visibles para vendedores
+    const effective = effectiveRequestStatus(req);
+    if (viewer && (effective === 'CERRADA' || effective === 'ARCHIVADA')) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+
     if (viewer && viewer.role !== UserRole.BUYER && req.country !== viewer.country) {
       throw new NotFoundException('Solicitud no encontrada');
     }
@@ -577,6 +617,38 @@ export class RequestsService {
     }
 
     return this.formatRequest(req);
+  }
+
+  /** Cierre manual del comprador: deja de aceptar ofertas, visible en su historial. */
+  async close(userId: string, id: string) {
+    const req = await this.prisma.request.findUnique({ where: { id } });
+    if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
+    if (req.userId !== userId) throw new ForbiddenException();
+    if (req.status === RequestStatus.CERRADA) {
+      return this.formatRequest(await this.findByIdRaw(id));
+    }
+
+    await this.prisma.request.update({
+      where: { id },
+      data: { status: RequestStatus.CERRADA, closedAt: new Date(), lastActivityAt: new Date() },
+    });
+    return this.formatRequest(await this.findByIdRaw(id));
+  }
+
+  /** "Seguir buscando": renueva la actividad y reabre Activa/Negociando según corresponda. */
+  async renew(userId: string, id: string) {
+    const req = await this.prisma.request.findUnique({ where: { id } });
+    if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
+    if (req.userId !== userId) throw new ForbiddenException();
+    if (req.status === RequestStatus.CERRADA) {
+      throw new BadRequestException('La solicitud está cerrada');
+    }
+
+    await this.prisma.request.update({
+      where: { id },
+      data: { lastActivityAt: new Date() },
+    });
+    return this.formatRequest(await this.findByIdRaw(id));
   }
 
   async remove(userId: string, id: string) {

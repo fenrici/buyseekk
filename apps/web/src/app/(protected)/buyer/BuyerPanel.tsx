@@ -16,6 +16,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { offerStatusLabel, useT } from '@/lib/i18n';
 
 type Tab = 'publish' | 'mine' | 'offers';
+type MineScope = 'open' | 'closed' | 'archived';
 
 export function BuyerPanel() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export function BuyerPanel() {
   const [tab, setTab] = useState<Tab>('publish');
   const [myRequests, setMyRequests] = useState<RequestItem[]>([]);
   const [minePage, setMinePage] = useState(1);
+  const [mineScope, setMineScope] = useState<MineScope>('open');
   const [mineMeta, setMineMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [offersPage, setOffersPage] = useState(1);
@@ -36,8 +38,10 @@ export function BuyerPanel() {
     if (t === 'publish' || t === 'mine' || t === 'offers') setTab(t);
   }, [searchParams]);
 
-  async function loadMine(page = minePage) {
-    const raw = await api<PaginatedResult<RequestItem> | RequestItem[]>(`/requests/mine?page=${page}`);
+  async function loadMine(page = minePage, scope = mineScope) {
+    const raw = await api<PaginatedResult<RequestItem> | RequestItem[]>(
+      `/requests/mine?page=${page}&scope=${scope}`,
+    );
     const data = normalizePaginated(raw);
     setMyRequests(data.items);
     setMineMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
@@ -55,9 +59,14 @@ export function BuyerPanel() {
   useEffect(() => {
     if (!user) return;
     setError('');
-    if (tab === 'mine') loadMine(minePage).catch((e) => setError(e.message));
+    if (tab === 'mine') loadMine(minePage, mineScope).catch((e) => setError(e.message));
     if (tab === 'offers') loadOffers(offersPage).catch((e) => setError(e.message));
-  }, [tab, user, minePage, offersPage]);
+  }, [tab, user, minePage, mineScope, offersPage]);
+
+  function changeScope(scope: MineScope) {
+    setMineScope(scope);
+    setMinePage(1);
+  }
 
   async function accept(id: string) {
     try {
@@ -84,6 +93,24 @@ export function BuyerPanel() {
   async function removeRequest(id: string) {
     try {
       await api(`/requests/${id}`, { method: 'DELETE' });
+      await loadMine(minePage);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
+  async function closeRequest(id: string) {
+    try {
+      await api(`/requests/${id}/close`, { method: 'PATCH' });
+      await loadMine(minePage);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
+  async function renewRequest(id: string) {
+    try {
+      await api(`/requests/${id}/renew`, { method: 'PATCH' });
       await loadMine(minePage);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -134,6 +161,19 @@ export function BuyerPanel() {
 
         {tab === 'mine' && (
           <div className="mt-8 space-y-4">
+            <div className="flex flex-wrap gap-2" role="group" aria-label={t('buyer.tabMine')}>
+              {(['open', 'closed', 'archived'] as const).map((scope) => (
+                <button
+                  key={scope}
+                  type="button"
+                  onClick={() => changeScope(scope)}
+                  aria-pressed={mineScope === scope}
+                  className={`explore-pill ${mineScope === scope ? 'active' : ''}`}
+                >
+                  {t(`buyer.scope${scope === 'open' ? 'Open' : scope === 'closed' ? 'Closed' : 'Archived'}`)}
+                </button>
+              ))}
+            </div>
             {myRequests.length === 0 && <p className="text-slate-500">{t('buyer.noRequests')}</p>}
             {myRequests.map((r) => (
               <RequestCard
@@ -142,6 +182,8 @@ export function BuyerPanel() {
                 request={r}
                 locale={user.locale}
                 onDelete={removeRequest}
+                onClose={closeRequest}
+                onRenew={renewRequest}
                 onUpdated={() => loadMine(minePage)}
               />
             ))}

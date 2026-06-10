@@ -7,7 +7,8 @@ import { PaginatedResult, PublicRequestItem } from '@/lib/types';
 import { PublicHeader } from '@/components/PublicHeader';
 import { RequestMeta } from '@/components/RequestMeta';
 import { PaginationControls } from '@/components/PaginationControls';
-import { useLocale, useT } from '@/lib/i18n';
+import { RequestStatusBadge } from '@/components/RequestStatusBadge';
+import { timeAgo, useLocale, useT } from '@/lib/i18n';
 
 export default function ExplorePage() {
   const t = useT();
@@ -187,10 +188,17 @@ export default function ExplorePage() {
               style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}
             >
               <div className="flex h-full flex-col p-4 lg:p-5">
+                {r.status === 'NEGOCIANDO' && (
+                  <div className="mb-2">
+                    <RequestStatusBadge status="NEGOCIANDO" />
+                  </div>
+                )}
                 <RequestMeta request={r} locale={locale} size="sm" />
                 <p className="mt-2 text-xs text-slate-400">
                   {r.location}
                   {r.zone ? ` · ${r.zone}` : ''}
+                  {' · '}
+                  {timeAgo(locale, r.lastActivityAt)}
                 </p>
                 <div className="mt-auto pt-3 lg:pt-4">
                   <div className="flex items-center justify-between gap-3 border-t pt-3 lg:pt-4">

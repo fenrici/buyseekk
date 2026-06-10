@@ -71,6 +71,20 @@ export class RequestsController {
   }
 
   @Throttle({ default: THROTTLE_LIMITS.write })
+  @Patch(':id/close')
+  @Roles('buyer')
+  close(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requests.close(user.id, id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Patch(':id/renew')
+  @Roles('buyer')
+  renew(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requests.renew(user.id, id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
   @Delete(':id')
   @Roles('buyer')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {

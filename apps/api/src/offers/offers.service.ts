@@ -5,11 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus } from '@prisma/client';
+import { OfferStatus, RequestStatus } from '@prisma/client';
 import { comparePrices, parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { assertValidImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { archiveCutoff } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
 
 @Injectable()
@@ -35,6 +36,12 @@ export class OffersService {
     });
 
     if (!request || !request.active) throw new NotFoundException('Solicitud no encontrada');
+    if (request.status === RequestStatus.CERRADA) {
+      throw new BadRequestException('La solicitud está cerrada y no acepta nuevas ofertas');
+    }
+    if (request.lastActivityAt < archiveCutoff()) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
 
     const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
     if (!seller) throw new ForbiddenException();
@@ -68,6 +75,12 @@ export class OffersService {
         seller: { select: { id: true, name: true, country: true } },
         request: { select: { id: true, title: true, imageUrls: true } },
       },
+    });
+
+    // Una oferta nueva cuenta como actividad de la solicitud
+    await this.prisma.request.update({
+      where: { id: dto.requestId },
+      data: { lastActivityAt: new Date() },
     });
 
     return this.withComparison(offer);
@@ -229,6 +242,16 @@ export class OffersService {
         },
       });
 
+      // El comprador abrió la negociación: estado NEGOCIANDO + actividad
+      await tx.request.updateMany({
+        where: { id: offer.requestId, status: RequestStatus.ACTIVA },
+        data: { status: RequestStatus.NEGOCIANDO },
+      });
+      await tx.request.update({
+        where: { id: offer.requestId },
+        data: { lastActivityAt: new Date() },
+      });
+
       return { updated: updatedOffer, chat: newChat };
     });
 
@@ -250,6 +273,12 @@ export class OffersService {
     if (result.count === 0) {
       throw new BadRequestException('La oferta ya fue procesada');
     }
+
+    // Rechazar también es respuesta del comprador: cuenta como actividad
+    await this.prisma.request.update({
+      where: { id: offer.requestId },
+      data: { lastActivityAt: new Date() },
+    });
 
     const updated = await this.prisma.offer.findUniqueOrThrow({ where: { id: offerId } });
     return this.withComparison(updated);

@@ -49,8 +49,13 @@ export interface PublicProfile {
   }[];
 }
 
+export type RequestStatusValue = 'ACTIVA' | 'NEGOCIANDO' | 'INACTIVA' | 'CERRADA' | 'ARCHIVADA';
+
 export interface RequestItem {
   id: string;
+  status: RequestStatusValue;
+  lastActivityAt: string;
+  conversationsCount: number;
   title: string;
   requirements: string;
   budget: number;
@@ -85,6 +90,9 @@ export interface RequestItem {
 /** Solicitud sanitizada del listado público (sin auth). */
 export interface PublicRequestItem {
   id: string;
+  status: RequestStatusValue;
+  lastActivityAt: string;
+  conversationsCount: number;
   category: string;
   operation: string;
   title: string;

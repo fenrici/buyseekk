@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus } from '@prisma/client';
+import { OfferStatus, RequestStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { PrismaService } from '../prisma/prisma.service';
@@ -171,6 +171,19 @@ export class ChatsService {
     const message = await this.prisma.message.create({
       data: { chatId, fromRole: role, text: dto.text.trim() },
     });
+
+    // Todo mensaje renueva la actividad; si responde el comprador → NEGOCIANDO
+    await this.prisma.request.update({
+      where: { id: chat.offer.requestId },
+      data: { lastActivityAt: new Date() },
+    });
+    if (role === 'buyer') {
+      await this.prisma.request.updateMany({
+        where: { id: chat.offer.requestId, status: RequestStatus.ACTIVA },
+        data: { status: RequestStatus.NEGOCIANDO },
+      });
+    }
+
     return {
       id: message.id,
       fromRole: message.fromRole,

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional } from 'class-validator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 
 export class MineRequestsQueryDto extends PaginationQueryDto {
@@ -7,4 +7,8 @@ export class MineRequestsQueryDto extends PaginationQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   active?: boolean;
+
+  @IsOptional()
+  @IsIn(['open', 'closed', 'archived'])
+  scope?: 'open' | 'closed' | 'archived';
 }
