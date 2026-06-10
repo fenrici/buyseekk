@@ -97,7 +97,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
     <header className="portal-header">
       <div className="portal-header-inner">
         <Link href="/" className="portal-logo">
-          <span className="portal-logo-text">BuySeekk</span>
+          <span className="portal-logo-text">BuySeek</span>
         </Link>
 
         <div className="portal-header-actions">

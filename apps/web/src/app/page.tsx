@@ -9,7 +9,7 @@ export default function HomePage() {
 
   return (
     <main className="portal">
-      <section className="portal-screen" aria-label="BuySeekk">
+      <section className="portal-screen" aria-label="BuySeek">
         <div className="portal-bg" aria-hidden="true" />
         <div className="portal-overlay" aria-hidden="true" />
         <div className="portal-glow" aria-hidden="true" />

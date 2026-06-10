@@ -15,10 +15,16 @@ export const metadata: Metadata = {
   description: 'Post what you need. Get real offers for cars and real estate.',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen antialiased`}>
+      <body className={`${inter.className} antialiased`}>
         <AppProviders>
           <LocaleHtml>{children}</LocaleHtml>
         </AppProviders>

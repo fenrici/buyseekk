@@ -19,11 +19,26 @@
   --header-h: 72px;
 }
 
+html {
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+html:has(.portal, .auth-portal),
+html:has(.portal, .auth-portal) body {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: #050a18;
 }
 
 /* Buttons */
@@ -159,8 +174,14 @@ body {
 }
 
 /* Portal full-screen home */
-.portal {
+.portal,
+.auth-portal {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
+  background: #050a18;
 }
 
 .portal-screen {
@@ -178,7 +199,7 @@ body {
 
 .portal-bg {
   position: absolute;
-  inset: -2%;
+  inset: 0;
   background-color: #050a18;
   background-image: url('/images/hero-buyseekk-dark-mobile.jpg');
   background-size: cover;
@@ -231,15 +252,15 @@ body {
 }
 
 .portal-logo-text {
-  font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+  font-size: clamp(1.65rem, 8vw, 2rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.035em;
   line-height: 1;
   background: linear-gradient(120deg, #ffffff 0%, #c4b5fd 30%, #818cf8 55%, #22d3ee 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 18px rgba(129, 140, 248, 0.4));
+  filter: drop-shadow(0 0 22px rgba(129, 140, 248, 0.55));
 }
 
 .portal-header-actions {
@@ -507,7 +528,8 @@ body {
       linear-gradient(105deg, rgba(4, 8, 20, 0.94) 0%, rgba(6, 12, 28, 0.82) 50%, rgba(8, 14, 32, 0.6) 100%);
   }
   .portal-logo-text {
-    font-size: 1.55rem;
+    font-size: 1.75rem;
+    filter: drop-shadow(0 0 20px rgba(129, 140, 248, 0.48));
   }
   .portal-cta {
     min-height: 56px;
@@ -572,18 +594,14 @@ body {
   }
 }
 
-/* Auth portal (login) */
-.auth-portal {
-  overflow-x: hidden;
-}
-
+/* Auth portal (login + register) */
 .auth-portal-screen {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   color: #fff;
 }
 
@@ -597,6 +615,8 @@ body {
   width: 100%;
   margin: 0 auto;
   padding: 8px 16px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .auth-portal-center {
@@ -783,6 +803,176 @@ body {
   z-index: 10;
   margin: auto;
   color: rgba(226, 232, 240, 0.8);
+}
+
+.auth-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 36px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center / 16px no-repeat,
+    rgba(255, 255, 255, 0.06);
+}
+
+.auth-select option {
+  color: #0f172a;
+  background: #fff;
+}
+
+/* Auth portal (register) */
+.auth-portal--register .portal-bg {
+  background-image: url('/images/hero-buyseekk-register-mobile.jpg');
+}
+
+.auth-portal--register .auth-portal-layout {
+  padding: 6px 14px max(18px, env(safe-area-inset-bottom));
+}
+
+.auth-portal--register .auth-portal-center {
+  max-width: min(100%, 27.5rem);
+  text-align: left;
+}
+
+.auth-card-title {
+  margin: 0 0 4px;
+  font-size: clamp(1.2rem, 4.8vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  text-align: center;
+  color: #fff;
+}
+
+.auth-card--register {
+  padding: clamp(16px, 4vw, 22px);
+  border-radius: 18px;
+  background: rgba(8, 14, 32, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 18px 44px rgba(2, 6, 23, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.auth-portal--register .auth-card-subtitle {
+  margin-bottom: 14px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(203, 213, 225, 0.7);
+}
+
+.auth-form--register {
+  margin-top: 0;
+  gap: 10px;
+}
+
+.auth-portal--register .auth-field {
+  gap: 4px;
+}
+
+.auth-portal--register .auth-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.auth-portal--register .auth-input {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-portal--register .auth-input::placeholder {
+  color: rgba(148, 163, 184, 0.45);
+  font-size: 13px;
+}
+
+.auth-portal--register .auth-input:focus {
+  border-color: rgba(129, 140, 248, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.16),
+    0 0 14px rgba(34, 211, 238, 0.07);
+}
+
+.auth-portal--register .auth-select {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 10px center / 14px no-repeat,
+    rgba(255, 255, 255, 0.05);
+}
+
+.auth-field-grid--register {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.auth-portal--register .auth-submit {
+  min-height: 46px;
+  margin-top: 2px;
+  font-size: 0.9375rem;
+}
+
+.auth-footer-link--register {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-size: 13px;
+  color: rgba(203, 213, 225, 0.68);
+}
+
+.auth-footer-link--register a {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #a5b4fc;
+  text-decoration: none;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.auth-footer-link--register a:hover {
+  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+@media (min-width: 480px) {
+  .auth-field-grid--register {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-portal--register .portal-bg {
+    background-image: url('/images/hero-buyseekk-register.jpg');
+    background-position: center left;
+  }
+
+  .auth-portal--register .portal-overlay {
+    background:
+      radial-gradient(ellipse 60% 52% at 62% 46%, rgba(3, 7, 18, 0.68) 0%, transparent 68%),
+      radial-gradient(ellipse 70% 55% at 65% 45%, rgba(79, 70, 229, 0.12) 0%, transparent 65%),
+      linear-gradient(255deg, rgba(4, 8, 20, 0.94) 0%, rgba(6, 12, 28, 0.82) 50%, rgba(8, 14, 32, 0.6) 100%);
+  }
+
+  .auth-portal--register .auth-portal-center {
+    max-width: 30rem;
+  }
+
+  .auth-card--register {
+    padding: 22px 24px;
+  }
+
+  .auth-card-title {
+    font-size: 1.45rem;
+  }
 }
 
 /* Panel tabs */
