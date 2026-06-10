@@ -134,7 +134,10 @@ export default function SellerPage() {
             {categoryFilters.map((c) => (
               <button
                 key={c.id || 'all'}
-                onClick={() => setCategory(c.id)}
+                onClick={() => {
+                  setCategory(c.id);
+                  if (c.id === 'AUTOS') setOperation('');
+                }}
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${category === c.id ? 'bg-indigo-600 text-white' : 'border bg-white'}`}
               >
                 {c.label}
@@ -142,6 +145,7 @@ export default function SellerPage() {
             ))}
           </div>
 
+          {category !== 'AUTOS' && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-slate-500">{t('seller.filterOperation')}:</span>
             {operationFilters.map((op) => (
@@ -154,6 +158,7 @@ export default function SellerPage() {
               </button>
             ))}
           </div>
+          )}
 
           <div className="mt-4">
             <span className="text-sm font-semibold text-slate-500">{t('seller.filterCity')}:</span>

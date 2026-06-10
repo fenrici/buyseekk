@@ -1,5 +1,5 @@
 import { Country, Currency, OperationType, RequestCategory } from '@prisma/client';
-import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
 
 export class CreateRequestDto {
@@ -26,6 +26,10 @@ export class CreateRequestDto {
   @IsOptional()
   @IsString()
   budgetPeriod?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  negotiable?: boolean;
 
   @IsEnum(Currency)
   currency!: Currency;

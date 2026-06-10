@@ -23,6 +23,7 @@ export interface RequestItem {
   requirements: string;
   budget: number;
   budgetPeriod?: string | null;
+  negotiable: boolean;
   currency: string;
   location: string;
   zone?: string | null;
@@ -46,6 +47,33 @@ export interface RequestItem {
     name: string;
     rating?: { avgStars: number | null; reviewCount: number; noResponseCount: number };
   };
+}
+
+/** Solicitud sanitizada del listado público (sin auth). */
+export interface PublicRequestItem {
+  id: string;
+  category: string;
+  operation: string;
+  title: string;
+  requirements: string;
+  budget: number;
+  budgetPeriod?: string | null;
+  negotiable: boolean;
+  currency: string;
+  location: string;
+  zone?: string | null;
+  country: string;
+  bedrooms?: number | null;
+  minSqm?: number | null;
+  maxSqm?: number | null;
+  carBrand?: string | null;
+  carModel?: string | null;
+  carColor?: string | null;
+  maxMileage?: number | null;
+  imageUrls?: string[];
+  createdAt: string;
+  offersCount: number;
+  buyerInitials: string;
 }
 
 export interface ChatPreview {

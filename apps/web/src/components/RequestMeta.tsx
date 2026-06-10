@@ -4,8 +4,29 @@ import { formatMoney } from '@/lib/api';
 import { operationLabel, useT } from '@/lib/i18n';
 import { RequestItem, User } from '@/lib/types';
 
+/** Subconjunto estructural para poder renderizar también solicitudes públicas. */
+type RequestMetaData = Pick<
+  RequestItem,
+  | 'category'
+  | 'operation'
+  | 'title'
+  | 'budget'
+  | 'budgetPeriod'
+  | 'negotiable'
+  | 'currency'
+  | 'requirements'
+  | 'zone'
+  | 'bedrooms'
+  | 'minSqm'
+  | 'maxSqm'
+  | 'carBrand'
+  | 'carModel'
+  | 'carColor'
+  | 'maxMileage'
+>;
+
 type Props = {
-  request: RequestItem;
+  request: RequestMetaData;
   locale: User['locale'];
   size?: 'sm' | 'md';
   showRequirements?: boolean;
@@ -33,9 +54,14 @@ export function RequestMeta({
         </span>
       </div>
       <h3 className={`mt-2 ${titleClass}`}>{request.title}</h3>
-      <p className={`mt-2 ${budgetClass}`}>
-        {formatMoney(request.budget, request.currency, request.budgetPeriod ?? '')}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <p className={budgetClass}>
+          {formatMoney(request.budget, request.currency, request.budgetPeriod ?? '')}
+        </p>
+        <span className={`tag ${request.negotiable !== false ? 'tag-negotiable' : 'tag-fixed'}`}>
+          {request.negotiable !== false ? t('request.negotiable') : t('request.fixedPrice')}
+        </span>
+      </div>
       {showRequirements && (
         <p className={`mt-2 ${size === 'sm' ? 'line-clamp-2 text-sm text-[var(--text-muted)]' : 'text-slate-600'}`}>
           {request.requirements}

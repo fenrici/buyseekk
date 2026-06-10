@@ -39,6 +39,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
     bedrooms: string;
     minSqm: string;
     maxSqm: string;
+    negotiable: boolean;
   }>({
     category: 'AUTOS',
     title: '',
@@ -56,6 +57,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
     bedrooms: '2',
     minSqm: '',
     maxSqm: '',
+    negotiable: true,
   });
 
   const isAuto = form.category === 'AUTOS';
@@ -74,6 +76,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         next.zone = allowedZones[0] ?? '';
       }
       if (field === 'category' && value === 'AUTOS') {
+        next.operation = 'COMPRA';
         const brand = CAR_BRAND_LIST[0] ?? '';
         next.carBrand = brand;
         next.carModel = modelsForBrand(brand)[0] ?? '';
@@ -130,6 +133,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         currency: form.currency,
         operation: form.operation,
         budgetPeriod: form.operation === 'ALQUILER' ? '/mes' : undefined,
+        negotiable: form.negotiable,
         imageUrls,
       };
 
@@ -159,14 +163,20 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
     <form onSubmit={handleSubmit} className="grid gap-4 rounded-xl border bg-white p-6 shadow-sm md:grid-cols-2">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 md:col-span-2">{error}</p>}
 
-      <select className="input" value={form.category} onChange={(e) => updateField('category', e.target.value)}>
+      <select
+        className={`input ${isAuto ? 'md:col-span-2' : ''}`}
+        value={form.category}
+        onChange={(e) => updateField('category', e.target.value)}
+      >
         <option value="AUTOS">{t('seller.autos')}</option>
         <option value="INMOBILIARIA">{t('seller.realEstate')}</option>
       </select>
-      <select className="input" value={form.operation} onChange={(e) => updateField('operation', e.target.value)}>
-        <option value="COMPRA">{t('request.buy')}</option>
-        <option value="ALQUILER">{t('request.rent')}</option>
-      </select>
+      {!isAuto && (
+        <select className="input" value={form.operation} onChange={(e) => updateField('operation', e.target.value)}>
+          <option value="COMPRA">{t('request.buy')}</option>
+          <option value="ALQUILER">{t('request.rent')}</option>
+        </select>
+      )}
 
       {isAuto ? (
         <div className="md:col-span-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
@@ -273,7 +283,26 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         </>
       )}
 
-      <input className="input" type="number" placeholder={t('request.budgetPlaceholder')} value={form.budget} onChange={(e) => updateField('budget', e.target.value)} required />
+      <div className="block">
+        <input className="input w-full" type="number" placeholder={t('request.budgetPlaceholder')} value={form.budget} onChange={(e) => updateField('budget', e.target.value)} required />
+        <p className="mt-2 text-xs text-slate-500">{t('request.negotiableHint')}</p>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${form.negotiable ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+            onClick={() => setForm((prev) => ({ ...prev, negotiable: true }))}
+          >
+            {t('request.negotiable')}
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${!form.negotiable ? 'border-slate-300 bg-slate-100 text-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+            onClick={() => setForm((prev) => ({ ...prev, negotiable: false }))}
+          >
+            {t('request.fixedPrice')}
+          </button>
+        </div>
+      </div>
       <label className="block">
         <span className="text-xs font-semibold text-slate-600">{t('request.city')} *</span>
         <select className="input mt-1 w-full" value={form.location} onChange={(e) => updateField('location', e.target.value)} required>

@@ -100,10 +100,10 @@ export function BuyerPanel() {
   const pendingCount = offers.filter((o) => o.status === 'PENDIENTE').length;
 
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto max-w-4xl px-4 py-10">
-        <h1 className="text-3xl font-bold">{t('buyer.title')}</h1>
+        <h1 className="text-3xl font-bold text-white">{t('buyer.title')}</h1>
         <p className="mt-1 text-slate-500">{t('buyer.subtitle')}</p>
 
         <div className="panel-tabs mt-6">
@@ -201,6 +201,6 @@ export function BuyerPanel() {
           </div>
         )}
       </main>
-    </>
+    </div>
   );
 }

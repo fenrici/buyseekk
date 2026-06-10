@@ -31,6 +31,7 @@ export function EditRequestForm({
   const [title, setTitle] = useState(request.title);
   const [requirements, setRequirements] = useState(request.requirements);
   const [budget, setBudget] = useState(String(request.budget));
+  const [negotiable, setNegotiable] = useState(request.negotiable !== false);
   const [imageUrls, setImageUrls] = useState<string[]>(request.imageUrls ?? []);
 
   if (mode === 'locked') {
@@ -54,12 +55,14 @@ export function EditRequestForm({
         if (title.trim()) payload.title = title.trim();
         payload.requirements = requirements;
         payload.budget = parseInt(budget, 10);
+        payload.negotiable = negotiable;
         payload.imageUrls = imageUrls;
         if (request.budgetPeriod) payload.budgetPeriod = request.budgetPeriod;
       } else {
         payload.title = title.trim();
         payload.requirements = requirements;
         payload.budget = parseInt(budget, 10);
+        payload.negotiable = negotiable;
         payload.imageUrls = imageUrls;
         if (request.budgetPeriod) payload.budgetPeriod = request.budgetPeriod;
       }
@@ -114,6 +117,26 @@ export function EditRequestForm({
           required
         />
       </label>
+
+      <div className="block">
+        <span className="text-xs font-semibold text-slate-600">{t('request.negotiableHint')}</span>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${negotiable ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+            onClick={() => setNegotiable(true)}
+          >
+            {t('request.negotiable')}
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${!negotiable ? 'border-slate-300 bg-slate-100 text-slate-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+            onClick={() => setNegotiable(false)}
+          >
+            {t('request.fixedPrice')}
+          </button>
+        </div>
+      </div>
 
       <ImageUpload
         label={t('request.refPhotos')}

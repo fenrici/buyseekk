@@ -12,7 +12,7 @@ const LANG_OPTIONS: { value: Locale; label: string }[] = [
   { value: 'EN', label: 'EN' },
 ];
 
-export type PublicRoute = '/' | '/login' | '/register';
+export type PublicRoute = '/' | '/login' | '/register' | '/marketplace';
 
 type PublicHeaderProps = {
   activeRoute?: PublicRoute;
@@ -54,6 +54,11 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
   const guestDesktopActions = (
     <>
       {langSwitcher}
+      {activeRoute !== '/marketplace' && (
+        <Link href="/marketplace" className="portal-header-link">
+          {t('nav.explore')}
+        </Link>
+      )}
       {activeRoute !== '/login' && (
         <Link href="/login" className="portal-header-link">
           {t('nav.login')}
@@ -125,7 +130,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
           />
           <div className="portal-mobile-menu">
             {!loading && user ? (
-              <nav className="flex flex-col gap-1">
+              <nav className="portal-mobile-nav">
                 <Link href="/" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
                   {t('nav.home')}
                 </Link>
@@ -155,7 +160,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
                 </button>
               </nav>
             ) : (
-              <nav className="flex flex-col gap-2">
+              <nav className="portal-mobile-nav">
                 <Link
                   href="/"
                   className={`portal-mobile-link${activeRoute === '/' ? ' portal-mobile-link--active' : ''}`}
@@ -164,6 +169,15 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
                 >
                   {t('nav.home')}
                 </Link>
+                {activeRoute !== '/marketplace' ? (
+                  <Link href="/marketplace" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
+                    {t('nav.explore')}
+                  </Link>
+                ) : (
+                  <span className="portal-mobile-link portal-mobile-link--active" aria-current="page">
+                    {t('nav.explore')}
+                  </span>
+                )}
                 {activeRoute !== '/login' ? (
                   <Link href="/login" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
                     {t('nav.login')}
@@ -176,7 +190,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
                 {activeRoute !== '/register' ? (
                   <Link
                     href="/register"
-                    className="portal-header-cta w-full text-center"
+                    className="portal-mobile-cta"
                     onClick={() => setMenuOpen(false)}
                   >
                     {t('nav.register')}
@@ -186,7 +200,9 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
                     {t('nav.register')}
                   </span>
                 )}
-                {langSwitcher}
+                {langSwitcher && (
+                  <div className="portal-mobile-lang">{langSwitcher}</div>
+                )}
               </nav>
             )}
           </div>

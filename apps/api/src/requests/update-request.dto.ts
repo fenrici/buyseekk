@@ -2,6 +2,7 @@ import { Currency, OperationType } from '@prisma/client';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -31,6 +32,10 @@ export class UpdateRequestDto {
   @IsOptional()
   @IsString()
   budgetPeriod?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  negotiable?: boolean;
 
   @IsOptional()
   currency?: Currency;

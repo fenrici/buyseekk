@@ -77,6 +77,7 @@ model Request {
   requirements String
   budget       Int
   budgetPeriod String?
+  negotiable   Boolean         @default(true)
   currency     Currency
   location     String
   zone         String?

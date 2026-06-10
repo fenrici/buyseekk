@@ -30,6 +30,7 @@ const LIMITED_EDIT_FIELDS = new Set([
   'requirements',
   'budget',
   'budgetPeriod',
+  'negotiable',
   'imageUrls',
 ]);
 
@@ -161,11 +162,12 @@ export class RequestsService {
       data: {
         userId,
         category: dto.category,
-        operation: dto.operation ?? 'COMPRA',
+        operation: dto.category === RequestCategory.AUTOS ? 'COMPRA' : dto.operation ?? 'COMPRA',
         title,
         requirements: dto.requirements,
         budget: dto.budget,
         budgetPeriod: dto.budgetPeriod,
+        negotiable: dto.negotiable ?? true,
         currency: dto.currency,
         location: dto.location,
         zone: dto.zone ?? null,
@@ -265,6 +267,69 @@ export class RequestsService {
     return toPaginatedResult(enriched, total, page, limit);
   }
 
+  /** Listado público (sin auth): solo solicitudes activas con datos sanitizados. */
+  async listPublic(filters: {
+    page?: number;
+    limit?: number;
+    category?: RequestCategory;
+    country?: Country;
+    location?: string;
+  }) {
+    const { page, limit, skip } = parsePagination(filters.page, filters.limit);
+
+    const where: Record<string, unknown> = { active: true };
+    if (filters.category) where.category = filters.category;
+    if (filters.country) where.country = filters.country;
+    if (filters.location) where.location = filters.location;
+
+    const [items, total] = await Promise.all([
+      this.prisma.request.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { name: true } },
+          offers: { select: { id: true } },
+        },
+      }),
+      this.prisma.request.count({ where }),
+    ]);
+
+    const sanitized = items.map((r) => ({
+      id: r.id,
+      category: r.category,
+      operation: r.operation,
+      title: r.title,
+      requirements: r.requirements,
+      budget: r.budget,
+      budgetPeriod: r.budgetPeriod,
+      negotiable: r.negotiable,
+      currency: r.currency,
+      location: r.location,
+      zone: r.zone,
+      country: r.country,
+      bedrooms: r.bedrooms,
+      minSqm: r.minSqm,
+      maxSqm: r.maxSqm,
+      carBrand: r.carBrand,
+      carModel: r.carModel,
+      carColor: r.carColor,
+      maxMileage: r.maxMileage,
+      imageUrls: r.imageUrls,
+      createdAt: r.createdAt,
+      offersCount: r.offers.length,
+      buyerInitials: r.user.name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase(),
+    }));
+
+    return toPaginatedResult(sanitized, total, page, limit);
+  }
+
   async locationsForSeller(user: { country: Country; role: UserRole }) {
     this.assertSellerRole(user.role);
 
@@ -335,13 +400,13 @@ export class RequestsService {
       const blocked = provided.filter(([key]) => STRUCTURAL_FIELDS.has(key));
       if (blocked.length) {
         throw new BadRequestException(
-          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto e imágenes',
+          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto, negociación e imágenes',
         );
       }
       const invalid = provided.filter(([key]) => !LIMITED_EDIT_FIELDS.has(key));
       if (invalid.length) {
         throw new BadRequestException(
-          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto e imágenes',
+          'Con ofertas pendientes solo podés editar título, requisitos, presupuesto, negociación e imágenes',
         );
       }
     }
@@ -439,10 +504,13 @@ export class RequestsService {
         ...(dto.requirements !== undefined ? { requirements: dto.requirements } : {}),
         ...(dto.budget !== undefined ? { budget: dto.budget } : {}),
         ...(dto.budgetPeriod !== undefined ? { budgetPeriod: dto.budgetPeriod } : {}),
+        ...(dto.negotiable !== undefined ? { negotiable: dto.negotiable } : {}),
         ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
         ...(dto.location !== undefined ? { location: dto.location } : {}),
         ...(dto.zone !== undefined ? { zone: dto.zone } : {}),
-        ...(dto.operation !== undefined ? { operation: dto.operation } : {}),
+        ...(dto.operation !== undefined && req.category !== RequestCategory.AUTOS
+          ? { operation: dto.operation }
+          : {}),
         ...(dto.imageUrls !== undefined ? { imageUrls: dto.imageUrls } : {}),
         ...(dto.bedrooms !== undefined ? { bedrooms: dto.bedrooms } : {}),
         ...(dto.minSqm !== undefined ? { minSqm: dto.minSqm } : {}),

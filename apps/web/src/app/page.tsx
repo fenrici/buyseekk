@@ -36,6 +36,14 @@ export default function HomePage() {
             </Link>
           </div>
 
+          <Link
+            href="/marketplace"
+            className="portal-explore-link portal-animate"
+            style={{ animationDelay: '0.3s' }}
+          >
+            {t('home.exploreLink')}
+          </Link>
+
           <p className="portal-chips portal-animate" style={{ animationDelay: '0.34s' }}>
             {t('home.chipLine')}
           </p>

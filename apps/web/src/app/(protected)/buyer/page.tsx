@@ -6,7 +6,9 @@ import { BuyerPanel } from './BuyerPanel';
 
 function BuyerFallback() {
   const t = useT();
-  return <main className="p-8">{t('common.loading')}</main>;
+  return (
+    <main className="panel-dark p-8 text-slate-400">{t('common.loading')}</main>
+  );
 }
 
 export default function BuyerPage() {

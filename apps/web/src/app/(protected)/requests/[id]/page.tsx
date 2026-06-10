@@ -55,10 +55,15 @@ export default function RequestDetailPage() {
       <Header />
       <main className="mx-auto grid max-w-5xl gap-8 px-4 py-10 md:grid-cols-2">
         <div>
-          <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
-          <div className="mt-4">
-            <RequestMeta request={request} locale={user.locale} size="md" />
-          </div>
+          {(request.imageUrls?.length ?? 0) > 0 && (
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('request.refPhotos')}
+              </p>
+              <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
+            </div>
+          )}
+          <RequestMeta request={request} locale={user.locale} size="md" />
           <p className="mt-2 text-sm text-slate-400">
             {request.location}
             {request.category === 'INMOBILIARIA' && request.zone ? ` · ${request.zone}` : ''} · {t('request.buyer')}: {request.user.name}

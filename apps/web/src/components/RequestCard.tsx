@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ImageGallery } from '@/components/ImageGallery';
 import { EditRequestForm } from '@/components/EditRequestForm';
 import { RequestMeta } from '@/components/RequestMeta';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
@@ -36,9 +35,8 @@ export function RequestCard(props: Props) {
 
   if (props.variant === 'seller') {
     return (
-      <article className="card card-listing">
-        <ImageGallery urls={request.imageUrls} alt={request.title} className="h-52" />
-        <div className="flex flex-1 flex-col p-5">
+      <article className="card card-listing h-full">
+        <div className="flex h-full flex-col p-5">
           <RequestMeta request={request} locale={locale} size="sm" />
           <p className="mt-2 text-xs text-slate-400">
             {request.location}
@@ -46,16 +44,18 @@ export function RequestCard(props: Props) {
             {' · '}
             {request.offersCount} {t('seller.offers')}
           </p>
-          <div className="mt-4 flex items-center gap-3 border-t pt-4">
-            <div className="avatar text-xs">{initials(request.user.name)}</div>
-            <div>
-              <p className="text-sm font-semibold">{request.user.name}</p>
-              <UserRatingBadge stats={request.user.rating} compact />
+          <div className="mt-auto pt-4">
+            <div className="flex items-center gap-3 border-t pt-4">
+              <div className="avatar text-xs">{initials(request.user.name)}</div>
+              <div>
+                <p className="text-sm font-semibold">{request.user.name}</p>
+                <UserRatingBadge stats={request.user.rating} compact />
+              </div>
             </div>
+            <Link href={`/requests/${request.id}`} className="btn btn-accent mt-4 w-full">
+              {t('seller.sendOffer')}
+            </Link>
           </div>
-          <Link href={`/requests/${request.id}`} className="btn btn-accent mt-4 w-full">
-            {t('seller.sendOffer')}
-          </Link>
         </div>
       </article>
     );
@@ -64,8 +64,7 @@ export function RequestCard(props: Props) {
   const hasAccepted = (request.offers ?? []).some((o) => o.status === 'ACEPTADA');
 
   return (
-    <article className="card overflow-hidden">
-      <ImageGallery urls={request.imageUrls} alt={request.title} className="h-48" />
+    <article className="card">
       <div className="p-5">
         {!editing ? (
           <>

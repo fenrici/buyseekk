@@ -148,7 +148,7 @@ No editables nunca: `id`, `buyerId`, `category`, `country`, `createdAt`, `update
 
 - Máx. 5 solicitudes activas por comprador
 - 1 oferta por vendedor por solicitud
-- Edición de solicitud: sin ofertas → campos completos; con ofertas pendientes → solo título, requisitos, presupuesto e imágenes; con oferta aceptada → bloqueado
+- Edición de solicitud: sin ofertas → campos completos; con ofertas pendientes → solo título, requisitos, presupuesto, negociación e imágenes; con oferta aceptada → bloqueado
 - Se puede eliminar (desactivar) solicitud con ofertas
 - Al aceptar: rechaza otras ofertas pendientes + crea chat
 
