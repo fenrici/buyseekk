@@ -198,7 +198,7 @@ export default function ExplorePage() {
                   {r.location}
                   {r.zone ? ` · ${r.zone}` : ''}
                   {' · '}
-                  {timeAgo(locale, r.lastActivityAt)}
+                  {timeAgo(locale, r.lastActivityAt ?? r.createdAt)}
                 </p>
                 <div className="mt-auto pt-3 lg:pt-4">
                   <div className="flex items-center justify-between gap-3 border-t pt-3 lg:pt-4">

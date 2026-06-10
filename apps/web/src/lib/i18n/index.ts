@@ -99,20 +99,29 @@ export function dateLocale(locale: Locale) {
 }
 
 /** "hace 2 horas" / "2 hours ago" a partir de una fecha ISO. */
-export function timeAgo(locale: Locale, iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return translate(locale, 'common.justNow');
+export function timeAgo(locale: Locale, iso?: string | null): string {
+  if (!iso) return translate(locale, 'common.justNow');
+
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return translate(locale, 'common.justNow');
+
+  const minutes = Math.round((Date.now() - ts) / 60000);
+  if (!Number.isFinite(minutes) || minutes < 1) return translate(locale, 'common.justNow');
 
   const rtf = new Intl.RelativeTimeFormat(dateLocale(locale), { numeric: 'auto' });
   if (minutes < 60) return rtf.format(-minutes, 'minute');
+
   const hours = Math.round(minutes / 60);
   if (hours < 24) return rtf.format(-hours, 'hour');
+
   const days = Math.round(hours / 24);
   if (days < 30) return rtf.format(-days, 'day');
+
   const months = Math.round(days / 30);
   if (months < 12) return rtf.format(-months, 'month');
-  return rtf.format(-Math.round(months / 12), 'year');
+
+  const years = Math.max(1, Math.round(months / 12));
+  return rtf.format(-years, 'year');
 }
 
 export function operationLabel(locale: Locale, operation: string) {

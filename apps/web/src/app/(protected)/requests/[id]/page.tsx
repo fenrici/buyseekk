@@ -85,6 +85,7 @@ export default function RequestDetailPage() {
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}
             lastActivityAt={request.lastActivityAt}
+            createdAt={request.createdAt}
             className="mt-1"
           />
         </div>

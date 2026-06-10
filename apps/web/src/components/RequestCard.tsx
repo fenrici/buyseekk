@@ -31,8 +31,12 @@ type Props = SellerProps | BuyerProps;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function daysIdle(lastActivityAt: string) {
-  return (Date.now() - new Date(lastActivityAt).getTime()) / DAY_MS;
+function daysIdle(lastActivityAt?: string | null, createdAt?: string | null) {
+  const iso = lastActivityAt ?? createdAt;
+  if (!iso) return 0;
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return 0;
+  return (Date.now() - ts) / DAY_MS;
 }
 
 export function RequestCard(props: Props) {
@@ -56,6 +60,7 @@ export function RequestCard(props: Props) {
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}
             lastActivityAt={request.lastActivityAt}
+            createdAt={request.createdAt}
             className="mt-1"
           />
           <div className="mt-auto pt-4">
@@ -83,7 +88,9 @@ export function RequestCard(props: Props) {
   const isClosed = request.status === 'CERRADA';
   const isArchived = request.status === 'ARCHIVADA';
   const showReminder =
-    !isClosed && !isArchived && daysIdle(request.lastActivityAt) >= REQUEST_REMINDER_DAYS;
+    !isClosed &&
+    !isArchived &&
+    daysIdle(request.lastActivityAt, request.createdAt) >= REQUEST_REMINDER_DAYS;
 
   return (
     <article className="card">
@@ -106,6 +113,7 @@ export function RequestCard(props: Props) {
                   offersCount={request.offersCount}
                   conversationsCount={request.conversationsCount}
                   lastActivityAt={request.lastActivityAt}
+                  createdAt={request.createdAt}
                   className="mt-1"
                 />
               </div>

@@ -11,11 +11,12 @@ const STATUS_STYLES: Record<RequestStatusValue, string> = {
   ARCHIVADA: 'bg-slate-100 text-slate-400',
 };
 
-export function RequestStatusBadge({ status }: { status: RequestStatusValue }) {
+export function RequestStatusBadge({ status = 'ACTIVA' }: { status?: RequestStatusValue }) {
   const t = useT();
+  const style = STATUS_STYLES[status] ?? STATUS_STYLES.ACTIVA;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[status]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${style}`}
     >
       {status === 'NEGOCIANDO' && (
         <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
@@ -29,17 +30,19 @@ export function RequestStatusBadge({ status }: { status: RequestStatusValue }) {
 }
 
 type ActivityProps = {
-  offersCount: number;
-  conversationsCount: number;
-  lastActivityAt: string;
+  offersCount?: number;
+  conversationsCount?: number;
+  lastActivityAt?: string | null;
+  createdAt?: string | null;
   className?: string;
 };
 
 /** "12 ofertas · 3 conversaciones · hace 2 horas" */
 export function RequestActivity({
-  offersCount,
-  conversationsCount,
+  offersCount = 0,
+  conversationsCount = 0,
   lastActivityAt,
+  createdAt,
   className = '',
 }: ActivityProps) {
   const t = useT();
@@ -50,7 +53,7 @@ export function RequestActivity({
       {' · '}
       {t('activity.conversations', { n: conversationsCount })}
       {' · '}
-      {t('activity.last', { time: timeAgo(locale, lastActivityAt) })}
+      {t('activity.last', { time: timeAgo(locale, lastActivityAt ?? createdAt) })}
     </p>
   );
 }
