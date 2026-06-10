@@ -64,7 +64,7 @@ export default function ExplorePage() {
     <div className="panel-dark">
       <PublicHeader activeRoute="/marketplace" />
 
-      <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 lg:pt-10">
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-12 lg:pt-16">
         {/* Mobile hero — intacto */}
         <div className="explore-hero-mobile">
           <div className="max-w-2xl">

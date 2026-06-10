@@ -2,15 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
 import { RequestMeta } from '@/components/RequestMeta';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { useT } from '@/lib/i18n';
 import { RequestItem, User } from '@/lib/types';
-
-function initials(name: string) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
 
 type SellerProps = {
   variant: 'seller';
@@ -46,9 +43,13 @@ export function RequestCard(props: Props) {
           </p>
           <div className="mt-auto pt-4">
             <div className="flex items-center gap-3 border-t pt-4">
-              <div className="avatar text-xs">{initials(request.user.name)}</div>
+              <Link href={`/users/${request.user.id}`} className="shrink-0">
+                <Avatar name={request.user.name} url={request.user.avatarUrl} size={36} />
+              </Link>
               <div>
-                <p className="text-sm font-semibold">{request.user.name}</p>
+                <Link href={`/users/${request.user.id}`} className="text-sm font-semibold hover:underline">
+                  {request.user.name}
+                </Link>
                 <UserRatingBadge stats={request.user.rating} compact />
               </div>
             </div>

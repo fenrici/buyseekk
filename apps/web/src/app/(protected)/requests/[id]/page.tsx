@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { RequestItem } from '@/lib/types';
@@ -47,12 +48,17 @@ export default function RequestDetailPage() {
   }
 
   if (!user || !request) {
-    return <><Header /><main className="p-8">{t('common.loading')}</main></>;
+    return (
+      <div className="panel-dark">
+        <Header variant="dark" />
+        <main className="p-8 text-slate-400">{t('common.loading')}</main>
+      </div>
+    );
   }
 
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto grid max-w-5xl gap-8 px-4 py-10 md:grid-cols-2">
         <div>
           {(request.imageUrls?.length ?? 0) > 0 && (
@@ -66,11 +72,14 @@ export default function RequestDetailPage() {
           <RequestMeta request={request} locale={user.locale} size="md" />
           <p className="mt-2 text-sm text-slate-400">
             {request.location}
-            {request.category === 'INMOBILIARIA' && request.zone ? ` · ${request.zone}` : ''} · {t('request.buyer')}: {request.user.name}
+            {request.category === 'INMOBILIARIA' && request.zone ? ` · ${request.zone}` : ''} · {t('request.buyer')}:{' '}
+            <Link href={`/users/${request.user.id}`} className="font-semibold text-indigo-600 hover:underline">
+              {request.user.name}
+            </Link>
           </p>
         </div>
         <form onSubmit={sendOffer} className="card h-fit p-6">
-          <h2 className="text-xl font-bold">{t('request.sendOfferTitle')}</h2>
+          <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
           {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
           <div className="mt-4 space-y-4">
             <input className="input w-full" type="number" placeholder={t('request.pricePlaceholder')} value={price} onChange={(e) => setPrice(e.target.value)} required />
@@ -90,6 +99,6 @@ export default function RequestDetailPage() {
           </div>
         </form>
       </main>
-    </>
+    </div>
   );
 }

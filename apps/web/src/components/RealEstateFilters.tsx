@@ -13,10 +13,12 @@ export function RealEstateFilters({
   values,
   onChange,
   visible,
+  compact = false,
 }: {
   values: RealEstateFilterValues;
   onChange: (next: RealEstateFilterValues) => void;
   visible: boolean;
+  compact?: boolean;
 }) {
   const t = useT();
   if (!visible) return null;
@@ -26,9 +28,9 @@ export function RealEstateFilters({
   }
 
   return (
-    <div className="mt-4 rounded-xl border bg-slate-50 p-4">
+    <div className={`card seller-filter-advanced ${compact ? 'mt-0' : 'mt-4'} p-4`}>
       <p className="text-sm font-bold text-slate-700">{t('seller.filterRealEstate')}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className={`mt-3 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-3'}`}>
         <label className="block">
           <span className="text-xs font-semibold text-slate-500">{t('request.bedrooms')}</span>
           <select

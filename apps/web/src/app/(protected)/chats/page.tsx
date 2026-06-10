@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, normalizePaginated } from '@/lib/api';
 import { ChatPreview, PaginatedResult } from '@/lib/types';
+import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
@@ -18,10 +19,6 @@ function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
     return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
   }
   return d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
-}
-
-function initials(name: string) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
 export default function ChatsPage() {
@@ -47,17 +44,17 @@ export default function ChatsPage() {
   if (!user) return null;
 
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-3xl font-bold">{t('chat.title')}</h1>
+        <h1 className="text-3xl font-bold text-white">{t('chat.title')}</h1>
         <p className="mt-1 text-slate-500">{t('chat.subtitle')}</p>
 
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-3">
           {chats.length === 0 && (
-            <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+            <div className="card empty-state p-8">
               <p className="text-4xl">💬</p>
               <p className="mt-3">{t('chat.empty')}</p>
               <p className="mt-1 text-sm">{t('chat.emptyHint')}</p>
@@ -67,11 +64,9 @@ export default function ChatsPage() {
             <Link
               key={c.id}
               href={`/chats/${c.id}`}
-              className="flex items-center gap-4 rounded-xl border bg-white p-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+              className="card flex items-center gap-4 p-4 transition hover:border-indigo-200"
             >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                {initials(c.partner.name)}
-              </div>
+              <Avatar name={c.partner.name} url={c.partner.avatarUrl} size={48} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="truncate font-semibold">{c.partner.name}</p>
@@ -93,6 +88,6 @@ export default function ChatsPage() {
           />
         </div>
       </main>
-    </>
+    </div>
   );
 }

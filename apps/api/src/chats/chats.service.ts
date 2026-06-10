@@ -16,15 +16,25 @@ export class ChatsService {
 
   private formatPartner(
     offer: {
-      seller: { id: string; name: string };
-      request: { user: { id: string; name: string } };
+      seller: { id: string; name: string; avatarUrl: string | null };
+      request: { user: { id: string; name: string; avatarUrl: string | null } };
     },
     myRole: 'buyer' | 'seller',
   ) {
     if (myRole === 'buyer') {
-      return { id: offer.seller.id, name: offer.seller.name, role: 'seller' as const };
+      return {
+        id: offer.seller.id,
+        name: offer.seller.name,
+        avatarUrl: offer.seller.avatarUrl,
+        role: 'seller' as const,
+      };
     }
-    return { id: offer.request.user.id, name: offer.request.user.name, role: 'buyer' as const };
+    return {
+      id: offer.request.user.id,
+      name: offer.request.user.name,
+      avatarUrl: offer.request.user.avatarUrl,
+      role: 'buyer' as const,
+    };
   }
 
   private assertParticipant(
@@ -64,8 +74,8 @@ export class ChatsService {
         include: {
           offer: {
             include: {
-              seller: { select: { id: true, name: true } },
-              request: { include: { user: { select: { id: true, name: true } } } },
+              seller: { select: { id: true, name: true, avatarUrl: true } },
+              request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
             },
           },
           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
@@ -99,8 +109,8 @@ export class ChatsService {
       include: {
         offer: {
           include: {
-            seller: { select: { id: true, name: true } },
-            request: { include: { user: { select: { id: true, name: true } } } },
+            seller: { select: { id: true, name: true, avatarUrl: true } },
+            request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
           },
         },
       },

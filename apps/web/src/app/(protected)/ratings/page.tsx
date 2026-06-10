@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, normalizePaginated } from '@/lib/api';
 import { PaginatedResult, PendingRatingItem } from '@/lib/types';
+import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
@@ -31,32 +32,35 @@ export default function RatingsPage() {
   if (!user) return null;
 
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-3xl font-bold">{t('rating.pendingTitle')}</h1>
+        <h1 className="text-3xl font-bold text-white">{t('rating.pendingTitle')}</h1>
         <p className="mt-1 text-slate-500">{t('rating.pendingSubtitle')}</p>
 
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-4">
           {items.length === 0 && (
-            <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+            <div className="card empty-state p-8">
               <p className="text-4xl">⭐</p>
               <p className="mt-3">{t('rating.pendingEmpty')}</p>
             </div>
           )}
           {items.map((item) => (
-            <article key={item.offerId} className="rounded-xl border bg-white p-5 shadow-sm">
-              <h2 className="font-bold">{item.requestTitle}</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {item.partner.name} · {item.partner.role === 'seller' ? t('compare.seller') : t('compare.buyer')}
-              </p>
+            <article key={item.offerId} className="card p-5">
+              <h2 className="font-bold text-white">{item.requestTitle}</h2>
+              <Link
+                href={`/users/${item.partner.id}`}
+                className="mt-2 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-400"
+              >
+                <Avatar name={item.partner.name} url={item.partner.avatarUrl} size={28} />
+                <span>
+                  {item.partner.name} · {item.partner.role === 'seller' ? t('compare.seller') : t('compare.buyer')}
+                </span>
+              </Link>
               {item.chatId ? (
-                <Link
-                  href={`/chats/${item.chatId}`}
-                  className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
-                >
+                <Link href={`/chats/${item.chatId}`} className="btn btn-primary mt-4">
                   {t('rating.rateNow')}
                 </Link>
               ) : (
@@ -73,6 +77,6 @@ export default function RatingsPage() {
           />
         </div>
       </main>
-    </>
+    </div>
   );
 }

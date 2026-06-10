@@ -88,7 +88,7 @@ export class OffersService {
         take: safeLimit,
         orderBy: { createdAt: 'desc' },
         include: {
-          seller: { select: { id: true, name: true, country: true } },
+          seller: { select: { id: true, name: true, country: true, avatarUrl: true, sellerType: true, businessName: true } },
           request: { select: { id: true, title: true, imageUrls: true, currency: true } },
         },
       }),
@@ -126,7 +126,7 @@ export class OffersService {
               id: true,
               title: true,
               imageUrls: true,
-              user: { select: { id: true, name: true } },
+              user: { select: { id: true, name: true, avatarUrl: true } },
             },
           },
           chat: { select: { id: true } },

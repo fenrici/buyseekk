@@ -12,9 +12,41 @@ export interface User {
   email: string;
   name: string;
   role: 'BUYER' | 'SELLER' | 'BOTH';
+  sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+  sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
   country: 'AR' | 'US';
   locale: 'ES' | 'EN';
   currency: 'ARS' | 'USD';
+  avatarUrl?: string | null;
+  bio?: string | null;
+  businessName?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  city?: string | null;
+}
+
+export interface PublicProfile {
+  id: string;
+  name: string;
+  role: 'BUYER' | 'SELLER' | 'BOTH';
+  sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+  sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
+  country: 'AR' | 'US';
+  avatarUrl?: string | null;
+  bio?: string | null;
+  businessName?: string | null;
+  website?: string | null;
+  city?: string | null;
+  createdAt: string;
+  rating: UserRatingStats;
+  completedDeals: number;
+  recentReviews: {
+    id: string;
+    stars: number | null;
+    comment?: string | null;
+    createdAt: string;
+    fromUser: { id: string; name: string; avatarUrl?: string | null };
+  }[];
 }
 
 export interface RequestItem {
@@ -45,6 +77,7 @@ export interface RequestItem {
   user: {
     id: string;
     name: string;
+    avatarUrl?: string | null;
     rating?: { avgStars: number | null; reviewCount: number; noResponseCount: number };
   };
 }
@@ -76,11 +109,18 @@ export interface PublicRequestItem {
   buyerInitials: string;
 }
 
+export interface ChatPartner {
+  id: string;
+  name: string;
+  role: 'buyer' | 'seller';
+  avatarUrl?: string | null;
+}
+
 export interface ChatPreview {
   id: string;
   offerId: string;
   requestTitle: string;
-  partner: { id: string; name: string; role: 'buyer' | 'seller' };
+  partner: ChatPartner;
   lastMessage: { text: string; fromRole: string; createdAt: string } | null;
   updatedAt: string;
 }
@@ -103,7 +143,7 @@ export interface ChatDetail {
   offerId: string;
   requestTitle: string;
   myRole: 'buyer' | 'seller';
-  partner: { id: string; name: string; role: 'buyer' | 'seller' };
+  partner: ChatPartner;
   messages: ChatMessage[];
   messagesMeta?: {
     total: number;
@@ -119,7 +159,7 @@ export interface PendingRatingItem {
   offerId: string;
   requestTitle: string;
   chatId?: string | null;
-  partner: { id: string; name: string; role: 'buyer' | 'seller' };
+  partner: ChatPartner;
   myRole: 'buyer' | 'seller';
 }
 
@@ -135,8 +175,20 @@ export interface OfferItem {
   requestBudgetPeriod?: string | null;
   requestRequirements: string;
   requestLocation: string;
-  seller?: { id: string; name: string; rating?: UserRatingStats };
-  request?: { id: string; title: string; imageUrls?: string[]; user?: { id: string; name: string } };
+  seller?: {
+    id: string;
+    name: string;
+    rating?: UserRatingStats;
+    avatarUrl?: string | null;
+    sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+    businessName?: string | null;
+  };
+  request?: {
+    id: string;
+    title: string;
+    imageUrls?: string[];
+    user?: { id: string; name: string; avatarUrl?: string | null };
+  };
   chatId?: string | null;
   comparison: {
     budget: number;

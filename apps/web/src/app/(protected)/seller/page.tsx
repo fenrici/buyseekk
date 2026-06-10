@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { citiesForCountry } from '@buyseekk/shared';
 import { api, formatMoney, normalizePaginated } from '@/lib/api';
 import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
-import { AutoFilters, AutoFilterValues } from '@/components/AutoFilters';
-import { RealEstateFilters, RealEstateFilterValues } from '@/components/RealEstateFilters';
-import { ZoneChips } from '@/components/ZoneChips';
+import { AutoFilterValues } from '@/components/AutoFilters';
+import { RealEstateFilterValues } from '@/components/RealEstateFilters';
+import { SellerFiltersPanel } from '@/components/SellerFiltersPanel';
 import { Header } from '@/components/Header';
 import { CompareBlock } from '@/components/CompareBlock';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -47,16 +47,18 @@ export default function SellerPage() {
     try {
       const params = new URLSearchParams();
       params.set('page', String(pageNum));
-      if (category) params.set('category', category);
+      const sellerCategory = user.sellerCategory;
+      const cat = sellerCategory || category;
+      if (!sellerCategory && category) params.set('category', category);
       if (operation) params.set('operation', operation);
       if (location) params.set('location', location);
       if (zone) params.set('zone', zone);
-      if (category !== 'AUTOS') {
+      if (cat !== 'AUTOS') {
         if (estateFilters.bedrooms) params.set('bedrooms', estateFilters.bedrooms);
         if (estateFilters.minSqm) params.set('minSqm', estateFilters.minSqm);
         if (estateFilters.maxSqm) params.set('maxSqm', estateFilters.maxSqm);
       }
-      if (category !== 'INMOBILIARIA') {
+      if (cat !== 'INMOBILIARIA') {
         if (autoFilters.carBrand) params.set('carBrand', autoFilters.carBrand);
         if (autoFilters.carModel) params.set('carModel', autoFilters.carModel);
         if (autoFilters.carColor) params.set('carColor', autoFilters.carColor);
@@ -87,10 +89,18 @@ export default function SellerPage() {
   }, [category, operation, location, zone, estateFilters, autoFilters]);
 
   useEffect(() => {
+    if (user?.sellerCategory) setCategory(user.sellerCategory);
+  }, [user?.sellerCategory]);
+
+  useEffect(() => {
     if (user) load(page);
   }, [user, page, sentPage, category, operation, location, zone, estateFilters, autoFilters]);
 
   if (!user) return null;
+
+  const lockedCategory = user.sellerCategory ?? '';
+  const showCategoryFilter = !lockedCategory;
+  const effectiveCategory = lockedCategory || category;
 
   const cities = citiesForCountry(user.country);
 
@@ -113,103 +123,75 @@ export default function SellerPage() {
     || !!zone
     || !!operation;
 
+  const filterPanelProps = {
+    user,
+    onCategoryChange: showCategoryFilter ? setCategory : undefined,
+    operation,
+    onOperationChange: setOperation,
+    location,
+    onLocationChange: setLocation,
+    zone,
+    onZoneChange: setZone,
+    estateFilters,
+    onEstateFiltersChange: setEstateFilters,
+    autoFilters,
+    onAutoFiltersChange: setAutoFilters,
+    categoryFilters,
+    operationFilters,
+    cities,
+    showCategoryFilter,
+    category: effectiveCategory,
+  };
+
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <h1 className="text-3xl font-bold">{t('seller.title')}</h1>
+        <h1 className="text-3xl font-bold text-white">{t('seller.title')}</h1>
         <p className="mt-1 text-slate-500">
-          {t('seller.hello')}, <strong>{user.name}</strong> — {t('seller.subtitle')}
+          {t('seller.hello')}, <strong className="text-slate-200">{user.name}</strong> — {t('seller.subtitle')}
         </p>
-        <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
-          {t('seller.market')}: {marketLabel}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
+            {t('seller.market')}: {marketLabel}
+          </p>
+          {user.sellerType && user.sellerCategory && (
+            <>
+              <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-slate-200">
+                {user.sellerType === 'BUSINESS' ? t('seller.profileBusiness') : t('seller.profilePersonal')}
+              </span>
+              <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-slate-200">
+                {user.sellerCategory === 'AUTOS' ? t('seller.profileAutos') : t('seller.profileRealEstate')}
+              </span>
+            </>
+          )}
+        </div>
 
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <section className="mt-10">
-          <h2 className="text-xl font-bold">{t('seller.requestsTitle')}</h2>
+          <h2 className="text-xl font-bold text-white lg:hidden">{t('seller.requestsTitle')}</h2>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {categoryFilters.map((c) => (
-              <button
-                key={c.id || 'all'}
-                onClick={() => {
-                  setCategory(c.id);
-                  if (c.id === 'AUTOS') setOperation('');
-                }}
-                className={`rounded-full px-4 py-2 text-sm font-semibold ${category === c.id ? 'bg-indigo-600 text-white' : 'border bg-white'}`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+          <div className="seller-browse-layout">
+            <aside className="seller-filters-sidebar" aria-label={t('seller.filtersTitle')}>
+              <SellerFiltersPanel {...filterPanelProps} />
+            </aside>
 
-          {category !== 'AUTOS' && (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-slate-500">{t('seller.filterOperation')}:</span>
-            {operationFilters.map((op) => (
-              <button
-                key={op.id || 'all-ops'}
-                onClick={() => setOperation(op.id)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold ${operation === op.id ? 'bg-violet-600 text-white' : 'border bg-white'}`}
-              >
-                {op.label}
-              </button>
-            ))}
-          </div>
-          )}
-
-          <div className="mt-4">
-            <span className="text-sm font-semibold text-slate-500">{t('seller.filterCity')}:</span>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  setLocation('');
-                  setZone('');
-                }}
-                className={`rounded-full px-4 py-2 text-sm font-semibold ${location === '' ? 'bg-emerald-600 text-white' : 'border bg-white'}`}
-              >
-                {t('seller.allCities')}
-              </button>
-              {cities.map((city) => (
-                <button
-                  key={city}
-                  onClick={() => {
-                    setLocation(city);
-                    setZone('');
-                  }}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${location === city ? 'bg-emerald-600 text-white' : 'border bg-white'}`}
-                >
-                  {city}
-                </button>
-              ))}
+            <div className="seller-filters-mobile">
+              <SellerFiltersPanel {...filterPanelProps} />
             </div>
-          </div>
 
-          <div className="mt-4">
-            <span className="text-sm font-semibold text-slate-500">{t('request.zone')}:</span>
-            <ZoneChips
-              country={user.country}
-              city={location}
-              value={zone}
-              onChange={setZone}
-            />
-          </div>
+            <div className="seller-results">
+              <div className="seller-results-header">
+                <h2 className="text-xl font-bold text-white">{t('seller.requestsTitle')}</h2>
+                {total > 0 && (
+                  <p className="text-sm text-slate-500">
+                    {t('seller.resultsCount', { count: String(total) })}
+                  </p>
+                )}
+              </div>
 
-          <RealEstateFilters
-            visible={category === '' || category === 'INMOBILIARIA'}
-            values={estateFilters}
-            onChange={setEstateFilters}
-          />
-
-          <AutoFilters
-            visible={category === '' || category === 'AUTOS'}
-            values={autoFilters}
-            onChange={setAutoFilters}
-          />
-
-          <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {requests.map((r) => (
               <RequestCard key={r.id} variant="seller" request={r} locale={user.locale} />
             ))}
@@ -249,17 +231,19 @@ export default function SellerPage() {
               </div>
             </div>
           )}
+            </div>
+          </div>
         </section>
 
         <section className="mt-14 border-t pt-10">
-          <h2 className="text-xl font-bold">{t('seller.sentTitle')}</h2>
+          <h2 className="text-xl font-bold text-white">{t('seller.sentTitle')}</h2>
           <div className="mt-6 space-y-6">
             {sentOffers.length === 0 && <p className="text-slate-500">{t('seller.noSent')}</p>}
             {sentOffers.map((o) => (
-              <article key={o.id} className="rounded-xl border bg-white p-5 shadow-sm">
+              <article key={o.id} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-bold">{o.requestTitle}</h3>
+                    <h3 className="font-bold text-white">{o.requestTitle}</h3>
                     <p className="text-sm text-slate-500">{t('seller.offeredPrice')}: {formatMoney(o.price, o.currency)}</p>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${
@@ -270,10 +254,7 @@ export default function SellerPage() {
                 </div>
                 <CompareBlock offer={o} perspective="seller" />
                 {o.status === 'ACEPTADA' && o.chatId && (
-                  <Link
-                    href={`/chats/${o.chatId}`}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
-                  >
+                  <Link href={`/chats/${o.chatId}`} className="btn btn-primary mt-4">
                     💬 {t('seller.openChat')}
                   </Link>
                 )}
@@ -289,6 +270,6 @@ export default function SellerPage() {
           </div>
         </section>
       </main>
-    </>
+    </div>
   );
 }

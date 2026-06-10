@@ -14,10 +14,12 @@ export function AutoFilters({
   values,
   onChange,
   visible,
+  compact = false,
 }: {
   values: AutoFilterValues;
   onChange: (next: AutoFilterValues) => void;
   visible: boolean;
+  compact?: boolean;
 }) {
   const t = useT();
   if (!visible) return null;
@@ -31,9 +33,9 @@ export function AutoFilters({
   }
 
   return (
-    <div className="mt-4 rounded-xl border bg-slate-50 p-4">
+    <div className={`card seller-filter-advanced ${compact ? 'mt-0' : 'mt-4'} p-4`}>
       <p className="text-sm font-bold text-slate-700">{t('seller.filterAutos')}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`mt-3 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
         <label className="block">
           <span className="text-xs font-semibold text-slate-500">{t('seller.brand')}</span>
           <select

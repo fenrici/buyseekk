@@ -1,4 +1,4 @@
-import { Country, Currency, Locale, UserRole } from '@prisma/client';
+import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
 import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
@@ -15,6 +15,14 @@ export class RegisterDto {
 
   @IsEnum(UserRole)
   role!: UserRole;
+
+  @IsOptional()
+  @IsEnum(SellerType)
+  sellerType?: SellerType;
+
+  @IsOptional()
+  @IsEnum(RequestCategory)
+  sellerCategory?: RequestCategory;
 
   @IsEnum(Country)
   country!: Country;

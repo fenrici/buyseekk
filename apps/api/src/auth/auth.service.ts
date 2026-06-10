@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Country, Currency, Locale, User } from '@prisma/client';
+import { Country, Currency, Locale, User, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { defaultCurrencyForCountry, defaultLocaleForCountry } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -35,6 +36,15 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email ya registrado');
 
+    const isSeller = dto.role === UserRole.SELLER || dto.role === UserRole.BOTH;
+    if (isSeller) {
+      if (!dto.sellerType || !dto.sellerCategory) {
+        throw new BadRequestException('Los vendedores deben indicar tipo y rubro');
+      }
+    } else if (dto.sellerType || dto.sellerCategory) {
+      throw new BadRequestException('Solo los vendedores pueden indicar tipo y rubro');
+    }
+
     const locale =
       dto.locale ??
       (defaultLocaleForCountry(dto.country as 'AR' | 'US') === 'en' ? Locale.EN : Locale.ES);
@@ -49,6 +59,8 @@ export class AuthService {
         passwordHash,
         name: dto.name,
         role: dto.role,
+        sellerType: isSeller ? dto.sellerType : null,
+        sellerCategory: isSeller ? dto.sellerCategory : null,
         country: dto.country,
         locale,
         currency,

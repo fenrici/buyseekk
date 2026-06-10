@@ -70,7 +70,7 @@ export class RequestsService {
     return this.prisma.request.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true, country: true, currency: true } },
+        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
         offers: { select: { id: true, status: true } },
       },
     });
@@ -182,7 +182,7 @@ export class RequestsService {
         maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage! : null,
       },
       include: {
-        user: { select: { id: true, name: true, country: true, currency: true } },
+        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
         offers: { select: { id: true, status: true } },
       },
     });
@@ -191,7 +191,12 @@ export class RequestsService {
   }
 
   async listForSeller(
-    user: { id: string; country: Country; role: UserRole },
+    user: {
+      id: string;
+      country: Country;
+      role: UserRole;
+      sellerCategory?: RequestCategory | null;
+    },
     filters: ListRequestsQueryDto,
   ) {
     this.assertSellerRole(user.role);
@@ -210,9 +215,15 @@ export class RequestsService {
       userId: { not: user.id },
     };
 
-    if (filters.category) where.category = filters.category;
-    else if (hasAutoFilter && !hasEstateFilter && !hasZoneFilter) where.category = RequestCategory.AUTOS;
-    else if (hasEstateFilter && !hasAutoFilter && !hasZoneFilter) where.category = RequestCategory.INMOBILIARIA;
+    if (user.sellerCategory) {
+      where.category = user.sellerCategory;
+    } else if (filters.category) {
+      where.category = filters.category;
+    } else if (hasAutoFilter && !hasEstateFilter && !hasZoneFilter) {
+      where.category = RequestCategory.AUTOS;
+    } else if (hasEstateFilter && !hasAutoFilter && !hasZoneFilter) {
+      where.category = RequestCategory.INMOBILIARIA;
+    }
 
     if (filters.operation) where.operation = filters.operation;
     if (filters.location) where.location = filters.location;
@@ -247,7 +258,7 @@ export class RequestsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, name: true, country: true, currency: true } },
+          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
           offers: { select: { id: true, status: true } },
         },
       }),
@@ -330,11 +341,21 @@ export class RequestsService {
     return toPaginatedResult(sanitized, total, page, limit);
   }
 
-  async locationsForSeller(user: { country: Country; role: UserRole }) {
+  async locationsForSeller(user: {
+    country: Country;
+    role: UserRole;
+    sellerCategory?: RequestCategory | null;
+  }) {
     this.assertSellerRole(user.role);
 
+    const where: { active: boolean; country: Country; category?: RequestCategory } = {
+      active: true,
+      country: user.country,
+    };
+    if (user.sellerCategory) where.category = user.sellerCategory;
+
     const fromDb = await this.prisma.request.findMany({
-      where: { active: true, country: user.country },
+      where,
       select: { location: true },
       distinct: ['location'],
     });
@@ -356,7 +377,7 @@ export class RequestsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, name: true, country: true, currency: true } },
+          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
           offers: { select: { id: true, status: true, sellerId: true, price: true } },
         },
       }),
@@ -521,7 +542,7 @@ export class RequestsService {
         ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
       },
       include: {
-        user: { select: { id: true, name: true, country: true, currency: true } },
+        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
         offers: { select: { id: true, status: true, sellerId: true, price: true } },
       },
     });
@@ -531,12 +552,24 @@ export class RequestsService {
 
   async getOne(
     id: string,
-    viewer?: { id: string; country: Country; role: UserRole },
+    viewer?: {
+      id: string;
+      country: Country;
+      role: UserRole;
+      sellerCategory?: RequestCategory | null;
+    },
   ) {
     const req = await this.findByIdRaw(id);
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
 
     if (viewer && viewer.role !== UserRole.BUYER && req.country !== viewer.country) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    if (
+      viewer &&
+      viewer.sellerCategory &&
+      req.category !== viewer.sellerCategory
+    ) {
       throw new NotFoundException('Solicitud no encontrada');
     }
     if (viewer && req.userId === viewer.id) {

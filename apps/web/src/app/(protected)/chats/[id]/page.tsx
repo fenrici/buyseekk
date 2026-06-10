@@ -18,8 +18,8 @@ export default function ChatDetailPage() {
   if (!user) return null;
 
   return (
-    <>
-      <Header />
+    <div className="panel-dark">
+      <Header variant="dark" />
       <main className="mx-auto max-w-2xl px-4 py-6">
         <Link href="/chats" className="text-sm font-semibold text-indigo-600 hover:underline">
           {t('chat.back')}
@@ -29,6 +29,6 @@ export default function ChatDetailPage() {
           {offerId && <RatingPanel offerId={offerId} />}
         </div>
       </main>
-    </>
+    </div>
   );
 }

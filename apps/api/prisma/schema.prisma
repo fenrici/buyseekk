@@ -13,6 +13,11 @@ enum UserRole {
   BOTH
 }
 
+enum SellerType {
+  PERSONAL
+  BUSINESS
+}
+
 enum Country {
   AR
   US
@@ -54,10 +59,18 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
-  role         UserRole @default(BOTH)
-  country      Country
-  locale       Locale
-  currency     Currency
+  role            UserRole         @default(BOTH)
+  sellerType      SellerType?
+  sellerCategory  RequestCategory?
+  country         Country
+  locale          Locale
+  currency        Currency
+  avatarUrl       String?
+  bio             String?
+  businessName    String?
+  phone           String?
+  website         String?
+  city            String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

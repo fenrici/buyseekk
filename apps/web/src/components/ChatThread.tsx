@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { api, getToken } from '@/lib/api';
 import { dateLocale, useLocale, useT } from '@/lib/i18n';
 import { getChatSocket } from '@/lib/socket';
 import { ChatDetail, ChatMessage } from '@/lib/types';
+import { Avatar } from './Avatar';
 
 function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
   const d = new Date(iso);
@@ -15,10 +17,6 @@ function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
     return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
   }
   return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-
-function initials(name: string) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
 function appendMessage(prev: ChatDetail | null, msg: ChatMessage): ChatDetail | null {
@@ -160,13 +158,15 @@ export function ChatThread({
   }
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] min-h-[28rem] flex-col rounded-xl border bg-white shadow-sm">
+    <div className="card flex h-[calc(100vh-12rem)] min-h-[28rem] flex-col overflow-hidden p-0">
       <div className="flex items-center gap-3 border-b px-4 py-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-          {initials(chat.partner.name)}
-        </div>
+        <Link href={`/users/${chat.partner.id}`} className="shrink-0">
+          <Avatar name={chat.partner.name} url={chat.partner.avatarUrl} size={40} />
+        </Link>
         <div className="flex-1">
-          <p className="font-semibold">{chat.partner.name}</p>
+          <Link href={`/users/${chat.partner.id}`} className="font-semibold hover:underline">
+            {chat.partner.name}
+          </Link>
           <p className="text-xs text-slate-500">{chat.requestTitle}</p>
         </div>
         <span className={`text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>

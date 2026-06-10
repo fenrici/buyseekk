@@ -1,10 +1,12 @@
-import { Country, Currency, Locale, UserRole } from '@prisma/client';
+import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
 
 export type AuthUser = {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  sellerType?: SellerType | null;
+  sellerCategory?: RequestCategory | null;
   country: Country;
   locale: Locale;
   currency: Currency;

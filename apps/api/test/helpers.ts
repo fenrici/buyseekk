@@ -45,11 +45,18 @@ export async function registerUser(
     name: string;
     role: 'BUYER' | 'SELLER' | 'BOTH';
     country: 'AR' | 'US';
+    sellerType?: 'PERSONAL' | 'BUSINESS';
+    sellerCategory?: 'AUTOS' | 'INMOBILIARIA';
   },
 ): Promise<AuthResponse> {
+  const body = { ...payload };
+  if (body.role === 'SELLER' || body.role === 'BOTH') {
+    if (!body.sellerType) body.sellerType = 'BUSINESS';
+    if (!body.sellerCategory) body.sellerCategory = 'AUTOS';
+  }
   const res = await request(app.getHttpServer())
     .post('/api/auth/register')
-    .send(payload)
+    .send(body)
     .expect(201);
   return res.body;
 }

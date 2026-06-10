@@ -152,8 +152,8 @@ export class RatingsService {
       },
       include: {
         chat: { select: { id: true } },
-        seller: { select: { id: true, name: true } },
-        request: { include: { user: { select: { id: true, name: true } } } },
+        seller: { select: { id: true, name: true, avatarUrl: true } },
+        request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
       },
       orderBy: { acceptedAt: 'desc' },
     });
@@ -173,8 +173,8 @@ export class RatingsService {
           requestTitle: o.requestTitle,
           chatId: o.chat?.id,
           partner: isBuyer
-            ? { id: o.seller.id, name: o.seller.name, role: 'seller' as const }
-            : { id: o.request.user.id, name: o.request.user.name, role: 'buyer' as const },
+            ? { id: o.seller.id, name: o.seller.name, avatarUrl: o.seller.avatarUrl, role: 'seller' as const }
+            : { id: o.request.user.id, name: o.request.user.name, avatarUrl: o.request.user.avatarUrl, role: 'buyer' as const },
           myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
         };
       });
@@ -188,7 +188,7 @@ export class RatingsService {
     const { offer, isBuyer, toUserId, chat } = await this.getOfferContext(offerId, userId);
     const partner = await this.prisma.user.findUnique({
       where: { id: toUserId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, avatarUrl: true },
     });
     if (!partner) throw new NotFoundException();
 

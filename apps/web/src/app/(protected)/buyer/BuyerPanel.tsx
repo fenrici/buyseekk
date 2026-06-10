@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, normalizePaginated } from '@/lib/api';
 import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
+import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { CompareBlock } from '@/components/CompareBlock';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -163,11 +164,21 @@ export function BuyerPanel() {
                   <div>
                     <h2 className="font-bold">{o.requestTitle}</h2>
                     <div className="mt-2 flex items-center gap-3">
-                      <div className="avatar text-xs">
-                        {(o.seller?.name ?? '?').split(' ').map((w) => w[0]).join('').slice(0, 2)}
-                      </div>
+                      {o.seller ? (
+                        <Link href={`/users/${o.seller.id}`} className="shrink-0">
+                          <Avatar name={o.seller.name} url={o.seller.avatarUrl} size={36} />
+                        </Link>
+                      ) : (
+                        <Avatar name="?" size={36} />
+                      )}
                       <div>
-                        <p className="text-sm font-semibold">{o.seller?.name ?? '—'}</p>
+                        {o.seller ? (
+                          <Link href={`/users/${o.seller.id}`} className="text-sm font-semibold hover:underline">
+                            {o.seller.businessName || o.seller.name}
+                          </Link>
+                        ) : (
+                          <p className="text-sm font-semibold">—</p>
+                        )}
                         <UserRatingBadge stats={o.seller?.rating} compact />
                       </div>
                     </div>

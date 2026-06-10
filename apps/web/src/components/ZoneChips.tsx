@@ -26,11 +26,12 @@ export function ZoneChips({
   const zones = zonesForCountryAndCity(country, city);
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="explore-pills mt-2">
       <button
         type="button"
         onClick={() => onChange('')}
-        className={`rounded-full px-4 py-2 text-sm font-semibold ${value === '' ? 'bg-amber-600 text-white' : 'border bg-white'}`}
+        className={`explore-pill ${value === '' ? 'active' : ''}`}
+        aria-pressed={value === ''}
       >
         {t('seller.allZones')}
       </button>
@@ -39,7 +40,8 @@ export function ZoneChips({
           key={z}
           type="button"
           onClick={() => onChange(z)}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${value === z ? 'bg-amber-600 text-white' : 'border bg-white'}`}
+          className={`explore-pill ${value === z ? 'active' : ''}`}
+          aria-pressed={value === z}
         >
           {z}
         </button>

@@ -1,6 +1,7 @@
 import {
   PrismaClient,
   UserRole,
+  SellerType,
   Country,
   Currency,
   Locale,
@@ -304,12 +305,17 @@ async function main() {
 
   const seller = await prisma.user.upsert({
     where: { email: 'vendedor@buyseekk.com' },
-    update: {},
+    update: {
+      sellerType: SellerType.BUSINESS,
+      sellerCategory: RequestCategory.AUTOS,
+    },
     create: {
       email: 'vendedor@buyseekk.com',
       passwordHash,
       name: 'Luxury Motors Miami',
       role: UserRole.SELLER,
+      sellerType: SellerType.BUSINESS,
+      sellerCategory: RequestCategory.AUTOS,
       country: Country.US,
       locale: Locale.EN,
       currency: Currency.USD,

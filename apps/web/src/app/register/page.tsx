@@ -19,6 +19,8 @@ export default function RegisterPage() {
     password: '',
     name: '',
     role: 'BUYER',
+    sellerType: 'PERSONAL',
+    sellerCategory: 'AUTOS',
     country: 'AR',
     currency: 'ARS',
   });
@@ -29,6 +31,10 @@ export default function RegisterPage() {
     setForm((f) => {
       const next = { ...f, [field]: value };
       if (field === 'country' && value === 'US') next.currency = 'USD';
+      if (field === 'role' && value === 'BUYER') {
+        next.sellerType = 'PERSONAL';
+        next.sellerCategory = 'AUTOS';
+      }
       return next;
     });
   }
@@ -39,9 +45,21 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
+      const payload: Record<string, string> = {
+        email: form.email,
+        password: form.password,
+        name: form.name,
+        role: form.role,
+        country: form.country,
+        currency: form.currency,
+      };
+      if (form.role === 'SELLER') {
+        payload.sellerType = form.sellerType;
+        payload.sellerCategory = form.sellerCategory;
+      }
       const res = await api<{ token: string; user: User }>('/auth/register', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       setToken(res.token);
       setStoredLocale(res.user.locale);
@@ -55,7 +73,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="auth-portal auth-portal--register">
+    <main className={`auth-portal auth-portal--register${form.role === 'SELLER' ? ' auth-portal--register-seller' : ''}`}>
       <section className="auth-portal-screen">
         <div className="portal-bg" aria-hidden="true" />
         <div className="portal-overlay" aria-hidden="true" />
@@ -116,20 +134,72 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
-                <div className="auth-field">
-                  <label htmlFor="register-role" className="auth-label">
+                <div className="auth-field" role="group" aria-labelledby="register-role-label">
+                  <span id="register-role-label" className="auth-label">
                     {t('auth.role')}
-                  </label>
-                  <select
-                    id="register-role"
-                    className="auth-input auth-select"
-                    value={form.role}
-                    onChange={(e) => update('role', e.target.value)}
-                  >
-                    <option value="BUYER">{t('auth.roleBuyer')}</option>
-                    <option value="SELLER">{t('auth.roleSeller')}</option>
-                  </select>
+                  </span>
+                  <div className="auth-option-row">
+                    <button
+                      type="button"
+                      className={`auth-option-btn ${form.role === 'BUYER' ? 'active' : ''}`}
+                      aria-pressed={form.role === 'BUYER'}
+                      onClick={() => update('role', 'BUYER')}
+                    >
+                      {t('auth.roleBuyer')}
+                    </button>
+                    <button
+                      type="button"
+                      className={`auth-option-btn ${form.role === 'SELLER' ? 'active' : ''}`}
+                      aria-pressed={form.role === 'SELLER'}
+                      onClick={() => update('role', 'SELLER')}
+                    >
+                      {t('auth.roleSeller')}
+                    </button>
+                  </div>
                 </div>
+                {form.role === 'SELLER' && (
+                  <div className="auth-seller-panel">
+                    <div className="auth-seller-row">
+                      <span className="auth-seller-row-label">{t('auth.sellerType')}</span>
+                      <div className="auth-option-row auth-option-row--compact">
+                        <button
+                          type="button"
+                          className={`auth-option-btn ${form.sellerType === 'PERSONAL' ? 'active' : ''}`}
+                          onClick={() => update('sellerType', 'PERSONAL')}
+                        >
+                          {t('auth.sellerTypePersonal')}
+                        </button>
+                        <button
+                          type="button"
+                          className={`auth-option-btn ${form.sellerType === 'BUSINESS' ? 'active' : ''}`}
+                          onClick={() => update('sellerType', 'BUSINESS')}
+                        >
+                          {t('auth.sellerTypeBusiness')}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="auth-seller-row">
+                      <span className="auth-seller-row-label">{t('auth.sellerCategory')}</span>
+                      <div className="auth-option-row auth-option-row--compact">
+                        <button
+                          type="button"
+                          className={`auth-option-btn ${form.sellerCategory === 'AUTOS' ? 'active' : ''}`}
+                          onClick={() => update('sellerCategory', 'AUTOS')}
+                        >
+                          {t('seller.autos')}
+                        </button>
+                        <button
+                          type="button"
+                          className={`auth-option-btn ${form.sellerCategory === 'INMOBILIARIA' ? 'active' : ''}`}
+                          onClick={() => update('sellerCategory', 'INMOBILIARIA')}
+                        >
+                          {t('seller.realEstate')}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="auth-seller-hint">{t('auth.sellerCategoryHint')}</p>
+                  </div>
+                )}
                 <div className="auth-field-grid auth-field-grid--register">
                   <div className="auth-field">
                     <label htmlFor="register-country" className="auth-label">

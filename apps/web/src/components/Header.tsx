@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, clearToken, normalizePaginated } from '@/lib/api';
+import { Avatar } from '@/components/Avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { clearStoredLocale, useT } from '@/lib/i18n';
 import { PaginatedResult, PendingRatingItem } from '@/lib/types';
@@ -72,6 +73,11 @@ export function Header({ variant = 'light' }: HeaderProps) {
           )}
         </Link>
       )}
+      {!loading && user && (
+        <Link href="/profile" className={`md:hidden ${navLinkCls}`} onClick={() => setMenuOpen(false)}>
+          {t('nav.profile')}
+        </Link>
+      )}
     </>
   );
 
@@ -105,9 +111,16 @@ export function Header({ variant = 'light' }: HeaderProps) {
         <div className="flex items-center gap-2">
           {!loading && user ? (
             <>
-              <span className={`hidden text-sm sm:inline ${dark ? 'text-slate-400' : 'text-[var(--text-muted)]'}`}>
-                {user.name}
-              </span>
+              <Link
+                href="/profile"
+                className={`hidden items-center gap-2 text-sm transition sm:flex ${
+                  dark ? 'text-slate-400 hover:text-indigo-300' : 'text-[var(--text-muted)] hover:text-[var(--primary)]'
+                }`}
+                title={t('nav.profile')}
+              >
+                <Avatar name={user.name} url={user.avatarUrl} size={30} />
+                <span>{user.name}</span>
+              </Link>
               {user.role === 'BOTH' && (
                 <div className="hidden gap-1 sm:flex">
                   <Link href="/buyer" className="btn btn-ghost px-2 py-1 text-xs">{t('nav.buyer')}</Link>
