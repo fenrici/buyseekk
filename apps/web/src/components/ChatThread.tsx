@@ -34,10 +34,14 @@ export function ChatThread({
   chatId,
   onLoaded,
   className,
+  keyboardOpen = false,
+  hideHeaderOnMobile = false,
 }: {
   chatId: string;
   onLoaded?: (chat: ChatDetail) => void;
   className?: string;
+  keyboardOpen?: boolean;
+  hideHeaderOnMobile?: boolean;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -47,7 +51,6 @@ export function ChatThread({
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [live, setLive] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const skipScrollRef = useRef(false);
@@ -60,6 +63,11 @@ export function ChatThread({
     } else {
       el.scrollTop = el.scrollHeight;
     }
+  }
+
+  function scrollToBottomAfterFocus() {
+    scrollMessagesToBottom('auto');
+    requestAnimationFrame(() => scrollMessagesToBottom('auto'));
   }
 
   useEffect(() => {
@@ -101,16 +109,23 @@ export function ChatThread({
       skipScrollRef.current = false;
       return;
     }
-    scrollMessagesToBottom(inputFocused ? 'auto' : 'smooth');
-  }, [chat?.messages.length, inputFocused]);
+    scrollMessagesToBottom(keyboardOpen ? 'auto' : 'smooth');
+  }, [chat?.messages.length, keyboardOpen]);
 
   useEffect(() => {
-    if (!inputFocused || typeof window === 'undefined') return;
+    if (!keyboardOpen) return;
+    scrollMessagesToBottom('auto');
+  }, [keyboardOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     const vv = window.visualViewport;
     if (!vv) return;
 
     function onViewportChange() {
-      scrollMessagesToBottom('auto');
+      if (document.activeElement === inputRef.current) {
+        scrollMessagesToBottom('auto');
+      }
     }
 
     vv.addEventListener('resize', onViewportChange);
@@ -119,7 +134,7 @@ export function ChatThread({
       vv.removeEventListener('resize', onViewportChange);
       vv.removeEventListener('scroll', onViewportChange);
     };
-  }, [inputFocused]);
+  }, []);
 
   async function loadOlderMessages() {
     if (!chat?.messagesMeta?.hasOlderPage || loadingOlder) return;
@@ -182,30 +197,32 @@ export function ChatThread({
 
   if (!chat) {
     return (
-      <div className="flex h-96 items-center justify-center text-slate-500">
+      <div className="chat-thread chat-thread--loading flex flex-1 items-center justify-center text-slate-500">
         {error || t('chat.loading')}
       </div>
     );
   }
 
   return (
-    <div className={`chat-thread card flex min-h-0 flex-col overflow-hidden p-0 ${className ?? 'flex-1'}`}>
-      <div className="flex items-center gap-3 border-b px-4 py-3">
+    <div
+      className={`chat-thread card flex min-h-0 flex-col overflow-hidden p-0 ${className ?? 'flex-1'} ${hideHeaderOnMobile ? 'chat-thread--mobile-fullscreen' : ''}`}
+    >
+      <div className={`chat-thread__header flex shrink-0 items-center gap-3 border-b px-4 py-3 ${hideHeaderOnMobile ? 'max-md:hidden' : ''}`}>
         <Link href={`/users/${chat.partner.id}`} className="shrink-0">
           <Avatar name={chat.partner.name} url={chat.partner.avatarUrl} size={40} />
         </Link>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Link href={`/users/${chat.partner.id}`} className="font-semibold hover:underline">
             {chat.partner.name}
           </Link>
-          <p className="text-xs text-slate-500">{chat.requestTitle}</p>
+          <p className="truncate text-xs text-slate-500">{chat.requestTitle}</p>
         </div>
-        <span className={`text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <span className={`shrink-0 text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>
           {live ? t('chat.live') : t('chat.reconnecting')}
         </span>
       </div>
 
-      <div ref={messagesRef} className="chat-thread__messages min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4">
+      <div ref={messagesRef} className="chat-thread__messages space-y-3 p-4">
         {chat.messagesMeta?.hasOlderPage && (
           <div className="flex justify-center">
             <button
@@ -230,7 +247,7 @@ export function ChatThread({
           return (
             <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] px-4 py-2 ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}`}>
-                <p className="text-sm">{m.text}</p>
+                <p className="text-sm break-words">{m.text}</p>
                 <p className={`mt-1 text-[10px] ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}>
                   {formatTime(m.createdAt, locale)}
                 </p>
@@ -240,30 +257,23 @@ export function ChatThread({
         })}
       </div>
 
-      {error && <p className="shrink-0 px-4 text-xs text-red-600">{error}</p>}
+      {error && <p className="chat-thread__error shrink-0 px-4 text-xs text-red-600">{error}</p>}
 
-      <form onSubmit={handleSend} className="chat-thread__input flex shrink-0 gap-2 border-t p-4">
+      <form onSubmit={handleSend} className="chat-thread__composer">
         <input
           ref={inputRef}
           type="text"
           enterKeyHint="send"
           autoComplete="off"
           autoCorrect="on"
-          className="input flex-1"
+          className="input chat-thread__composer-input"
           placeholder={t('chat.placeholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onFocus={() => {
-            setInputFocused(true);
-            scrollMessagesToBottom('auto');
-            requestAnimationFrame(() => scrollMessagesToBottom('auto'));
-            setTimeout(() => scrollMessagesToBottom('auto'), 120);
-            setTimeout(() => scrollMessagesToBottom('auto'), 320);
-          }}
-          onBlur={() => setInputFocused(false)}
+          onFocus={scrollToBottomAfterFocus}
           maxLength={2000}
         />
-        <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary">
+        <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary chat-thread__composer-send">
           {t('chat.send')}
         </button>
       </form>
