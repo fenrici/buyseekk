@@ -6,6 +6,7 @@ import { api, normalizePaginated } from '@/lib/api';
 import { PaginatedResult, RequestItem } from '@/lib/types';
 import { BuyerPanelTabs } from '@/components/BuyerPanelTabs';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { CreateRequestForm } from '@/components/CreateRequestForm';
 import { RequestCard } from '@/components/RequestCard';
@@ -26,6 +27,7 @@ export function BuyerPanel() {
   const [mineScope, setMineScope] = useState<MineScope>('open');
   const [mineMeta, setMineMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
+  const [mineLoading, setMineLoading] = useState(false);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -48,8 +50,19 @@ export function BuyerPanel() {
 
   useEffect(() => {
     if (!user || tab !== 'mine') return;
+    let cancelled = false;
     setError('');
-    loadMine(minePage, mineScope).catch((e) => setError(e instanceof Error ? e.message : t('common.error')));
+    setMineLoading(true);
+    loadMine(minePage, mineScope)
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : t('common.error'));
+      })
+      .finally(() => {
+        if (!cancelled) setMineLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [tab, user, minePage, mineScope]);
 
   function changeScope(scope: MineScope) {
@@ -125,8 +138,11 @@ export function BuyerPanel() {
                 </button>
               ))}
             </div>
-            {myRequests.length === 0 && <p className="text-slate-500">{t('buyer.noRequests')}</p>}
-            {myRequests.map((r) => (
+            <PanelListLoading loading={mineLoading} />
+            {!mineLoading && myRequests.length === 0 && (
+              <p className="text-slate-500">{t('buyer.noRequests')}</p>
+            )}
+            {!mineLoading && myRequests.map((r) => (
               <RequestCard
                 key={r.id}
                 variant="buyer"
@@ -138,13 +154,15 @@ export function BuyerPanel() {
                 onUpdated={() => loadMine(minePage)}
               />
             ))}
-            <PaginationControls
-              page={mineMeta.page}
-              totalPages={mineMeta.totalPages}
-              total={mineMeta.total}
-              onPageChange={setMinePage}
-              itemLabel={t('buyer.tabMine').toLowerCase()}
-            />
+            {!mineLoading && (
+              <PaginationControls
+                page={mineMeta.page}
+                totalPages={mineMeta.totalPages}
+                total={mineMeta.total}
+                onPageChange={setMinePage}
+                itemLabel={t('buyer.tabMine').toLowerCase()}
+              />
+            )}
           </div>
         )}
       </main>

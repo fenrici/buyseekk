@@ -6,6 +6,7 @@ import { api, normalizePaginated } from '@/lib/api';
 import { ChatPreview, PaginatedResult } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { dateLocale, useLocale, useT } from '@/lib/i18n';
@@ -29,16 +30,28 @@ export default function ChatsPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
+    setLoading(true);
     api<PaginatedResult<ChatPreview> | ChatPreview[]>(`/chats?page=${page}`)
       .then((raw) => {
+        if (cancelled) return;
         const res = normalizePaginated(raw);
         setChats(res.items);
         setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, page]);
 
   if (!user) return null;
@@ -53,39 +66,44 @@ export default function ChatsPage() {
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-3">
-          {chats.length === 0 && (
-            <div className="card empty-state p-8">
-              <p className="text-4xl">💬</p>
-              <p className="mt-3">{t('chat.empty')}</p>
-              <p className="mt-1 text-sm">{t('chat.emptyHint')}</p>
-            </div>
-          )}
-          {chats.map((c) => (
-            <Link
-              key={c.id}
-              href={`/chats/${c.id}`}
-              className="card flex items-center gap-4 p-4 transition hover:border-indigo-200"
-            >
-              <Avatar name={c.partner.name} url={c.partner.avatarUrl} size={48} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate font-semibold">{c.partner.name}</p>
-                  <span className="flex-shrink-0 text-xs text-slate-400">{formatTime(c.updatedAt, locale)}</span>
+          <PanelListLoading loading={loading} />
+          {!loading && (
+            <>
+              {chats.length === 0 && (
+                <div className="card empty-state p-8">
+                  <p className="text-4xl">💬</p>
+                  <p className="mt-3">{t('chat.empty')}</p>
+                  <p className="mt-1 text-sm">{t('chat.emptyHint')}</p>
                 </div>
-                <p className="truncate text-xs text-indigo-600">{c.requestTitle}</p>
-                {c.lastMessage && (
-                  <p className="mt-1 truncate text-sm text-slate-500">{c.lastMessage.text}</p>
-                )}
-              </div>
-            </Link>
-          ))}
-          <PaginationControls
-            page={meta.page}
-            totalPages={meta.totalPages}
-            total={meta.total}
-            onPageChange={setPage}
-            itemLabel={t('nav.messages').toLowerCase()}
-          />
+              )}
+              {chats.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/chats/${c.id}`}
+                  className="card flex items-center gap-4 p-4 transition hover:border-indigo-200"
+                >
+                  <Avatar name={c.partner.name} url={c.partner.avatarUrl} size={48} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate font-semibold">{c.partner.name}</p>
+                      <span className="flex-shrink-0 text-xs text-slate-400">{formatTime(c.updatedAt, locale)}</span>
+                    </div>
+                    <p className="truncate text-xs text-indigo-600">{c.requestTitle}</p>
+                    {c.lastMessage && (
+                      <p className="mt-1 truncate text-sm text-slate-500">{c.lastMessage.text}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+              <PaginationControls
+                page={meta.page}
+                totalPages={meta.totalPages}
+                total={meta.total}
+                onPageChange={setPage}
+                itemLabel={t('nav.messages').toLowerCase()}
+              />
+            </>
+          )}
         </div>
       </main>
     </div>

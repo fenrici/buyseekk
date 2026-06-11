@@ -2360,6 +2360,14 @@ html:has(.panel-dark) body {
   transform: scale(0.99);
 }
 
+.panel-list-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  min-height: 160px;
+}
+
 /* Mobile bottom navigation (< 768px) */
 .mobile-bottom-nav {
   display: block;

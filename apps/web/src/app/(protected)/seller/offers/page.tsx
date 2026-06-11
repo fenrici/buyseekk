@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, normalizePaginated } from '@/lib/api';
 import { OfferItem, PaginatedResult } from '@/lib/types';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { SellerSentOfferCard } from '@/components/SellerSentOfferCard';
 import { SellerSubnav } from '@/components/SellerSubnav';
@@ -17,17 +18,29 @@ export default function SellerOffersPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setError('');
+    setLoading(true);
     api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/sent?page=${page}`)
       .then((raw) => {
+        if (cancelled) return;
         const data = normalizePaginated(raw);
         setOffers(data.items);
         setMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.error')));
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : t('common.error'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, page, t]);
 
   if (!user) return null;
@@ -56,24 +69,29 @@ export default function SellerOffersPage() {
           )}
 
           <div className="mt-6 space-y-6">
-            {offers.length === 0 && !error && (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
-                <p className="text-slate-400">{t('seller.noSent')}</p>
-                <p className="mt-2 text-sm text-slate-500">{t('seller.noSentHint')}</p>
-              </div>
+            <PanelListLoading loading={loading} />
+            {!loading && (
+              <>
+                {offers.length === 0 && !error && (
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
+                    <p className="text-slate-400">{t('seller.noSent')}</p>
+                    <p className="mt-2 text-sm text-slate-500">{t('seller.noSentHint')}</p>
+                  </div>
+                )}
+
+                {offers.map((o) => (
+                  <SellerSentOfferCard key={o.id} offer={o} />
+                ))}
+
+                <PaginationControls
+                  page={meta.page}
+                  totalPages={meta.totalPages}
+                  total={meta.total}
+                  onPageChange={setPage}
+                  itemLabel={t('seller.sentTitle').toLowerCase()}
+                />
+              </>
             )}
-
-            {offers.map((o) => (
-              <SellerSentOfferCard key={o.id} offer={o} />
-            ))}
-
-            <PaginationControls
-              page={meta.page}
-              totalPages={meta.totalPages}
-              total={meta.total}
-              onPageChange={setPage}
-              itemLabel={t('seller.sentTitle').toLowerCase()}
-            />
           </div>
         </section>
       </main>

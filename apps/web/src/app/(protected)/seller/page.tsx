@@ -8,6 +8,7 @@ import { AutoFilterValues } from '@/components/AutoFilters';
 import { RealEstateFilterValues } from '@/components/RealEstateFilters';
 import { SellerFiltersPanel } from '@/components/SellerFiltersPanel';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { RequestCard } from '@/components/RequestCard';
 import { SellerSubnav } from '@/components/SellerSubnav';
 import { useAuth } from '@/providers/AuthProvider';
@@ -37,9 +38,11 @@ export default function SellerPage() {
     maxMileage: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function load(pageNum = page) {
     if (!user) return;
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       params.set('page', String(pageNum));
@@ -72,6 +75,8 @@ export default function SellerPage() {
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -184,22 +189,27 @@ export default function SellerPage() {
                 )}
               </div>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {requests.map((r) => (
-              <RequestCard key={r.id} variant="seller" request={r} locale={user.locale} />
-            ))}
-          </div>
-          {requests.length === 0 && (
-            <p className="mt-4 text-slate-500">
-              {hasActiveFilters
-                ? t('seller.noAutoRequests')
-                : location
-                  ? t('seller.noRequestsCity')
-                  : t('seller.noRequests')}
-            </p>
+          <PanelListLoading loading={loading} />
+          {!loading && (
+            <>
+              <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {requests.map((r) => (
+                  <RequestCard key={r.id} variant="seller" request={r} locale={user.locale} />
+                ))}
+              </div>
+              {requests.length === 0 && (
+                <p className="mt-4 text-slate-500">
+                  {hasActiveFilters
+                    ? t('seller.noAutoRequests')
+                    : location
+                      ? t('seller.noRequestsCity')
+                      : t('seller.noRequests')}
+                </p>
+              )}
+            </>
           )}
 
-          {totalPages > 1 && (
+          {!loading && totalPages > 1 && (
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
               <p className="text-sm text-slate-500">
                 {t('seller.pageInfo', { page: String(page), totalPages: String(totalPages), total: String(total) })}

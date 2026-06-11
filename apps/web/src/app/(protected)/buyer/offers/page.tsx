@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, normalizePaginated } from '@/lib/api';
 import { OfferHighlight, OfferItem, PaginatedResult } from '@/lib/types';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { OfferHighlightsSummary } from '@/components/OfferHighlightsSummary';
 import { OfferReceivedCard } from '@/components/OfferReceivedCard';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -20,21 +21,33 @@ export default function BuyerOffersPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setError('');
+    setLoading(true);
     Promise.all([
       api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/received?page=${page}`),
       api<{ highlights: OfferHighlight[] }>('/offers/received/highlights'),
     ])
       .then(([raw, highlightsRes]) => {
+        if (cancelled) return;
         const data = normalizePaginated(raw);
         setOffers(data.items);
         setMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
         setOfferHighlights(highlightsRes.highlights ?? []);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('common.error')));
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : t('common.error'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, page, t]);
 
   async function refresh() {
@@ -91,42 +104,47 @@ export default function BuyerOffersPage() {
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-6">
-          {offerHighlights.length > 0 && (
-            <OfferHighlightsSummary
-              highlights={offerHighlights}
-              onAccept={accept}
-              onReject={reject}
-            />
+          <PanelListLoading loading={loading} />
+          {!loading && (
+            <>
+              {offerHighlights.length > 0 && (
+                <OfferHighlightsSummary
+                  highlights={offerHighlights}
+                  onAccept={accept}
+                  onReject={reject}
+                />
+              )}
+
+              {otherOffers.length > 0 && offerHighlights.length > 0 && (
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                  {t('highlights.allOffers')}
+                </h2>
+              )}
+
+              {offers.length === 0 && !error && (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
+                  <p className="text-slate-400">{t('buyer.noOffers')}</p>
+                </div>
+              )}
+
+              {otherOffers.map((o) => (
+                <OfferReceivedCard
+                  key={o.id}
+                  offer={o}
+                  onAccept={accept}
+                  onReject={reject}
+                />
+              ))}
+
+              <PaginationControls
+                page={meta.page}
+                totalPages={meta.totalPages}
+                total={meta.total}
+                onPageChange={setPage}
+                itemLabel={t('buyer.tabOffers').toLowerCase()}
+              />
+            </>
           )}
-
-          {otherOffers.length > 0 && offerHighlights.length > 0 && (
-            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-              {t('highlights.allOffers')}
-            </h2>
-          )}
-
-          {offers.length === 0 && !error && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
-              <p className="text-slate-400">{t('buyer.noOffers')}</p>
-            </div>
-          )}
-
-          {otherOffers.map((o) => (
-            <OfferReceivedCard
-              key={o.id}
-              offer={o}
-              onAccept={accept}
-              onReject={reject}
-            />
-          ))}
-
-          <PaginationControls
-            page={meta.page}
-            totalPages={meta.totalPages}
-            total={meta.total}
-            onPageChange={setPage}
-            itemLabel={t('buyer.tabOffers').toLowerCase()}
-          />
         </div>
       </main>
     </div>
