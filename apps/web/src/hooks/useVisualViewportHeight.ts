@@ -2,7 +2,12 @@
 
 import { useEffect } from 'react';
 
-/** Sincroniza --app-vh con el visual viewport (teclado mobile). */
+const LOCK_CLASS = 'chat-viewport-lock';
+
+/**
+ * Sincroniza --app-vh / --app-vt con visualViewport (teclado iOS/Android)
+ * y bloquea scroll del documento mientras el chat está abierto.
+ */
 export function useVisualViewportHeight(enabled = true) {
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
@@ -12,22 +17,28 @@ export function useVisualViewportHeight(enabled = true) {
     function apply() {
       const vv = window.visualViewport;
       const height = vv?.height ?? window.innerHeight;
+      const top = vv?.offsetTop ?? 0;
       root.style.setProperty('--app-vh', `${height}px`);
-      if (vv && vv.offsetTop > 0) {
-        window.scrollTo(0, 0);
-      }
+      root.style.setProperty('--app-vt', `${top}px`);
     }
 
+    root.classList.add(LOCK_CLASS);
     apply();
-    window.visualViewport?.addEventListener('resize', apply);
-    window.visualViewport?.addEventListener('scroll', apply);
+
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', apply);
+    vv?.addEventListener('scroll', apply);
     window.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', apply);
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', apply);
-      window.visualViewport?.removeEventListener('scroll', apply);
+      vv?.removeEventListener('resize', apply);
+      vv?.removeEventListener('scroll', apply);
       window.removeEventListener('resize', apply);
+      window.removeEventListener('orientationchange', apply);
+      root.classList.remove(LOCK_CLASS);
       root.style.removeProperty('--app-vh');
+      root.style.removeProperty('--app-vt');
     };
   }, [enabled]);
 }
