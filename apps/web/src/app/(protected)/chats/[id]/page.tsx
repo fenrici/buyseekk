@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ChatThread } from '@/components/ChatThread';
 import { RatingPanel } from '@/components/RatingPanel';
+import { useVisualViewportHeight } from '@/hooks/useVisualViewportHeight';
 import { useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -16,16 +17,36 @@ export default function ChatDetailPage() {
   const [offerId, setOfferId] = useState<string | null>(null);
   const [showRating, setShowRating] = useState(false);
 
+  useVisualViewportHeight(true);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   if (!user) return null;
 
   return (
-    <div className="panel-dark flex h-[100dvh] flex-col overflow-hidden">
-      <Header variant="dark" />
-      <main className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col overflow-hidden px-4 py-4">
-        <Link href="/chats" className="shrink-0 text-sm font-semibold text-indigo-400 hover:underline">
+    <div className="chat-detail-screen panel-dark flex flex-col overflow-hidden">
+      <div className="chat-detail-screen__header max-md:hidden">
+        <Header variant="dark" />
+      </div>
+      <header className="chat-detail-mobile-bar md:hidden">
+        <Link href="/chats" className="chat-detail-mobile-bar__back">
+          ← {t('chat.back')}
+        </Link>
+      </header>
+      <main className="chat-detail-screen__main mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden px-4 py-3 md:py-4">
+        <Link
+          href="/chats"
+          className="chat-detail-back-desktop shrink-0 text-sm font-semibold text-indigo-400 hover:underline"
+        >
           {t('chat.back')}
         </Link>
-        <div className="mt-3 flex min-h-0 flex-1 flex-col gap-2">
+        <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2 md:mt-3">
           <ChatThread
             chatId={id}
             className="min-h-0 flex-1"

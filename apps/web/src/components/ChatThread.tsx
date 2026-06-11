@@ -231,7 +231,7 @@ export function ChatThread({
 
       {error && <p className="shrink-0 px-4 text-xs text-red-600">{error}</p>}
 
-      <form onSubmit={handleSend} className="flex shrink-0 gap-2 border-t p-4">
+      <form onSubmit={handleSend} className="chat-thread-input flex shrink-0 gap-2 border-t p-4">
         <input
           ref={inputRef}
           className="input flex-1"
@@ -241,6 +241,7 @@ export function ChatThread({
           onFocus={() => {
             inputFocusedRef.current = true;
             scrollMessagesToBottom('auto');
+            requestAnimationFrame(() => scrollMessagesToBottom('auto'));
           }}
           onBlur={() => {
             inputFocusedRef.current = false;

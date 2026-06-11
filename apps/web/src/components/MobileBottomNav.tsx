@@ -150,6 +150,9 @@ export function MobileBottomNav() {
 
   if (!user || !context) return null;
 
+  // Chat activo: pantalla completa sin bottom nav (evita saltos con el teclado).
+  if (pathname.startsWith('/chats/')) return null;
+
   const tabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
 
   return (
