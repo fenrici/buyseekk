@@ -17,7 +17,7 @@ export function UserRatingBadge({ stats, compact }: { stats?: Stats; compact?: b
   const hasFlags = stats.noResponseCount > 0;
 
   if (!hasReviews && !hasFlags) {
-    return <span className="text-xs text-slate-400">{t('rating.noRatings')}</span>;
+    return <span className={`block text-slate-400 ${compact ? 'text-xs' : 'text-sm'}`}>{t('rating.noRatings')}</span>;
   }
 
   return (

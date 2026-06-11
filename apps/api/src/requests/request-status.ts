@@ -5,8 +5,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Estado visible de una solicitud. ACTIVA/NEGOCIANDO/CERRADA se almacenan;
- * INACTIVA (7 días sin actividad) y ARCHIVADA (30 días) se derivan de
- * lastActivityAt, así "Seguir buscando" reabre con solo tocar la fecha.
+ * INACTIVA (10 días sin actividad, oculta a vendedores) y ARCHIVADA (30 días)
+ * se derivan de lastActivityAt; "Seguir buscando" reabre con solo tocar la fecha.
  */
 export type EffectiveRequestStatus =
   | 'ACTIVA'
@@ -14,6 +14,10 @@ export type EffectiveRequestStatus =
   | 'INACTIVA'
   | 'CERRADA'
   | 'ARCHIVADA';
+
+export function inactiveCutoff(now = Date.now()) {
+  return new Date(now - REQUEST_INACTIVE_DAYS * DAY_MS);
+}
 
 export function archiveCutoff(now = Date.now()) {
   return new Date(now - REQUEST_ARCHIVE_DAYS * DAY_MS);
@@ -30,10 +34,10 @@ export function effectiveRequestStatus(req: {
   return req.status === RequestStatus.NEGOCIANDO ? 'NEGOCIANDO' : 'ACTIVA';
 }
 
-/** Condiciones de visibilidad para vendedores y listados públicos. */
+/** Condiciones de visibilidad para vendedores y listados públicos (oculta inactivas >10d). */
 export function visibleToSellersWhere() {
   return {
     status: { not: RequestStatus.CERRADA },
-    lastActivityAt: { gte: archiveCutoff() },
+    lastActivityAt: { gte: inactiveCutoff() },
   };
 }

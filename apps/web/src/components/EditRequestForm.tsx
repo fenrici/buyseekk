@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { maxAmountFor } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
+import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
+import { ValidationAlerts } from '@/components/ValidationAlerts';
+import { spamFieldErrors } from '@/lib/spam';
 import { RequestItem } from '@/lib/types';
 import { ImageUpload } from '@/components/ImageUpload';
 
@@ -48,6 +52,19 @@ export function EditRequestForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const spamMsgs = [
+      ...new Set([...spamFieldErrors(t, title), ...spamFieldErrors(t, requirements)]),
+    ];
+    if (spamMsgs.length) {
+      setError(spamMsgs.join('\n'));
+      return;
+    }
+    const budgetNum = parseInt(budget, 10);
+    const isRent = request.operation === 'ALQUILER' || !!request.budgetPeriod;
+    if (budgetLimitErrorKey(budgetNum, request.currency as 'USD' | 'ARS', isRent)) {
+      setError(t('request.budgetMax', { max: budgetMaxLabel(request.currency as 'USD' | 'ARS', isRent) }));
+      return;
+    }
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {};
@@ -89,7 +106,7 @@ export function EditRequestForm({
         <p className="text-xs text-amber-700">{t('buyer.editLimitedHint')}</p>
       )}
 
-      {error && <p className="rounded-lg bg-red-50 p-2 text-xs text-red-600">{error}</p>}
+      {error && <ValidationAlerts message={error} />}
 
       <label className="block">
         <span className="text-xs font-semibold text-slate-600">{t('request.titlePlaceholder')}</span>
@@ -112,6 +129,11 @@ export function EditRequestForm({
         <input
           className="input mt-1 w-full"
           type="number"
+          min={1}
+          max={maxAmountFor(
+            request.currency as 'USD' | 'ARS',
+            request.operation === 'ALQUILER' || !!request.budgetPeriod,
+          )}
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
           required

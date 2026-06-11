@@ -22,6 +22,7 @@ type RequestMetaData = Pick<
   | 'carBrand'
   | 'carModel'
   | 'carColor'
+  | 'carYearMin'
   | 'maxMileage'
 >;
 
@@ -30,6 +31,7 @@ type Props = {
   locale: User['locale'];
   size?: 'sm' | 'md';
   showRequirements?: boolean;
+  compact?: boolean;
 };
 
 export function RequestMeta({
@@ -37,15 +39,29 @@ export function RequestMeta({
   locale,
   size = 'md',
   showRequirements = true,
+  compact = false,
 }: Props) {
   const t = useT();
-  const titleClass = size === 'sm' ? 'text-lg font-bold leading-snug' : 'text-2xl font-bold';
-  const budgetClass = size === 'sm' ? 'text-xl font-extrabold text-[var(--accent)]' : 'text-2xl font-extrabold text-emerald-600';
-  const specClass = size === 'sm' ? 'text-xs font-semibold text-slate-600' : 'text-sm font-semibold text-slate-700';
+  const titleClass = compact
+    ? 'text-base font-bold leading-snug line-clamp-2'
+    : size === 'sm'
+      ? 'text-lg font-bold leading-snug'
+      : 'text-2xl font-bold';
+  const budgetClass = compact
+    ? 'text-lg font-extrabold text-[var(--accent)]'
+    : size === 'sm'
+      ? 'text-xl font-extrabold text-[var(--accent)]'
+      : 'text-2xl font-extrabold text-emerald-600';
+  const specClass = compact
+    ? 'truncate text-xs font-semibold text-slate-600'
+    : size === 'sm'
+      ? 'text-xs font-semibold text-slate-600'
+      : 'text-sm font-semibold text-slate-700';
+  const gap = compact ? 'mt-1.5' : 'mt-2';
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <span className={`tag ${request.category === 'AUTOS' ? 'tag-autos' : 'tag-inm'}`}>
           {t(`category.${request.category}`)}
         </span>
@@ -53,8 +69,8 @@ export function RequestMeta({
           {operationLabel(locale, request.operation)}
         </span>
       </div>
-      <h3 className={`mt-2 ${titleClass}`}>{request.title}</h3>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <h3 className={`${gap} ${titleClass}`}>{request.title}</h3>
+      <div className={`${gap} flex flex-wrap items-center gap-2`}>
         <p className={budgetClass}>
           {formatMoney(request.budget, request.currency, request.budgetPeriod ?? '')}
         </p>
@@ -63,19 +79,20 @@ export function RequestMeta({
         </span>
       </div>
       {showRequirements && (
-        <p className={`mt-2 ${size === 'sm' ? 'line-clamp-2 text-sm text-[var(--text-muted)]' : 'text-slate-600'}`}>
+        <p className={`${gap} ${size === 'sm' ? 'line-clamp-2 text-sm text-[var(--text-muted)]' : 'text-slate-600'}`}>
           {request.requirements}
         </p>
       )}
       {request.category === 'AUTOS' && request.carBrand && (
-        <p className={`mt-2 ${specClass}`}>
+        <p className={`${gap} ${specClass}`}>
           {request.carBrand} {request.carModel}
           {request.carColor ? ` · ${request.carColor}` : ''}
+          {request.carYearMin != null ? ` · ≥ ${request.carYearMin}` : ''}
           {request.maxMileage != null ? ` · ≤ ${request.maxMileage.toLocaleString()} ${t('seller.miles')}` : ''}
         </p>
       )}
       {request.category === 'INMOBILIARIA' && (
-        <p className={`mt-2 ${specClass}`}>
+        <p className={`${gap} ${specClass}`}>
           {request.zone}
           {request.bedrooms != null ? ` · ${request.bedrooms} ${t('request.bedroomsShort')}` : ''}
           {request.minSqm != null ? ` · ≥ ${request.minSqm} m²` : ''}

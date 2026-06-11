@@ -893,6 +893,44 @@ button.portal-mobile-link {
   color: rgba(226, 232, 240, 0.8);
 }
 
+/* Pantalla de carga global (portal) */
+.portal-loading-screen {
+  justify-content: center;
+  align-items: center;
+}
+
+.portal-loading-center {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.35rem;
+  padding: 24px;
+  text-align: center;
+}
+
+.portal-loading-brand {
+  font-size: clamp(2rem, 11vw, 2.85rem);
+}
+
+.portal-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(129, 140, 248, 0.22);
+  border-top-color: #818cf8;
+  border-right-color: #22d3ee;
+  border-radius: 50%;
+  animation: portalSpinner 0.9s linear infinite;
+  box-shadow: 0 0 24px rgba(129, 140, 248, 0.35);
+}
+
+@keyframes portalSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .auth-select {
   appearance: none;
   cursor: pointer;
@@ -1482,6 +1520,84 @@ html:has(.panel-dark) body {
 .panel-dark .tag-inm {
   background: rgba(16, 185, 129, 0.14);
   color: #6ee7b7;
+}
+
+/* Formulario publicar solicitud (panel oscuro) */
+.panel-dark .publish-form select.input {
+  appearance: menulist;
+  -webkit-appearance: menulist;
+  min-height: 44px;
+  line-height: 1.25;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.panel-dark .publish-form .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-dark .publish-form .border-indigo-500\/25 {
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.panel-dark .publish-form .bg-indigo-500\/10 {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.panel-dark .publish-form .text-indigo-200 {
+  color: #c7d2fe;
+}
+
+.panel-dark .publish-form .text-indigo-300 {
+  color: #a5b4fc;
+}
+
+.panel-dark .publish-form .text-indigo-300\/70 {
+  color: rgba(165, 180, 252, 0.7);
+}
+
+.panel-dark .publish-form .text-slate-200 {
+  color: #e2e8f0;
+}
+
+.panel-dark .publish-form .bg-white\/5 {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.panel-dark .publish-form .bg-white\/10 {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.panel-dark .publish-form .bg-white\/\[0\.08\]:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-dark .publish-form .border-white\/12 {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.panel-dark .publish-form .border-white\/15 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.panel-dark .publish-form .border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.panel-dark .publish-form .border-indigo-400\/50 {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.panel-dark .publish-form .border-indigo-400\/60 {
+  border-color: rgba(129, 140, 248, 0.6);
+}
+
+.panel-dark .publish-form .bg-indigo-500\/20 {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.panel-dark .publish-form .ring-indigo-500\/20 {
+  --tw-ring-color: rgba(99, 102, 241, 0.2);
 }
 
 /* Explore (marketplace público) */

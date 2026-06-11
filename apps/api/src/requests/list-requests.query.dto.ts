@@ -56,6 +56,13 @@ export class ListRequestsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(1990)
+  @Max(2100)
+  carYearMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   @Min(0)
   @Max(500000)
   maxMileage?: number;

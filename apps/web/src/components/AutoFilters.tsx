@@ -1,12 +1,13 @@
 'use client';
 
-import { CAR_BRAND_LIST, CAR_COLORS, MILEAGE_PRESETS, modelsForBrand } from '@buyseekk/shared';
+import { CAR_BRAND_LIST, CAR_COLORS, carYearPresets, MILEAGE_PRESETS, modelsForBrand } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 
 export type AutoFilterValues = {
   carBrand: string;
   carModel: string;
   carColor: string;
+  carYearMin: string;
   maxMileage: string;
 };
 
@@ -35,7 +36,7 @@ export function AutoFilters({
   return (
     <div className={`card seller-filter-advanced ${compact ? 'mt-0' : 'mt-4'} p-4`}>
       <p className="text-sm font-bold text-slate-700">{t('seller.filterAutos')}</p>
-      <div className={`mt-3 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
+      <div className={`mt-3 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'}`}>
         <label className="block">
           <span className="text-xs font-semibold text-slate-500">{t('seller.brand')}</span>
           <select
@@ -75,6 +76,20 @@ export function AutoFilters({
             <option value="">{t('seller.allColors')}</option>
             {CAR_COLORS.map((c) => (
               <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-semibold text-slate-500">{t('request.carYearFrom')}</span>
+          <select
+            className="input mt-1 w-full"
+            value={values.carYearMin}
+            onChange={(e) => set('carYearMin', e.target.value)}
+          >
+            <option value="">{t('seller.anyYear')}</option>
+            {carYearPresets().map((y) => (
+              <option key={y} value={String(y)}>{y}</option>
             ))}
           </select>
         </label>

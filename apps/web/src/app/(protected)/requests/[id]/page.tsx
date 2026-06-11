@@ -4,12 +4,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
+import { ValidationAlerts } from '@/components/ValidationAlerts';
+import { spamFieldErrors } from '@/lib/spam';
+import { maxAmountFor } from '@buyseekk/shared';
 import { RequestItem } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { ImageGallery } from '@/components/ImageGallery';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/providers/AuthProvider';
 import { RequestMeta } from '@/components/RequestMeta';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { useT } from '@/lib/i18n';
 
@@ -33,8 +38,20 @@ export default function RequestDetailPage() {
 
   async function sendOffer(e: React.FormEvent) {
     e.preventDefault();
+    if (!request) return;
     if (!imageUrls.length) {
       setError(t('request.needPhoto'));
+      return;
+    }
+    const spamMsgs = spamFieldErrors(t, message);
+    if (spamMsgs.length) {
+      setError(spamMsgs.join('\n'));
+      return;
+    }
+    const priceNum = parseInt(price, 10);
+    const isRent = request?.operation === 'ALQUILER' || !!request?.budgetPeriod;
+    if (budgetLimitErrorKey(priceNum, currency as 'USD' | 'ARS', isRent)) {
+      setError(t('request.priceMax', { max: budgetMaxLabel(currency as 'USD' | 'ARS', isRent) }));
       return;
     }
     try {
@@ -49,12 +66,7 @@ export default function RequestDetailPage() {
   }
 
   if (!user || !request) {
-    return (
-      <div className="panel-dark">
-        <Header variant="dark" />
-        <main className="p-8 text-slate-400">{t('common.loading')}</main>
-      </div>
-    );
+    return <PortalLoadingScreen />;
   }
 
   return (
@@ -91,9 +103,21 @@ export default function RequestDetailPage() {
         </div>
         <form onSubmit={sendOffer} className="card h-fit p-6">
           <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
-          {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+          {error && <ValidationAlerts message={error} className="mt-3" />}
           <div className="mt-4 space-y-4">
-            <input className="input w-full" type="number" placeholder={t('request.pricePlaceholder')} value={price} onChange={(e) => setPrice(e.target.value)} required />
+            <input
+              className="input w-full"
+              type="number"
+              min={1}
+              max={maxAmountFor(
+                currency as 'USD' | 'ARS',
+                request.operation === 'ALQUILER' || !!request.budgetPeriod,
+              )}
+              placeholder={t('request.pricePlaceholder')}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
             <select className="input w-full" value={currency} onChange={(e) => setCurrency(e.target.value)}>
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>

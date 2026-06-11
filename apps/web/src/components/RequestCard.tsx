@@ -92,92 +92,103 @@ export function RequestCard(props: Props) {
     !isArchived &&
     daysIdle(request.lastActivityAt, request.createdAt) >= REQUEST_REMINDER_DAYS;
 
+  const actionBtn =
+    'shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold sm:text-sm';
+
   return (
     <article className="card">
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {!editing ? (
           <>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="mb-2">
-                  <RequestStatusBadge status={request.status} />
-                </div>
-                <RequestMeta request={request} locale={locale} size="sm" showRequirements />
-                <p className="mt-2 text-xs text-slate-400">
-                  {request.location}
-                  {request.zone ? ` · ${request.zone}` : ''}
-                  {' · '}
-                  {request.pendingOffersCount} {t('buyer.pending')}
-                </p>
-                <RequestActivity
-                  offersCount={request.offersCount}
-                  conversationsCount={request.conversationsCount}
-                  lastActivityAt={request.lastActivityAt}
-                  createdAt={request.createdAt}
-                  className="mt-1"
-                />
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                {!hasAccepted && !isClosed && !isArchived && (
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="rounded-lg border border-indigo-200 px-3 py-1 text-sm font-semibold text-indigo-600"
-                  >
-                    {t('buyer.edit')}
-                  </button>
-                )}
-                {isArchived && props.onRenew && (
-                  <button
-                    type="button"
-                    onClick={() => void props.onRenew?.(request.id)}
-                    className="rounded-lg border border-indigo-200 px-3 py-1 text-sm font-semibold text-indigo-600"
-                  >
-                    {t('reminder.keep')}
-                  </button>
-                )}
-                {!isClosed && props.onClose && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(t('buyer.closeConfirm'))) {
-                        void props.onClose?.(request.id);
-                      }
-                    }}
-                    className="rounded-lg border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-500"
-                  >
-                    {t('buyer.closeAction')}
-                  </button>
-                )}
+            <div className="flex items-center justify-between gap-2">
+              <RequestStatusBadge status={request.status} />
+              <span className="shrink-0 text-xs font-semibold text-slate-400">
+                {request.pendingOffersCount} {t('buyer.pending')}
+              </span>
+            </div>
+
+            <div className="mt-2 min-w-0">
+              <RequestMeta
+                request={request}
+                locale={locale}
+                size="sm"
+                compact
+                showRequirements={false}
+              />
+              <p className="mt-1.5 truncate text-xs text-slate-400">
+                {request.location}
+                {request.zone ? ` · ${request.zone}` : ''}
+              </p>
+              <RequestActivity
+                offersCount={request.offersCount}
+                conversationsCount={request.conversationsCount}
+                lastActivityAt={request.lastActivityAt}
+                createdAt={request.createdAt}
+                className="mt-1 truncate"
+              />
+            </div>
+
+            <div className="mt-3 flex gap-2 overflow-x-auto border-t border-white/10 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+              {!hasAccepted && !isClosed && !isArchived && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className={`${actionBtn} border-indigo-200 text-indigo-600`}
+                >
+                  {t('buyer.edit')}
+                </button>
+              )}
+              {isArchived && props.onRenew && (
+                <button
+                  type="button"
+                  onClick={() => void props.onRenew?.(request.id)}
+                  className={`${actionBtn} border-indigo-200 text-indigo-600`}
+                >
+                  {t('reminder.keep')}
+                </button>
+              )}
+              {!isClosed && props.onClose && (
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm(t('buyer.deleteConfirm'))) {
-                      void props.onDelete(request.id);
+                    if (window.confirm(t('buyer.closeConfirm'))) {
+                      void props.onClose?.(request.id);
                     }
                   }}
-                  className="rounded-lg border border-red-200 px-3 py-1 text-sm font-semibold text-red-600"
+                  className={`${actionBtn} border-slate-200 text-slate-500`}
                 >
-                  {t('buyer.delete')}
+                  {t('buyer.closeAction')}
                 </button>
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(t('buyer.deleteConfirm'))) {
+                    void props.onDelete(request.id);
+                  }
+                }}
+                className={`${actionBtn} border-red-200 text-red-600`}
+              >
+                {t('buyer.delete')}
+              </button>
             </div>
+
             {showReminder && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
                 <p className="text-sm font-bold text-amber-700">{t('reminder.title')}</p>
                 <p className="mt-0.5 text-xs text-amber-700/80">{t('reminder.hint')}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-2 flex gap-2 sm:mt-3">
                   <button
                     type="button"
                     onClick={() => void props.onRenew?.(request.id)}
-                    className="btn btn-primary px-3 py-1.5 text-sm"
+                    className="btn btn-primary shrink-0 px-3 py-1.5 text-sm"
                   >
                     {t('reminder.keep')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void props.onClose?.(request.id)}
-                    className="btn btn-ghost border px-3 py-1.5 text-sm"
+                    className="btn btn-ghost shrink-0 border px-3 py-1.5 text-sm"
                   >
                     {t('reminder.close')}
                   </button>

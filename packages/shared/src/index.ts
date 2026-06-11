@@ -4,3 +4,5 @@ export * from './locations';
 export * from './pricing';
 export * from './pagination';
 export * from './car-catalog';
+export * from './content-policy';
+export * from './money-limits';

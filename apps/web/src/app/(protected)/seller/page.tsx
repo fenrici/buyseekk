@@ -38,6 +38,7 @@ export default function SellerPage() {
     carBrand: '',
     carModel: '',
     carColor: '',
+    carYearMin: '',
     maxMileage: '',
   });
   const [error, setError] = useState('');
@@ -62,6 +63,7 @@ export default function SellerPage() {
         if (autoFilters.carBrand) params.set('carBrand', autoFilters.carBrand);
         if (autoFilters.carModel) params.set('carModel', autoFilters.carModel);
         if (autoFilters.carColor) params.set('carColor', autoFilters.carColor);
+        if (autoFilters.carYearMin) params.set('carYearMin', autoFilters.carYearMin);
         if (autoFilters.maxMileage) params.set('maxMileage', autoFilters.maxMileage);
       }
       const q = params.toString() ? `?${params}` : '';
@@ -118,7 +120,7 @@ export default function SellerPage() {
 
   const marketLabel = user.country === 'US' ? t('seller.marketUS') : t('seller.marketAR');
   const hasActiveFilters =
-    !!(autoFilters.carBrand || autoFilters.carModel || autoFilters.carColor || autoFilters.maxMileage)
+    !!(autoFilters.carBrand || autoFilters.carModel || autoFilters.carColor || autoFilters.carYearMin || autoFilters.maxMileage)
     || !!(estateFilters.bedrooms || estateFilters.minSqm || estateFilters.maxSqm)
     || !!zone
     || !!operation;

@@ -7,10 +7,12 @@ import {
 } from '@nestjs/common';
 import { OfferStatus, RequestStatus } from '@prisma/client';
 import { comparePrices, parsePagination, toPaginatedResult } from '@buyseekk/shared';
+import { assertValidMoneyAmount } from '../common/utils/money-limits';
+import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/spam-content';
 import { assertValidImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { archiveCutoff } from '../requests/request-status';
+import { inactiveCutoff } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
 
 @Injectable()
@@ -39,7 +41,7 @@ export class OffersService {
     if (request.status === RequestStatus.CERRADA) {
       throw new BadRequestException('La solicitud está cerrada y no acepta nuevas ofertas');
     }
-    if (request.lastActivityAt < archiveCutoff()) {
+    if (request.lastActivityAt < inactiveCutoff()) {
       throw new NotFoundException('Solicitud no encontrada');
     }
 
@@ -56,6 +58,14 @@ export class OffersService {
       throw new ConflictException('Ya enviaste una oferta para esta solicitud');
     }
     assertValidImageUrls(dto.imageUrls, 'producto');
+    assertCleanPublicText(dto.message, 'la propuesta');
+    assertValidMoneyAmount(
+      dto.price,
+      dto.currency,
+      'precio',
+      request.budgetPeriod != null || request.operation === 'ALQUILER',
+    );
+    await assertOfferSpamLimits(this.prisma, sellerId, dto.message);
 
     const offer = await this.prisma.offer.create({
       data: {

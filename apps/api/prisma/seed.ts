@@ -39,6 +39,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Ferrari',
     carModel: '488 GTB',
     carColor: 'Rosso Corsa',
+    carYearMin: 2018,
     maxMileage: 15000,
   },
   {
@@ -55,6 +56,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Porsche',
     carModel: '911 Carrera',
     carColor: 'Negro',
+    carYearMin: 2016,
     maxMileage: 40000,
   },
   {
@@ -71,6 +73,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Porsche',
     carModel: '911 GT3',
     carColor: 'Blanco',
+    carYearMin: 2019,
     maxMileage: 20000,
   },
   {
@@ -87,6 +90,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Tesla',
     carModel: 'Model S',
     carColor: 'Blanco',
+    carYearMin: 2020,
     maxMileage: 50000,
   },
   {
@@ -103,6 +107,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'BMW',
     carModel: 'Serie 3',
     carColor: 'Negro',
+    carYearMin: 2017,
     maxMileage: 60000,
   },
   {
@@ -119,6 +124,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Ford',
     carModel: 'Mustang',
     carColor: 'Rojo',
+    carYearMin: 2018,
     maxMileage: 35000,
   },
   // ── US · Inmuebles ──────────────────────────────────────
@@ -196,6 +202,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'Toyota',
     carModel: 'Hilux',
     carColor: 'Blanco',
+    carYearMin: 2015,
     maxMileage: 80000,
   },
   {
@@ -213,6 +220,7 @@ const DEMO_REQUESTS: DemoRequest[] = [
     carBrand: 'BMW',
     carModel: 'Serie 3',
     carColor: 'Gris',
+    carYearMin: 2016,
     maxMileage: 60000,
   },
   // ── AR · Inmuebles ──────────────────────────────────────

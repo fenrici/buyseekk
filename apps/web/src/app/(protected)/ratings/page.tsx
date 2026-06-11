@@ -50,22 +50,27 @@ export default function RatingsPage() {
           {items.map((item) => (
             <article key={item.offerId} className="card p-5">
               <h2 className="font-bold text-white">{item.requestTitle}</h2>
-              <Link
-                href={`/users/${item.partner.id}`}
-                className="mt-2 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-400"
-              >
-                <Avatar name={item.partner.name} url={item.partner.avatarUrl} size={28} />
-                <span>
-                  {item.partner.name} · {item.partner.role === 'seller' ? t('compare.seller') : t('compare.buyer')}
-                </span>
-              </Link>
-              {item.chatId ? (
-                <Link href={`/chats/${item.chatId}`} className="btn btn-primary mt-4">
-                  {t('rating.rateNow')}
+              <div className="mt-4 flex flex-col gap-4 border-t border-slate-700/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <Link
+                  href={`/users/${item.partner.id}`}
+                  className="inline-flex min-w-0 items-center gap-3 rounded-lg transition-colors hover:text-indigo-300"
+                >
+                  <Avatar name={item.partner.name} url={item.partner.avatarUrl} size={40} />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-white">{item.partner.name}</span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      {item.partner.role === 'seller' ? t('compare.seller') : t('compare.buyer')}
+                    </span>
+                  </span>
                 </Link>
-              ) : (
-                <p className="mt-4 text-sm text-slate-400">{t('rating.pendingEmpty')}</p>
-              )}
+                {item.chatId ? (
+                  <Link href={`/chats/${item.chatId}`} className="btn btn-primary shrink-0 self-start sm:self-center">
+                    {t('rating.rateNow')}
+                  </Link>
+                ) : (
+                  <p className="text-sm text-slate-400">{t('rating.pendingEmpty')}</p>
+                )}
+              </div>
             </article>
           ))}
           <PaginationControls

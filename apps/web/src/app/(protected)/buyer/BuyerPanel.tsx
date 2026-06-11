@@ -58,10 +58,14 @@ export function BuyerPanel() {
 
   useEffect(() => {
     if (!user) return;
+    loadOffers(offersPage).catch((e) => setError(e instanceof Error ? e.message : t('common.error')));
+  }, [user, offersPage]);
+
+  useEffect(() => {
+    if (!user || tab !== 'mine') return;
     setError('');
-    if (tab === 'mine') loadMine(minePage, mineScope).catch((e) => setError(e.message));
-    if (tab === 'offers') loadOffers(offersPage).catch((e) => setError(e.message));
-  }, [tab, user, minePage, mineScope, offersPage]);
+    loadMine(minePage, mineScope).catch((e) => setError(e instanceof Error ? e.message : t('common.error')));
+  }, [tab, user, minePage, mineScope]);
 
   function changeScope(scope: MineScope) {
     setMineScope(scope);
@@ -125,7 +129,7 @@ export function BuyerPanel() {
     { id: 'offers', label: t('buyer.tabOffers') },
   ];
 
-  const pendingCount = offers.filter((o) => o.status === 'PENDIENTE').length;
+  const pendingCount = offersMeta.total;
 
   return (
     <div className="panel-dark">
@@ -155,7 +159,14 @@ export function BuyerPanel() {
 
         {tab === 'publish' && (
           <div className="mt-8">
-            <CreateRequestForm user={user} onSuccess={() => { setTab('mine'); loadMine(1); }} />
+            <CreateRequestForm
+              user={user}
+              onSuccess={() => {
+                setTab('mine');
+                setMinePage(1);
+                loadMine(1);
+              }}
+            />
           </div>
         )}
 
@@ -213,9 +224,12 @@ export function BuyerPanel() {
                       ) : (
                         <Avatar name="?" size={36} />
                       )}
-                      <div>
+                      <div className="min-w-0 flex flex-col gap-1">
                         {o.seller ? (
-                          <Link href={`/users/${o.seller.id}`} className="text-sm font-semibold hover:underline">
+                          <Link
+                            href={`/users/${o.seller.id}`}
+                            className="block text-sm font-semibold leading-snug hover:underline"
+                          >
                             {o.seller.businessName || o.seller.name}
                           </Link>
                         ) : (

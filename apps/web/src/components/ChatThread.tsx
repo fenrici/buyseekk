@@ -33,9 +33,11 @@ function prependMessages(prev: ChatDetail, older: ChatMessage[]): ChatDetail {
 export function ChatThread({
   chatId,
   onLoaded,
+  className,
 }: {
   chatId: string;
   onLoaded?: (chat: ChatDetail) => void;
+  className?: string;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -45,8 +47,20 @@ export function ChatThread({
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [live, setLive] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const skipScrollRef = useRef(false);
+  const inputFocusedRef = useRef(false);
+
+  function scrollMessagesToBottom(behavior: ScrollBehavior = 'smooth') {
+    const el = messagesRef.current;
+    if (!el) return;
+    if (behavior === 'smooth') {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
 
   useEffect(() => {
     api<ChatDetail>(`/chats/${chatId}`)
@@ -87,7 +101,7 @@ export function ChatThread({
       skipScrollRef.current = false;
       return;
     }
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollMessagesToBottom(inputFocusedRef.current ? 'auto' : 'smooth');
   }, [chat?.messages.length]);
 
   async function loadOlderMessages() {
@@ -158,7 +172,13 @@ export function ChatThread({
   }
 
   return (
-    <div className="card flex h-[calc(100vh-12rem)] min-h-[28rem] flex-col overflow-hidden p-0">
+    <div
+      className={
+        className
+          ? `card flex min-h-0 flex-col overflow-hidden p-0 ${className}`
+          : 'card flex h-[calc(100vh-12rem)] min-h-[28rem] flex-col overflow-hidden p-0'
+      }
+    >
       <div className="flex items-center gap-3 border-b px-4 py-3">
         <Link href={`/users/${chat.partner.id}`} className="shrink-0">
           <Avatar name={chat.partner.name} url={chat.partner.avatarUrl} size={40} />
@@ -174,7 +194,7 @@ export function ChatThread({
         </span>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div ref={messagesRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4">
         {chat.messagesMeta?.hasOlderPage && (
           <div className="flex justify-center">
             <button
@@ -207,17 +227,24 @@ export function ChatThread({
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
-      {error && <p className="px-4 text-xs text-red-600">{error}</p>}
+      {error && <p className="shrink-0 px-4 text-xs text-red-600">{error}</p>}
 
-      <form onSubmit={handleSend} className="flex gap-2 border-t p-4">
+      <form onSubmit={handleSend} className="flex shrink-0 gap-2 border-t p-4">
         <input
+          ref={inputRef}
           className="input flex-1"
           placeholder={t('chat.placeholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onFocus={() => {
+            inputFocusedRef.current = true;
+            scrollMessagesToBottom('auto');
+          }}
+          onBlur={() => {
+            inputFocusedRef.current = false;
+          }}
           maxLength={2000}
         />
         <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary">

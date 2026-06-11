@@ -75,6 +75,7 @@ export interface RequestItem {
   carBrand?: string | null;
   carModel?: string | null;
   carColor?: string | null;
+  carYearMin?: number | null;
   maxMileage?: number | null;
   offersCount: number;
   pendingOffersCount: number;
@@ -111,6 +112,7 @@ export interface PublicRequestItem {
   carBrand?: string | null;
   carModel?: string | null;
   carColor?: string | null;
+  carYearMin?: number | null;
   maxMileage?: number | null;
   imageUrls?: string[];
   createdAt: string;

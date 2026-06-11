@@ -2,15 +2,13 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/Header';
-import { useT } from '@/lib/i18n';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading, refresh } = useAuth();
-  const t = useT();
 
   useEffect(() => {
     if (loading) return;
@@ -23,12 +21,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }, [user, loading, router, refresh]);
 
   if (loading) {
-    return (
-      <>
-        <Header />
-        <main className="p-8">{t('common.loading')}</main>
-      </>
-    );
+    return <PortalLoadingScreen />;
   }
 
   if (!user) return null;

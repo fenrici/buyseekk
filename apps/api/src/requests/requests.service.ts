@@ -8,6 +8,7 @@ import { Country, OfferStatus, OperationType, RequestCategory, RequestStatus, Us
 import {
   citiesForCountry,
   isValidBrand,
+  isValidCarYear,
   isValidColor,
   isValidModel,
   MAX_ACTIVE_REQUESTS,
@@ -16,6 +17,8 @@ import {
   zonesForCountryAndCity,
 } from '@buyseekk/shared';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
+import { assertValidMoneyAmount } from '../common/utils/money-limits';
+import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -47,6 +50,7 @@ const STRUCTURAL_FIELDS = new Set([
   'carBrand',
   'carModel',
   'carColor',
+  'carYearMin',
   'maxMileage',
   'bedrooms',
   'minSqm',
@@ -96,6 +100,15 @@ export class RequestsService {
       throw new ForbiddenException('Solo compradores pueden publicar solicitudes');
     }
     validateImageUrls(dto.imageUrls);
+    assertCleanPublicText(dto.requirements, 'los requisitos');
+    assertCleanPublicText(dto.title, 'el título');
+    await assertNoDuplicateRequest(this.prisma, userId, dto.requirements, dto.title);
+    assertValidMoneyAmount(
+      dto.budget,
+      dto.currency,
+      'presupuesto',
+      dto.operation === 'ALQUILER' || dto.budgetPeriod != null,
+    );
 
     if (dto.country !== user.country) {
       throw new BadRequestException('Solo podés publicar solicitudes en tu país');
@@ -106,8 +119,8 @@ export class RequestsService {
     }
 
     if (dto.category === RequestCategory.AUTOS) {
-      if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.maxMileage == null) {
-        throw new BadRequestException('Marca, modelo, color y millaje son obligatorios para autos');
+      if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.carYearMin == null || dto.maxMileage == null) {
+        throw new BadRequestException('Marca, modelo, color, año y millaje son obligatorios para autos');
       }
       if (!dto.zone) throw new BadRequestException('Zona obligatoria para autos');
       const autoZones = zonesForCountryAndCity(user.country, dto.location);
@@ -117,6 +130,7 @@ export class RequestsService {
       if (!isValidBrand(dto.carBrand)) throw new BadRequestException('Marca no válida');
       if (!isValidModel(dto.carBrand, dto.carModel)) throw new BadRequestException('Modelo no válido');
       if (!isValidColor(dto.carColor)) throw new BadRequestException('Color no válido');
+      if (!isValidCarYear(dto.carYearMin)) throw new BadRequestException('Año no válido');
       if (dto.maxMileage < 0 || dto.maxMileage > 500000) {
         throw new BadRequestException('Millaje no válido');
       }
@@ -139,7 +153,7 @@ export class RequestsService {
       if (dto.minSqm != null && dto.maxSqm != null && dto.minSqm > dto.maxSqm) {
         throw new BadRequestException('El mínimo de m² no puede superar el máximo');
       }
-      if (dto.carBrand || dto.carModel || dto.carColor || dto.maxMileage != null) {
+      if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.maxMileage != null) {
         throw new BadRequestException('Los campos de auto solo aplican a solicitudes de autos');
       }
     } else {
@@ -186,6 +200,7 @@ export class RequestsService {
         carBrand: dto.category === RequestCategory.AUTOS ? dto.carBrand : null,
         carModel: dto.category === RequestCategory.AUTOS ? dto.carModel : null,
         carColor: dto.category === RequestCategory.AUTOS ? dto.carColor! : null,
+        carYearMin: dto.category === RequestCategory.AUTOS ? dto.carYearMin! : null,
         maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage! : null,
       },
       include: {
@@ -208,7 +223,13 @@ export class RequestsService {
   ) {
     this.assertSellerRole(user.role);
 
-    const hasAutoFilter = !!(filters.carBrand || filters.carModel || filters.carColor || filters.maxMileage);
+    const hasAutoFilter = !!(
+      filters.carBrand ||
+      filters.carModel ||
+      filters.carColor ||
+      filters.carYearMin != null ||
+      filters.maxMileage
+    );
     const hasEstateFilter = !!(
       filters.bedrooms ||
       filters.minSqm != null ||
@@ -242,6 +263,11 @@ export class RequestsService {
     if (filters.carColor) where.carColor = filters.carColor;
 
     const rangeFilters: Record<string, unknown>[] = [];
+    if (filters.carYearMin != null) {
+      rangeFilters.push({
+        OR: [{ carYearMin: null }, { carYearMin: { lte: filters.carYearMin } }],
+      });
+    }
     if (filters.maxMileage != null) {
       rangeFilters.push({ OR: [{ maxMileage: null }, { maxMileage: { lte: filters.maxMileage } }] });
     }
@@ -338,6 +364,7 @@ export class RequestsService {
       carBrand: r.carBrand,
       carModel: r.carModel,
       carColor: r.carColor,
+      carYearMin: r.carYearMin,
       maxMileage: r.maxMileage,
       imageUrls: r.imageUrls,
       createdAt: r.createdAt,
@@ -464,6 +491,22 @@ export class RequestsService {
     }
 
     if (dto.imageUrls !== undefined) validateImageUrls(dto.imageUrls);
+    if (dto.requirements !== undefined) assertCleanPublicText(dto.requirements, 'los requisitos');
+    if (dto.title !== undefined) assertCleanPublicText(dto.title, 'el título');
+    if (dto.requirements !== undefined || dto.title !== undefined) {
+      await assertNoDuplicateRequest(
+        this.prisma,
+        userId,
+        dto.requirements ?? req.requirements,
+        dto.title ?? req.title,
+        id,
+      );
+    }
+    if (dto.budget !== undefined) {
+      const currency = dto.currency ?? req.currency;
+      const isRent = (dto.operation ?? req.operation) === 'ALQUILER' || (dto.budgetPeriod ?? req.budgetPeriod) != null;
+      assertValidMoneyAmount(dto.budget, currency, 'presupuesto', isRent);
+    }
 
     const location = dto.location ?? req.location;
     if (dto.location !== undefined) {
@@ -477,6 +520,7 @@ export class RequestsService {
       const carBrand = dto.carBrand ?? req.carBrand;
       const carModel = dto.carModel ?? req.carModel;
       const carColor = dto.carColor ?? req.carColor;
+      const carYearMin = dto.carYearMin ?? req.carYearMin;
       const maxMileage = dto.maxMileage ?? req.maxMileage;
       const zone = dto.zone ?? req.zone;
 
@@ -490,6 +534,9 @@ export class RequestsService {
         if (dto.carColor !== undefined && !isValidColor(dto.carColor)) {
           throw new BadRequestException('Color no válido');
         }
+        if (dto.carYearMin !== undefined && !isValidCarYear(dto.carYearMin)) {
+          throw new BadRequestException('Año no válido');
+        }
         if (dto.maxMileage !== undefined && (dto.maxMileage < 0 || dto.maxMileage > 500000)) {
           throw new BadRequestException('Millaje no válido');
         }
@@ -501,7 +548,7 @@ export class RequestsService {
         }
       }
 
-      if (!carBrand || !carModel || !carColor || maxMileage == null || !zone) {
+      if (!carBrand || !carModel || !carColor || carYearMin == null || maxMileage == null || !zone) {
         throw new BadRequestException('Datos de auto incompletos');
       }
     } else if (req.category === RequestCategory.INMOBILIARIA) {
@@ -529,7 +576,7 @@ export class RequestsService {
         if (minSqm != null && maxSqm != null && minSqm > maxSqm) {
           throw new BadRequestException('El mínimo de m² no puede superar el máximo');
         }
-        if (dto.carBrand || dto.carModel || dto.carColor || dto.maxMileage != null) {
+        if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.maxMileage != null) {
           throw new BadRequestException('Los campos de auto solo aplican a solicitudes de autos');
         }
       }
@@ -570,6 +617,7 @@ export class RequestsService {
         ...(dto.carBrand !== undefined ? { carBrand: dto.carBrand } : {}),
         ...(dto.carModel !== undefined ? { carModel: dto.carModel } : {}),
         ...(dto.carColor !== undefined ? { carColor: dto.carColor } : {}),
+        ...(dto.carYearMin !== undefined ? { carYearMin: dto.carYearMin } : {}),
         ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
         lastActivityAt: new Date(),
       },

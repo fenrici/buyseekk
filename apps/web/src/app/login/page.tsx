@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getToken, setToken } from '@/lib/api';
 import { User } from '@/lib/types';
 import { getDashboardPath } from '@/lib/auth';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { PublicHeader } from '@/components/PublicHeader';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
@@ -144,16 +145,7 @@ function LoginForm() {
 }
 
 function LoginFallback() {
-  const t = useT();
-  return (
-    <main className="auth-portal">
-      <section className="auth-portal-screen">
-        <div className="portal-bg" aria-hidden="true" />
-        <div className="portal-overlay" aria-hidden="true" />
-        <p className="auth-loading">{t('common.loading')}</p>
-      </section>
-    </main>
-  );
+  return <PortalLoadingScreen />;
 }
 
 export default function LoginPage() {

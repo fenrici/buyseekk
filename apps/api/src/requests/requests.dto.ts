@@ -83,6 +83,12 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsInt()
+  @Min(1990)
+  @Max(2100)
+  carYearMin?: number;
+
+  @IsOptional()
+  @IsInt()
   @Min(0)
   @Max(500000)
   maxMileage?: number;

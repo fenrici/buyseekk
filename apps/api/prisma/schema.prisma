@@ -109,6 +109,7 @@ model Request {
   carBrand     String?
   carModel     String?
   carColor     String?
+  carYearMin   Int?
   maxMileage   Int?
   active       Boolean         @default(true)
   status         RequestStatus @default(ACTIVA)

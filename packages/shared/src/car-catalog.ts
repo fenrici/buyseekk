@@ -149,6 +149,18 @@ export const CAR_BRAND_LIST = Object.keys(CAR_BRANDS).sort();
 
 export const MILEAGE_PRESETS = [10000, 20000, 30000, 50000, 75000, 100000, 150000];
 
+export const CAR_YEAR_MIN = 1990;
+
+export function carYearPresets(): number[] {
+  const current = new Date().getFullYear();
+  return Array.from({ length: current - CAR_YEAR_MIN + 1 }, (_, i) => current - i);
+}
+
+export function isValidCarYear(year: number) {
+  const current = new Date().getFullYear();
+  return Number.isInteger(year) && year >= CAR_YEAR_MIN && year <= current;
+}
+
 export function modelsForBrand(brand: string): string[] {
   return CAR_BRANDS[brand] ?? [];
 }
