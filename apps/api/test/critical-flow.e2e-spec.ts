@@ -75,6 +75,7 @@ describe('Critical business flow (e2e)', () => {
         carBrand: 'Ferrari',
         carModel: '488 GTB',
         carColor: 'Rosso Corsa',
+        carYearMin: 2018,
         maxMileage: 15000,
       })
       .expect(201);
@@ -174,6 +175,7 @@ describe('Critical business flow (e2e)', () => {
         carBrand: 'Ferrari',
         carModel: '488 GTB',
         carColor: 'Rosso Corsa',
+        carYearMin: 2018,
         maxMileage: 20000,
       })
       .expect(201);
@@ -242,6 +244,7 @@ describe('Critical business flow (e2e)', () => {
         carBrand: 'Ferrari',
         carModel: '488 GTB',
         carColor: 'Rosso Corsa',
+        carYearMin: 2018,
         maxMileage: 10000,
       })
       .expect(201);

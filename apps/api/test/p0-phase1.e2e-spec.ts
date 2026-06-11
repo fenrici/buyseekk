@@ -48,13 +48,13 @@ describe('P0 Phase 1 (e2e)', () => {
     });
   }
 
-  async function createRequest(token: string) {
+  async function createRequest(token: string, unique = Math.random().toString(36).slice(2, 10)) {
     const res = await request(app.getHttpServer())
       .post('/api/requests')
       .set(authHeader(token))
       .send({
         category: 'AUTOS',
-        requirements: 'Busco deportivo impecable en Miami con bajo kilometraje.',
+        requirements: `Busco deportivo impecable en Miami con bajo kilometraje. Caso ${unique}.`,
         budget: 200000,
         currency: 'USD',
         location: 'Miami, FL',
@@ -63,6 +63,7 @@ describe('P0 Phase 1 (e2e)', () => {
         carBrand: 'Ferrari',
         carModel: '488 GTB',
         carColor: 'Rosso Corsa',
+        carYearMin: 2018,
         maxMileage: 12000,
       })
       .expect(201);
