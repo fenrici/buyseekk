@@ -1279,12 +1279,16 @@ button.portal-mobile-link {
   gap: 8px;
 }
 .panel-tab {
+  display: inline-flex;
+  align-items: center;
   padding: 10px 18px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   border: 1px solid var(--border);
   background: white;
+  color: inherit;
+  text-decoration: none;
   cursor: pointer;
   transition: all .2s;
 }
@@ -1294,12 +1298,237 @@ button.portal-mobile-link {
   border-color: var(--primary);
 }
 
+@media (max-width: 767px) {
+  .panel-tab--desktop-only,
+  .panel-tabs--desktop-only {
+    display: none !important;
+  }
+}
+
 /* Compare */
 .compare-block {
   overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: var(--bg);
+}
+
+.compare-compact-row {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.compare-compact-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(148 163 184);
+}
+
+.compare-compact-value {
+  color: rgb(226 232 240);
+  line-height: 1.4;
+}
+
+.compare-compact-badge {
+  display: inline-flex;
+  margin-top: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.compare-compact-badge--under {
+  background: rgb(6 78 59 / 0.35);
+  color: rgb(110 231 183);
+}
+
+.compare-compact-badge--at {
+  background: rgb(49 46 129 / 0.35);
+  color: rgb(165 180 252);
+}
+
+.compare-compact-badge--over {
+  background: rgb(127 29 29 / 0.35);
+  color: rgb(252 165 165);
+}
+
+/* Offer highlights summary */
+.offer-highlights-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.offer-highlight-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+  border: 1px solid rgb(99 102 241 / 0.22);
+  background: linear-gradient(145deg, rgb(30 27 75 / 0.55), rgb(15 23 42 / 0.85));
+  padding: 1rem;
+  min-height: 0;
+}
+
+.offer-highlight-card--wide .compare-block {
+  margin-top: 1rem;
+}
+
+.offer-received-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(99 102 241 / 0.18);
+  background: linear-gradient(145deg, rgb(30 27 75 / 0.4), rgb(15 23 42 / 0.75));
+  padding: 1rem;
+}
+
+.offer-received-card .compare-block {
+  margin-top: 0;
+}
+
+.offer-decision-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(15 23 42 / 0.65);
+}
+
+.offer-decision-bar__info {
+  min-width: 0;
+}
+
+.offer-decision-bar__seller {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgb(248 250 252);
+  line-height: 1.3;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.offer-decision-bar__subtitle {
+  margin-top: 0.2rem;
+  color: rgb(148 163 184);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.offer-decision-bar__actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.offer-decision-bar__actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.offer-decision-bar__reject {
+  border: 1px solid rgb(255 255 255 / 0.12) !important;
+  color: rgb(248 250 252) !important;
+  background: transparent !important;
+}
+
+.offer-decision-bar__reject:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.06) !important;
+}
+
+@media (min-width: 640px) {
+  .offer-decision-bar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .offer-decision-bar__info {
+    flex: 1;
+  }
+
+  .offer-decision-bar__actions {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .offer-decision-bar__actions .btn {
+    flex: 0 0 auto;
+    min-width: auto;
+  }
+}
+
+.offer-highlight-badge {
+  align-self: flex-start;
+  border-radius: 9999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.offer-highlight-badge--recommended {
+  background: linear-gradient(90deg, rgb(79 70 229), rgb(99 102 241));
+  color: white;
+}
+
+.offer-highlight-badge--price {
+  background: rgb(6 78 59 / 0.5);
+  color: rgb(110 231 183);
+  border: 1px solid rgb(16 185 129 / 0.35);
+}
+
+.offer-highlight-badge--closest {
+  background: rgb(30 58 138 / 0.45);
+  color: rgb(147 197 253);
+  border: 1px solid rgb(59 130 246 / 0.35);
+}
+
+.offer-highlight-target {
+  outline: 2px solid rgb(99 102 241 / 0.65);
+  outline-offset: 2px;
+  transition: outline-color 0.3s ease;
+}
+
+.offer-status-badge {
+  border-radius: 9999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.offer-status-badge--pending {
+  background: rgb(120 53 15 / 0.45);
+  color: rgb(252 211 77);
+  border: 1px solid rgb(245 158 11 / 0.35);
+}
+
+.offer-status-badge--accepted {
+  background: rgb(6 78 59 / 0.45);
+  color: rgb(110 231 183);
+  border: 1px solid rgb(16 185 129 / 0.35);
+}
+
+.offer-status-badge--rejected {
+  background: rgb(127 29 29 / 0.4);
+  color: rgb(252 165 165);
+  border: 1px solid rgb(239 68 68 / 0.35);
 }
 
 /* Chat */
@@ -2099,5 +2328,138 @@ html:has(.panel-dark) body {
     justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 0.25rem;
+  }
+}
+
+.profile-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.profile-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.profile-logout-btn:active {
+  background: rgba(239, 68, 68, 0.16);
+  transform: scale(0.99);
+}
+
+/* Mobile bottom navigation (< 768px) */
+.mobile-bottom-nav {
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #060c1d;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+}
+
+.mobile-bottom-nav__inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 8px 6px 6px;
+  background: rgba(6, 12, 29, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.mobile-bottom-nav__tab {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 2px;
+  text-decoration: none;
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav__tab.active {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.mobile-bottom-nav__icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+}
+
+.mobile-bottom-nav__label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(100 116 139);
+}
+
+.mobile-bottom-nav__tab.active .mobile-bottom-nav__label {
+  color: rgb(129 140 248);
+}
+
+.mobile-bottom-nav__badge {
+  position: absolute;
+  top: -3px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(6, 12, 29, 0.9);
+}
+
+@media (max-width: 767px) {
+  .mobile-app-shell {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+
+  html:has(.mobile-bottom-nav),
+  html:has(.mobile-bottom-nav) body {
+    background: #060c1d;
   }
 }

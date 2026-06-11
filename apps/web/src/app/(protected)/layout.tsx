@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
@@ -26,5 +27,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
-  return children;
+  return (
+    <>
+      <div className="mobile-app-shell">{children}</div>
+      <Suspense fallback={null}>
+        <MobileBottomNav />
+      </Suspense>
+    </>
+  );
 }

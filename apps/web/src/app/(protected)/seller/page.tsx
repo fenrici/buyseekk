@@ -1,19 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { citiesForCountry } from '@buyseekk/shared';
-import { api, formatMoney, normalizePaginated } from '@/lib/api';
-import { OfferItem, PaginatedResult, RequestItem } from '@/lib/types';
+import { api, normalizePaginated } from '@/lib/api';
+import { PaginatedResult, RequestItem } from '@/lib/types';
 import { AutoFilterValues } from '@/components/AutoFilters';
 import { RealEstateFilterValues } from '@/components/RealEstateFilters';
 import { SellerFiltersPanel } from '@/components/SellerFiltersPanel';
 import { Header } from '@/components/Header';
-import { CompareBlock } from '@/components/CompareBlock';
-import { PaginationControls } from '@/components/PaginationControls';
 import { RequestCard } from '@/components/RequestCard';
+import { SellerSubnav } from '@/components/SellerSubnav';
 import { useAuth } from '@/providers/AuthProvider';
-import { offerStatusLabel, useT } from '@/lib/i18n';
+import { useT } from '@/lib/i18n';
 
 export default function SellerPage() {
   const { user } = useAuth();
@@ -22,9 +20,6 @@ export default function SellerPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [sentOffers, setSentOffers] = useState<OfferItem[]>([]);
-  const [sentPage, setSentPage] = useState(1);
-  const [sentMeta, setSentMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [category, setCategory] = useState('');
   const [operation, setOperation] = useState('');
   const [location, setLocation] = useState('');
@@ -68,18 +63,12 @@ export default function SellerPage() {
       }
       const q = params.toString() ? `?${params}` : '';
 
-      const [reqsRaw, offersRaw] = await Promise.all([
-        api<PaginatedResult<RequestItem> | RequestItem[]>(`/requests${q}`),
-        api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/sent?page=${sentPage}`),
-      ]);
+      const reqsRaw = await api<PaginatedResult<RequestItem> | RequestItem[]>(`/requests${q}`);
       const reqs = normalizePaginated(reqsRaw);
-      const offers = normalizePaginated(offersRaw);
       setRequests(reqs.items);
       setPage(reqs.page);
       setTotalPages(reqs.totalPages);
       setTotal(reqs.total);
-      setSentOffers(offers.items);
-      setSentMeta({ total: offers.total, totalPages: offers.totalPages, page: offers.page });
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
@@ -96,7 +85,7 @@ export default function SellerPage() {
 
   useEffect(() => {
     if (user) load(page);
-  }, [user, page, sentPage, category, operation, location, zone, estateFilters, autoFilters]);
+  }, [user, page, category, operation, location, zone, estateFilters, autoFilters]);
 
   if (!user) return null;
 
@@ -171,7 +160,9 @@ export default function SellerPage() {
 
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-        <section className="mt-10">
+        <SellerSubnav />
+
+        <section className="mt-8">
           <h2 className="text-xl font-bold text-white lg:hidden">{t('seller.requestsTitle')}</h2>
 
           <div className="seller-browse-layout">
@@ -234,41 +225,6 @@ export default function SellerPage() {
             </div>
           )}
             </div>
-          </div>
-        </section>
-
-        <section className="mt-14 border-t pt-10">
-          <h2 className="text-xl font-bold text-white">{t('seller.sentTitle')}</h2>
-          <div className="mt-6 space-y-6">
-            {sentOffers.length === 0 && <p className="text-slate-500">{t('seller.noSent')}</p>}
-            {sentOffers.map((o) => (
-              <article key={o.id} className="card p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-bold text-white">{o.requestTitle}</h3>
-                    <p className="text-sm text-slate-500">{t('seller.offeredPrice')}: {formatMoney(o.price, o.currency)}</p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                    o.status === 'ACEPTADA' ? 'bg-emerald-100 text-emerald-700' :
-                    o.status === 'RECHAZADA' ? 'bg-red-100 text-red-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>{offerStatusLabel(user.locale, o.status)}</span>
-                </div>
-                <CompareBlock offer={o} perspective="seller" />
-                {o.status === 'ACEPTADA' && o.chatId && (
-                  <Link href={`/chats/${o.chatId}`} className="btn btn-primary mt-4">
-                    💬 {t('seller.openChat')}
-                  </Link>
-                )}
-              </article>
-            ))}
-            <PaginationControls
-              page={sentMeta.page}
-              totalPages={sentMeta.totalPages}
-              total={sentMeta.total}
-              onPageChange={setSentPage}
-              itemLabel={t('seller.sentTitle').toLowerCase()}
-            />
           </div>
         </section>
       </main>

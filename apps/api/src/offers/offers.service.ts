@@ -6,7 +6,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OfferStatus, RequestStatus } from '@prisma/client';
-import { comparePrices, parsePagination, toPaginatedResult } from '@buyseekk/shared';
+import {
+  comparePrices,
+  parsePagination,
+  pickOfferHighlights,
+  type OfferForHighlight,
+  toPaginatedResult,
+} from '@buyseekk/shared';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/spam-content';
 import { assertValidImageUrls } from '../common/utils/image-urls';
@@ -129,6 +135,55 @@ export class OffersService {
     }));
 
     return toPaginatedResult(items, total, safePage, safeLimit);
+  }
+
+  async receivedHighlights(userId: string) {
+    const offers = await this.prisma.offer.findMany({
+      where: {
+        status: OfferStatus.PENDIENTE,
+        request: { userId, active: true },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            sellerType: true,
+            businessName: true,
+          },
+        },
+        request: { select: { imageUrls: true } },
+      },
+    });
+
+    if (!offers.length) return { highlights: [] as ReturnType<typeof pickOfferHighlights> };
+
+    const ratingMap = await this.ratings.getStatsForUsers(offers.map((o) => o.sellerId));
+
+    const forHighlight: OfferForHighlight[] = offers.map((o) => ({
+      id: o.id,
+      price: o.price,
+      currency: o.currency,
+      message: o.message,
+      imageUrls: o.imageUrls,
+      requestImageUrls: o.request.imageUrls,
+      requestTitle: o.requestTitle,
+      requestBudget: o.requestBudget,
+      requestBudgetPeriod: o.requestBudgetPeriod,
+      requestRequirements: o.requestRequirements,
+      requestLocation: o.requestLocation,
+      seller: {
+        name: o.seller.name,
+        businessName: o.seller.businessName,
+        avatarUrl: o.seller.avatarUrl,
+        sellerType: o.seller.sellerType,
+        rating: ratingMap[o.sellerId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
+      },
+    }));
+
+    return { highlights: pickOfferHighlights(forHighlight) };
   }
 
   async sent(sellerId: string, page?: number, limit?: number) {

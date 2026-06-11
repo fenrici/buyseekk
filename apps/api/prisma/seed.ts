@@ -7,6 +7,7 @@ import {
   Locale,
   RequestCategory,
   OperationType,
+  OfferStatus,
   Prisma,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -280,6 +281,120 @@ async function upsertDemoRequest(userId: string, data: DemoRequest) {
   return created.id;
 }
 
+type DemoOfferSeed = {
+  requestTitle: string;
+  sellerEmail: string;
+  price: number;
+  message: string;
+  imageUrls: string[];
+};
+
+const CARLOS_DEMO_OFFERS: DemoOfferSeed[] = [
+  {
+    requestTitle: '[Demo] BMW Serie 3 — Recoleta',
+    sellerEmail: 'vendedor.ar@buyseekk.com',
+    price: 36200,
+    message:
+      'BMW Serie 3 2018 gris oscuro, 48.000 km, service oficial en concesionario. Interior cuero, cámara trasera y sensores. Entrega inmediata en CABA.',
+    imageUrls: ['/images/bmw-serie3.jpg', '/images/ford-mustang.jpg'],
+  },
+  {
+    requestTitle: '[Demo] BMW Serie 3 — Recoleta',
+    sellerEmail: 'autosur.ar@buyseekk.com',
+    price: 37500,
+    message:
+      'Serie 3 2017 automático, color gris, único dueño. Historial de service completo, neumáticos nuevos y detalle estético reciente.',
+    imageUrls: ['/images/bmw-serie3.jpg'],
+  },
+  {
+    requestTitle: '[Demo] BMW Serie 3 — Recoleta',
+    sellerEmail: 'elite.ar@buyseekk.com',
+    price: 39200,
+    message:
+      'BMW 320i 2019 con paquete M, 35.000 km. Excelente estado general, ideal para ciudad.',
+    imageUrls: ['/images/bmw-serie3.jpg'],
+  },
+  {
+    requestTitle: '[Demo] Toyota Hilux 4x4 — Palermo',
+    sellerEmail: 'vendedor.ar@buyseekk.com',
+    price: 42800,
+    message:
+      'Hilux 4x4 2016 blanca, 72.000 km, doble cabina. Service al día, gomas nuevas, lista para usar.',
+    imageUrls: ['/images/ford-mustang.jpg'],
+  },
+  {
+    requestTitle: '[Demo] Toyota Hilux 4x4 — Palermo',
+    sellerEmail: 'autosur.ar@buyseekk.com',
+    price: 44100,
+    message:
+      'Hilux SR 2017 4x4, 65.000 km, caja automática. Mantenimiento en Toyota oficial, sin choques.',
+    imageUrls: ['/images/ford-mustang.jpg', '/images/bmw-serie3.jpg'],
+  },
+  {
+    requestTitle: '[Demo] Depto 3 ambientes — Palermo Soho',
+    sellerEmail: 'inmo.ar@buyseekk.com',
+    price: 175000,
+    message:
+      'Departamento 3 ambientes con balcón al contrafrente, 82 m², luminoso. Cochera opcional, expensas moderadas, listo para escriturar.',
+    imageUrls: ['/images/dept-palermo.jpg', '/images/apt-miami-beach.jpg'],
+  },
+];
+
+async function upsertDemoSeller(data: {
+  email: string;
+  name: string;
+  businessName: string;
+  sellerCategory: RequestCategory;
+  country: Country;
+  locale: Locale;
+  passwordHash: string;
+}) {
+  return prisma.user.upsert({
+    where: { email: data.email },
+    update: {
+      sellerType: SellerType.BUSINESS,
+      sellerCategory: data.sellerCategory,
+      businessName: data.businessName,
+    },
+    create: {
+      email: data.email,
+      passwordHash: data.passwordHash,
+      name: data.name,
+      businessName: data.businessName,
+      role: UserRole.SELLER,
+      sellerType: SellerType.BUSINESS,
+      sellerCategory: data.sellerCategory,
+      country: data.country,
+      locale: data.locale,
+      currency: Currency.USD,
+    },
+  });
+}
+
+async function upsertDemoOffer(seed: DemoOfferSeed, sellerId: string) {
+  const request = await prisma.request.findFirst({ where: { title: seed.requestTitle } });
+  if (!request) return;
+
+  const payload = {
+    price: seed.price,
+    currency: request.currency,
+    message: seed.message,
+    imageUrls: seed.imageUrls,
+    status: OfferStatus.PENDIENTE,
+    requestTitle: request.title,
+    requestBudget: request.budget,
+    requestBudgetPeriod: request.budgetPeriod,
+    requestRequirements: request.requirements,
+    requestLocation: request.location,
+  };
+
+  await prisma.offer.upsert({
+    where: { requestId_sellerId: { requestId: request.id, sellerId } },
+    update: payload,
+    create: { requestId: request.id, sellerId, ...payload },
+  });
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash('demo1234', 10);
 
@@ -330,6 +445,53 @@ async function main() {
     },
   });
 
+  const sellerAR = await upsertDemoSeller({
+    email: 'vendedor.ar@buyseekk.com',
+    name: 'Martín López',
+    businessName: 'Automotores Palermo',
+    sellerCategory: RequestCategory.AUTOS,
+    country: Country.AR,
+    locale: Locale.ES,
+    passwordHash,
+  });
+
+  const sellerAR2 = await upsertDemoSeller({
+    email: 'autosur.ar@buyseekk.com',
+    name: 'Laura Vega',
+    businessName: 'AutoSur Recoleta',
+    sellerCategory: RequestCategory.AUTOS,
+    country: Country.AR,
+    locale: Locale.ES,
+    passwordHash,
+  });
+
+  const sellerAR3 = await upsertDemoSeller({
+    email: 'elite.ar@buyseekk.com',
+    name: 'Diego Fernández',
+    businessName: 'Elite Motors BA',
+    sellerCategory: RequestCategory.AUTOS,
+    country: Country.AR,
+    locale: Locale.ES,
+    passwordHash,
+  });
+
+  const sellerInmoAR = await upsertDemoSeller({
+    email: 'inmo.ar@buyseekk.com',
+    name: 'Valentina Ruiz',
+    businessName: 'Palermo Propiedades',
+    sellerCategory: RequestCategory.INMOBILIARIA,
+    country: Country.AR,
+    locale: Locale.ES,
+    passwordHash,
+  });
+
+  const sellerByEmail: Record<string, string> = {
+    'vendedor.ar@buyseekk.com': sellerAR.id,
+    'autosur.ar@buyseekk.com': sellerAR2.id,
+    'elite.ar@buyseekk.com': sellerAR3.id,
+    'inmo.ar@buyseekk.com': sellerInmoAR.id,
+  };
+
   await prisma.request.updateMany({
     where: { title: { not: { startsWith: '[Demo]' } }, active: true },
     data: { active: false },
@@ -344,29 +506,25 @@ async function main() {
     where: { title: '[Demo] Ferrari 488 GTB — Brickell' },
   });
   if (ferrari) {
-    const existingOffer = await prisma.offer.findFirst({
-      where: { requestId: ferrari.id, sellerId: seller.id },
-    });
-    if (!existingOffer) {
-      await prisma.offer.create({
-        data: {
-          requestId: ferrari.id,
-          sellerId: seller.id,
-          price: 235000,
-          currency: Currency.USD,
-          message: 'Ferrari 488 GTB 2019 rosso corsa, 12.000 km, service oficial.',
-          imageUrls: ['/images/ferrari-488.jpg'],
-          requestTitle: ferrari.title,
-          requestBudget: ferrari.budget,
-          requestRequirements: ferrari.requirements,
-          requestLocation: ferrari.location,
-        },
-      });
-    }
+    await upsertDemoOffer(
+      {
+        requestTitle: '[Demo] Ferrari 488 GTB — Brickell',
+        sellerEmail: 'vendedor@buyseekk.com',
+        price: 235000,
+        message: 'Ferrari 488 GTB 2019 rosso corsa, 12.000 km, service oficial.',
+        imageUrls: ['/images/ferrari-488.jpg'],
+      },
+      seller.id,
+    );
+  }
+
+  for (const demoOffer of CARLOS_DEMO_OFFERS) {
+    const sellerId = sellerByEmail[demoOffer.sellerEmail];
+    if (sellerId) await upsertDemoOffer(demoOffer, sellerId);
   }
 
   console.log('Seed OK');
-  console.log('  comprador@buyseekk.com / demo1234 (AR)');
+  console.log('  comprador@buyseekk.com / demo1234 (AR) — 6 ofertas pendientes');
   console.log('  comprador.us@buyseekk.com / demo1234 (US)');
   console.log('  vendedor@buyseekk.com / demo1234 (US seller)');
 }

@@ -28,6 +28,12 @@ export class OffersController {
     return this.offers.received(user.id, query.page, query.limit);
   }
 
+  @Get('received/highlights')
+  @Roles('buyer')
+  receivedHighlights(@CurrentUser() user: AuthUser) {
+    return this.offers.receivedHighlights(user.id);
+  }
+
   @Get('sent')
   @Roles('seller')
   sent(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {

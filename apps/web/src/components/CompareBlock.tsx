@@ -11,13 +11,25 @@ const diffStyles = {
   over: 'bg-red-100 text-red-700',
 };
 
-export function CompareBlock({ offer, perspective = 'buyer' }: { offer: OfferItem; perspective?: 'buyer' | 'seller' }) {
+export function CompareBlock({
+  offer,
+  perspective = 'buyer',
+  size = 'default',
+}: {
+  offer: OfferItem;
+  perspective?: 'buyer' | 'seller';
+  size?: 'default' | 'sm';
+}) {
   const t = useT();
   const locale = useLocale();
   const period = offer.requestBudgetPeriod ?? '';
   const style = diffStyles[offer.comparison.status];
   const isBuyer = perspective === 'buyer';
   const label = comparisonLabel(locale, offer.comparison.status, offer.comparison.diff, offer.currency);
+  const galleryClass = size === 'sm' ? 'h-36 sm:h-40' : 'h-52 md:h-60';
+  const sellerLabel = isBuyer
+    ? offer.seller?.businessName || offer.seller?.name
+    : offer.request?.user?.name ?? '—';
 
   return (
     <div className="compare-block mt-4">
@@ -29,7 +41,7 @@ export function CompareBlock({ offer, perspective = 'buyer' }: { offer: OfferIte
           <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
             {isBuyer ? t('compare.youAsked') : t('compare.theyAsked')}
           </p>
-          <ImageGallery urls={offer.request?.imageUrls} alt={t('compare.theyAsked')} className="h-52 md:h-60" />
+          <ImageGallery urls={offer.request?.imageUrls} alt={t('compare.theyAsked')} className={galleryClass} />
           <div>
             <p className="text-xs text-slate-500">{t('compare.budget')}</p>
             <p className="font-semibold">{formatMoney(offer.requestBudget, offer.currency, period)}</p>
@@ -40,28 +52,30 @@ export function CompareBlock({ offer, perspective = 'buyer' }: { offer: OfferIte
           </div>
           <div>
             <p className="text-xs text-slate-500">{t('compare.requirements')}</p>
-            <p className="text-sm text-slate-700">{offer.requestRequirements}</p>
+            <p className={`text-sm text-slate-700 ${size === 'sm' ? 'line-clamp-3' : ''}`}>
+              {offer.requestRequirements}
+            </p>
           </div>
         </div>
         <div className="space-y-3 bg-emerald-50/50 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
             {isBuyer ? t('compare.theyOffer') : t('compare.yourOffer')}
           </p>
-          <ImageGallery urls={offer.imageUrls} alt={t('compare.theyOffer')} className="h-52 md:h-60" />
+          <ImageGallery urls={offer.imageUrls} alt={t('compare.theyOffer')} className={galleryClass} />
           <div>
             <p className="text-xs text-slate-500">{t('compare.price')}</p>
-            <p className="text-xl font-extrabold text-emerald-600">{formatMoney(offer.price, offer.currency)}</p>
+            <p className={`font-extrabold text-emerald-600 ${size === 'sm' ? 'text-lg' : 'text-xl'}`}>
+              {formatMoney(offer.price, offer.currency)}
+            </p>
             <span className={`mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${style}`}>{label}</span>
           </div>
           <div>
             <p className="text-xs text-slate-500">{isBuyer ? t('compare.seller') : t('compare.buyer')}</p>
-            <p className="text-sm font-semibold">
-              {isBuyer ? offer.seller?.name : offer.request?.user?.name ?? '—'}
-            </p>
+            <p className="text-sm font-semibold">{sellerLabel}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500">{t('compare.proposal')}</p>
-            <p className="text-sm text-slate-700">{offer.message}</p>
+            <p className={`text-sm text-slate-700 ${size === 'sm' ? 'line-clamp-4' : ''}`}>{offer.message}</p>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
+import { logoutSession } from '@/lib/session';
 
 export default function ProfileEditPage() {
   const { user, setSession } = useAuth();
@@ -218,6 +219,12 @@ export default function ProfileEditPage() {
             {saving ? t('common.saving') : t('profile.save')}
           </button>
         </form>
+
+        <div className="mt-8 border-t border-white/10 pt-8">
+          <button type="button" onClick={logoutSession} className="profile-logout-btn">
+            {t('nav.logout')}
+          </button>
+        </div>
       </main>
     </div>
   );

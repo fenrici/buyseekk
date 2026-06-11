@@ -174,6 +174,34 @@ export interface PendingRatingItem {
   myRole: 'buyer' | 'seller';
 }
 
+export type OfferHighlightLabel = 'recommended' | 'lowest_price' | 'closest_match';
+
+export interface OfferComparisonSummary {
+  requestedBudget: number;
+  offeredPrice: number;
+  requestedLocation: string;
+  offeredLocation: string | null;
+  requestedRequirements: string;
+  offerMessage: string;
+  imageCount: number;
+  offerImageUrls: string[];
+  requestImageUrls: string[];
+  priceComparison: OfferItem['comparison'];
+  requirementsMatch: 'full' | 'partial' | 'unknown';
+  locationMatch: boolean;
+}
+
+export interface OfferHighlight {
+  offerId: string;
+  label: OfferHighlightLabel;
+  price: number;
+  currency: string;
+  requestTitle: string;
+  sellerName: string;
+  sellerRating: { avgStars: number | null; reviewCount: number } | null;
+  comparisonSummary: OfferComparisonSummary;
+}
+
 export interface OfferItem {
   id: string;
   price: number;

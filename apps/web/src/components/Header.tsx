@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { api, clearToken, normalizePaginated } from '@/lib/api';
+import { api, normalizePaginated } from '@/lib/api';
 import { Avatar } from '@/components/Avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { clearStoredLocale, useT } from '@/lib/i18n';
-import { PaginatedResult, PendingRatingItem } from '@/lib/types';
+import { useT } from '@/lib/i18n';
+import { logoutSession } from '@/lib/session';
+import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { isBuyerRole, isSellerRole } from '@/lib/auth';
 
@@ -20,51 +21,59 @@ export function Header({ variant = 'light' }: HeaderProps) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const t = useT();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingRatings, setPendingRatings] = useState(0);
+  const [pendingOffers, setPendingOffers] = useState(0);
   const navLinkCls = `transition ${dark ? 'hover:text-indigo-300' : 'hover:text-[var(--primary)]'}`;
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [user?.id]);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [menuOpen]);
 
   useEffect(() => {
     if (!user) {
       setPendingRatings(0);
+      setPendingOffers(0);
       return;
     }
-    if (pathname === '/ratings') return;
-    api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>('/ratings/pending?limit=1')
-      .then((raw) => setPendingRatings(normalizePaginated(raw).total))
-      .catch(() => setPendingRatings(0));
-  }, [user?.id, pathname]);
+    if (pathname !== '/ratings') {
+      api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>('/ratings/pending?limit=1')
+        .then((raw) => setPendingRatings(normalizePaginated(raw).total))
+        .catch(() => setPendingRatings(0));
+    }
+    if (isBuyerRole(user.role)) {
+      api<PaginatedResult<OfferItem> | OfferItem[]>('/offers/received?limit=1')
+        .then((raw) => setPendingOffers(normalizePaginated(raw).total))
+        .catch(() => setPendingOffers(0));
+    } else {
+      setPendingOffers(0);
+    }
+  }, [user?.id, user?.role, pathname]);
 
   const navLinks = (
     <>
       {!loading && user && isBuyerRole(user.role) && (
-        <Link href="/buyer" className={navLinkCls} onClick={() => setMenuOpen(false)}>
+        <Link href="/buyer" className={navLinkCls}>
           {t('nav.buyerPanel')}
         </Link>
       )}
+      {!loading && user && isBuyerRole(user.role) && (
+        <Link href="/buyer/offers" className={navLinkCls}>
+          {t('buyer.tabOffers')}
+          {pendingOffers > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {pendingOffers}
+            </span>
+          )}
+        </Link>
+      )}
       {!loading && user && isSellerRole(user.role) && (
-        <Link href="/seller" className={navLinkCls} onClick={() => setMenuOpen(false)}>
+        <Link href="/seller" className={navLinkCls}>
           {t('nav.sellerPanel')}
         </Link>
       )}
       {!loading && user && (
-        <Link href="/chats" className={navLinkCls} onClick={() => setMenuOpen(false)}>
+        <Link href="/chats" className={navLinkCls}>
           {t('nav.messages')}
         </Link>
       )}
       {!loading && user && (
-        <Link href="/ratings" className={navLinkCls} onClick={() => setMenuOpen(false)}>
+        <Link href="/ratings" className={navLinkCls}>
           {t('nav.ratings')}
           {pendingRatings > 0 && (
             <span className="ml-1.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -73,29 +82,36 @@ export function Header({ variant = 'light' }: HeaderProps) {
           )}
         </Link>
       )}
-      {!loading && user && (
-        <Link href="/profile" className={`md:hidden ${navLinkCls}`} onClick={() => setMenuOpen(false)}>
-          {t('nav.profile')}
-        </Link>
-      )}
     </>
   );
 
   return (
     <header
-      className={`sticky top-0 z-50 backdrop-blur-md transition-shadow ${
+      className={`app-header sticky top-0 z-50 backdrop-blur-md transition-shadow ${
         dark
           ? 'border-b border-white/10 bg-[#060c1d]/85'
           : 'border-b border-transparent bg-white/85'
       }`}
     >
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div
+        className={`app-header__inner mx-auto flex h-[72px] max-w-6xl items-center justify-between px-4 sm:px-6 ${
+          user ? 'max-md:justify-center max-md:relative' : ''
+        }`}
+      >
         {dark ? (
-          <Link href="/" className="portal-logo">
+          <Link
+            href="/"
+            className={`portal-logo ${user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''}`}
+          >
             <span className="portal-logo-text">BuySeek</span>
           </Link>
         ) : (
-          <Link href="/" className="flex items-center gap-2.5 text-xl font-extrabold text-[var(--dark)]">
+          <Link
+            href="/"
+            className={`flex items-center gap-2.5 text-xl font-extrabold text-[var(--dark)] ${
+              user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''
+            }`}
+          >
             <span className="text-[var(--primary)]">⇄</span> BuySeek
           </Link>
         )}
@@ -108,7 +124,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
           {navLinks}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className={`app-header__actions flex items-center gap-2 ${user ? 'max-md:hidden' : ''}`}>
           {!loading && user ? (
             <>
               <Link
@@ -129,7 +145,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
               )}
               <button
                 type="button"
-                onClick={() => { clearToken(); clearStoredLocale(); window.location.href = '/'; }}
+                onClick={logoutSession}
                 className="btn btn-ghost hidden px-3 py-2 text-sm sm:inline-flex"
               >
                 {t('nav.logout')}
@@ -142,67 +158,8 @@ export function Header({ variant = 'light' }: HeaderProps) {
               <Link href="/register" className="btn btn-primary hidden px-3 py-2 text-sm sm:inline-flex">{t('nav.register')}</Link>
             </>
           )}
-
-          <button
-            type="button"
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border md:hidden ${
-              dark ? 'border-white/15 bg-white/5 text-white' : 'border-slate-200'
-            }`}
-            aria-expanded={menuOpen}
-            aria-label={t('nav.menu')}
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            <span className="text-lg leading-none">{menuOpen ? '✕' : '☰'}</span>
-          </button>
         </div>
       </div>
-
-      {menuOpen && (
-        <div
-          className={`px-4 py-4 md:hidden ${
-            dark ? 'border-t border-white/10 bg-[#060c1d]/95' : 'border-t bg-white'
-          }`}
-        >
-          <nav
-            className={`flex flex-col gap-3 text-sm font-semibold ${
-              dark ? 'text-slate-200' : 'text-[var(--text)]'
-            }`}
-          >
-            {navLinks}
-            {!loading && user && user.role === 'BOTH' && (
-              <div className="flex gap-2 border-t pt-3">
-                <Link href="/buyer" className="btn btn-ghost flex-1 text-xs" onClick={() => setMenuOpen(false)}>
-                  {t('nav.buyer')}
-                </Link>
-                <Link href="/seller" className="btn btn-ghost flex-1 text-xs" onClick={() => setMenuOpen(false)}>
-                  {t('nav.seller')}
-                </Link>
-              </div>
-            )}
-            {!loading && user ? (
-              <button
-                type="button"
-                className={`mt-1 rounded-lg border px-3 py-2 text-left text-sm font-semibold ${
-                  dark ? 'border-white/15 text-slate-300' : 'border-slate-200 text-slate-700'
-                }`}
-                onClick={() => { clearToken(); clearStoredLocale(); window.location.href = '/'; }}
-              >
-                {t('nav.logout')}
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2 border-t pt-3">
-                <LanguageSwitcher />
-                <Link href="/login" className="btn btn-ghost w-full" onClick={() => setMenuOpen(false)}>
-                  {t('nav.login')}
-                </Link>
-                <Link href="/register" className="btn btn-primary w-full" onClick={() => setMenuOpen(false)}>
-                  {t('nav.register')}
-                </Link>
-              </div>
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   );
 }

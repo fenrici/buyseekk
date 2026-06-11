@@ -18,7 +18,7 @@ export default function OffersRedirect() {
     api<User>('/auth/me')
       .then((user) => {
         if (user.role === 'SELLER') router.replace('/seller');
-        else router.replace('/buyer?tab=offers');
+        else router.replace('/buyer/offers');
       })
       .catch(() => router.replace('/login'));
   }, [router]);
