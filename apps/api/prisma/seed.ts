@@ -417,6 +417,8 @@ async function upsertDemoSeller(data: {
   return prisma.user.upsert({
     where: { email: data.email },
     update: {
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
       role: UserRole.BOTH,
       activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
@@ -435,6 +437,8 @@ async function upsertDemoSeller(data: {
       country: data.country,
       locale: data.locale,
       currency: Currency.USD,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     },
   });
 }
@@ -468,7 +472,7 @@ async function main() {
 
   const buyerAR = await prisma.user.upsert({
     where: { email: 'comprador@buyseekk.com' },
-    update: {},
+    update: { emailVerified: true, emailVerifiedAt: new Date() },
     create: {
       email: 'comprador@buyseekk.com',
       passwordHash,
@@ -477,12 +481,14 @@ async function main() {
       country: Country.AR,
       locale: Locale.ES,
       currency: Currency.USD,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     },
   });
 
   const buyerUS = await prisma.user.upsert({
     where: { email: 'comprador.us@buyseekk.com' },
-    update: {},
+    update: { emailVerified: true, emailVerifiedAt: new Date() },
     create: {
       email: 'comprador.us@buyseekk.com',
       passwordHash,
@@ -491,12 +497,16 @@ async function main() {
       country: Country.US,
       locale: Locale.EN,
       currency: Currency.USD,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     },
   });
 
   const seller = await prisma.user.upsert({
     where: { email: 'vendedor@buyseekk.com' },
     update: {
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
       role: UserRole.BOTH,
       activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
@@ -513,6 +523,8 @@ async function main() {
       country: Country.US,
       locale: Locale.EN,
       currency: Currency.USD,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
     },
   });
 

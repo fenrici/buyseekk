@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, setToken } from '@/lib/api';
+import { api, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
 import { getDashboardPathForMode } from '@/lib/auth';
 import { PublicHeader } from '@/components/PublicHeader';
@@ -69,11 +69,11 @@ export default function RegisterPage() {
         payload.sellerType = form.sellerType;
         payload.sellerCategory = form.sellerCategory;
       }
-      const res = await api<{ token: string; user: User }>('/auth/register', {
+      const res = await api<{ token: string; refreshToken: string; user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      setToken(res.token);
+      setAuthTokens(res.token, res.refreshToken);
       setStoredLocale(res.user.locale);
       setSession(res.user);
       router.replace(getDashboardPathForMode(res.user.activeMode));

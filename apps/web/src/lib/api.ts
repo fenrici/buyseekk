@@ -8,17 +8,68 @@ function normalizeApiUrl(raw?: string) {
 
 export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
+const TOKEN_KEY = 'buyseekk_token';
+const REFRESH_KEY = 'buyseekk_refresh_token';
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('buyseekk_token');
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(REFRESH_KEY);
 }
 
 export function setToken(token: string) {
-  localStorage.setItem('buyseekk_token', token);
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function setRefreshToken(token: string) {
+  localStorage.setItem(REFRESH_KEY, token);
+}
+
+export function setAuthTokens(token: string, refreshToken: string) {
+  setToken(token);
+  setRefreshToken(refreshToken);
 }
 
 export function clearToken() {
-  localStorage.removeItem('buyseekk_token');
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshSession(): Promise<boolean> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          clearToken();
+          return false;
+        }
+        if (data.token && data.refreshToken) {
+          setAuthTokens(data.token, data.refreshToken);
+          return true;
+        }
+        clearToken();
+        return false;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
 }
 
 /** Acepta respuesta paginada o array legacy (compatibilidad API pre-P0). */
@@ -53,6 +104,7 @@ export function normalizePaginated<T>(data: PaginatedResult<T> | T[]): Paginated
 export async function api<T>(
   path: string,
   options: RequestInit = {},
+  retryOnUnauthorized = true,
 ): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -63,6 +115,13 @@ export async function api<T>(
 
   const res = await fetch(`${API_URL}/api${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401 && retryOnUnauthorized && !path.startsWith('/auth/')) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      return api<T>(path, options, false);
+    }
+  }
 
   if (!res.ok) {
     const msg = data.message ?? data.error ?? 'Error en la solicitud';

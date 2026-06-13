@@ -25,6 +25,8 @@ export interface User {
   website?: string | null;
   city?: string | null;
   lastSellerFilters?: Record<string, unknown> | null;
+  emailVerified: boolean;
+  emailVerifiedAt?: string | null;
 }
 
 export interface PublicProfile {

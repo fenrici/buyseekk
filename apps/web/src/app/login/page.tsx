@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, getToken, setToken } from '@/lib/api';
+import { api, getToken, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
 import { getDashboardPathForMode } from '@/lib/auth';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
@@ -49,11 +49,11 @@ function LoginForm() {
     setLoading(true);
     setError('');
     try {
-      const res = await api<{ token: string; user: User }>('/auth/login', {
+      const res = await api<{ token: string; refreshToken: string; user: User }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      setToken(res.token);
+      setAuthTokens(res.token, res.refreshToken);
       setStoredLocale(res.user.locale);
       setSession(res.user);
       router.replace(getDashboardPathForMode(res.user.activeMode));
@@ -128,6 +128,9 @@ function LoginForm() {
               <button type="submit" disabled={loading} className="portal-cta portal-cta-primary auth-submit">
                 {loading ? t('auth.entering') : t('auth.enter')}
               </button>
+              <p className="auth-forgot-link">
+                <Link href="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
+              </p>
             </form>
 
             <p className="auth-demo-hint">{t('auth.demoPassword')}</p>

@@ -60,6 +60,16 @@ enum RatingType {
   NO_RESPONSE
 }
 
+enum SecurityEvent {
+  USER_REGISTERED
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_CHANGED
+  EMAIL_VERIFIED
+  LOGOUT
+}
+
 /// Estados almacenados. INACTIVA, ARCHIVADA y PENDIENTE_DE_CONFIRMACION se derivan de lastBuyerActivityAt.
 enum RequestStatus {
   ACTIVA
@@ -86,15 +96,73 @@ model User {
   website         String?
   city            String?
   lastSellerFilters Json?
+  emailVerified    Boolean   @default(false)
+  emailVerifiedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  requests         Request[]
-  offers           Offer[]
-  ratingsGiven     Rating[] @relation("RatingsGiven")
-  ratingsReceived  Rating[] @relation("RatingsReceived")
-  savedSearches    SavedSearch[]
-  savedRequests    SavedRequest[]
+  requests                  Request[]
+  offers                    Offer[]
+  ratingsGiven              Rating[] @relation("RatingsGiven")
+  ratingsReceived           Rating[] @relation("RatingsReceived")
+  savedSearches             SavedSearch[]
+  savedRequests             SavedRequest[]
+  emailVerificationTokens   EmailVerificationToken[]
+  passwordResetTokens       PasswordResetToken[]
+  refreshTokens             RefreshToken[]
+  securityLogs              SecurityLog[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SecurityLog {
+  id        String        @id @default(cuid())
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event     SecurityEvent
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
 }
 
 model SavedSearch {

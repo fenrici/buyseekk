@@ -19,6 +19,7 @@ import {
 } from '@buyseekk/shared';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
+import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
@@ -156,6 +157,7 @@ export class RequestsService {
     if (!isBuyerCapable(user.role)) {
       throw new ForbiddenException('Solo compradores pueden publicar solicitudes');
     }
+    assertEmailVerified(user);
     validateImageUrls(dto.imageUrls);
     assertCleanPublicText(dto.requirements, 'los requisitos');
     assertCleanPublicText(dto.title, 'el título');

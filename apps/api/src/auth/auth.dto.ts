@@ -43,3 +43,30 @@ export class LoginDto {
   @IsString()
   password!: string;
 }
+
+export class RefreshTokenDto {
+  @IsString()
+  @MinLength(10)
+  refreshToken!: string;
+}
+
+export class VerifyEmailDto {
+  @IsString()
+  @MinLength(10)
+  token!: string;
+}
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  email!: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @MinLength(10)
+  token!: string;
+
+  @IsString()
+  @MinLength(6)
+  password!: string;
+}

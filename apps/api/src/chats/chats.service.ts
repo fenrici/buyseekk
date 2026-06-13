@@ -6,6 +6,7 @@ import {
 import { OfferStatus, RequestStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
+import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
@@ -166,6 +167,10 @@ export class ChatsService {
       },
     });
     if (!chat) throw new NotFoundException('Chat no encontrado');
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ForbiddenException();
+    assertEmailVerified(user);
 
     const role = this.assertParticipant(chat, userId);
     const message = await this.prisma.message.create({

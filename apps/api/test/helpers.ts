@@ -5,6 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
+import { hashToken } from '../src/auth/token.util';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 export async function createTestApp(): Promise<INestApplication<App>> {
@@ -23,18 +24,43 @@ export async function createTestApp(): Promise<INestApplication<App>> {
 }
 
 export async function resetDatabase(prisma: PrismaService) {
+  await prisma.securityLog.deleteMany();
   await prisma.message.deleteMany();
   await prisma.chat.deleteMany();
   await prisma.rating.deleteMany();
   await prisma.offer.deleteMany();
+  await prisma.savedRequest.deleteMany();
+  await prisma.savedSearch.deleteMany();
   await prisma.request.deleteMany();
+  await prisma.emailVerificationToken.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
 }
 
-type AuthResponse = { token: string; user: { id: string; email: string } };
+type AuthResponse = {
+  token: string;
+  refreshToken: string;
+  user: { id: string; email: string; emailVerified?: boolean };
+};
 
 export function authHeader(token: string) {
   return { Authorization: `Bearer ${token}` };
+}
+
+export async function verifyUserEmail(prisma: PrismaService, userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { emailVerified: true, emailVerifiedAt: new Date() },
+  });
+}
+
+export async function getVerificationToken(prisma: PrismaService, userId: string) {
+  const record = await prisma.emailVerificationToken.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  return record;
 }
 
 export async function registerUser(
@@ -48,6 +74,7 @@ export async function registerUser(
     sellerType?: 'PERSONAL' | 'BUSINESS';
     sellerCategory?: 'AUTOS' | 'INMOBILIARIA';
   },
+  options: { verify?: boolean } = { verify: true },
 ): Promise<AuthResponse> {
   const body = { ...payload };
   if (body.role === 'SELLER' || body.role === 'BOTH') {
@@ -58,6 +85,12 @@ export async function registerUser(
     .post('/api/auth/register')
     .send(body)
     .expect(201);
+
+  if (options.verify !== false) {
+    const prisma = app.get(PrismaService);
+    await verifyUserEmail(prisma, res.body.user.id);
+  }
+
   return res.body;
 }
 
@@ -72,3 +105,19 @@ export async function loginUser(
     .expect(201);
   return res.body;
 }
+
+export async function getPasswordResetTokenPlain(
+  prisma: PrismaService,
+  userId: string,
+): Promise<string | null> {
+  const record = await prisma.passwordResetToken.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!record) return null;
+  // Tests cannot reverse hash; callers should use verify endpoint with token from email logs
+  // or create token via API and read from DB using a known plain token in security tests.
+  return record.tokenHash;
+}
+
+export { hashToken };

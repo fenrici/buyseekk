@@ -16,6 +16,7 @@ import {
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/spam-content';
 import { assertValidImageUrls } from '../common/utils/image-urls';
+import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
@@ -53,6 +54,7 @@ export class OffersService {
 
     const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
     if (!seller) throw new ForbiddenException();
+    assertEmailVerified(seller);
     if (seller.country !== request.country) {
       throw new ForbiddenException('Solo podés ofertar en solicitudes de tu país');
     }

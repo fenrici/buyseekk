@@ -1,5 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import {
+  IsEmail,
   IsIn,
   IsNotEmpty,
   IsOptional,
@@ -20,6 +21,30 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   JWT_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  JWT_ACCESS_EXPIRES?: string;
+
+  @IsOptional()
+  @IsString()
+  JWT_REFRESH_EXPIRES?: string;
+
+  @IsOptional()
+  @IsIn(['console', 'resend'])
+  EMAIL_PROVIDER?: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_FROM?: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_API_KEY?: string;
+
+  @IsOptional()
+  @IsEmail()
+  EMAIL_SANDBOX_TO?: string;
 
   @IsOptional()
   @IsString()
@@ -94,6 +119,20 @@ export function validateEnv(config: Record<string, unknown>) {
     const missing = required.filter(([, value]) => !value).map(([name]) => name);
     if (missing.length) {
       throw new Error(`STORAGE_PROVIDER=r2 requiere: ${missing.join(', ')}`);
+    }
+  }
+
+  if (validated.EMAIL_PROVIDER === 'resend') {
+    if (!validated.EMAIL_API_KEY?.trim()) {
+      throw new Error('EMAIL_PROVIDER=resend requiere EMAIL_API_KEY');
+    }
+    if (!validated.EMAIL_FROM?.trim()) {
+      throw new Error('EMAIL_PROVIDER=resend requiere EMAIL_FROM');
+    }
+    if (validated.EMAIL_FROM.includes('@resend.dev') && !validated.EMAIL_SANDBOX_TO?.trim()) {
+      throw new Error(
+        'Sin dominio propio: EMAIL_FROM con @resend.dev requiere EMAIL_SANDBOX_TO (el email de tu cuenta Resend)',
+      );
     }
   }
 

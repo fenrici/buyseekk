@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { EmailVerificationBanner } from '@/components/EmailVerificationBanner';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { getToken } from '@/lib/api';
@@ -29,6 +30,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   return (
     <>
+      <EmailVerificationBanner placement="mobile" />
       <div className="mobile-app-shell">{children}</div>
       <Suspense fallback={null}>
         <MobileBottomNav />

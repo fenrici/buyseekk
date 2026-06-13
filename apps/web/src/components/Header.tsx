@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { resolveNavMode } from '@buyseekk/shared';
 import { api, normalizePaginated } from '@/lib/api';
 import { Avatar } from '@/components/Avatar';
+import { EmailVerificationBanner } from '@/components/EmailVerificationBanner';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
@@ -87,13 +88,14 @@ export function Header({ variant = 'light' }: HeaderProps) {
   );
 
   return (
-    <header
-      className={`app-header sticky top-0 z-50 backdrop-blur-md transition-shadow max-md:hidden ${
-        dark
-          ? 'border-b border-white/10 bg-[#060c1d]/85'
-          : 'border-b border-transparent bg-white/85'
-      }`}
-    >
+    <div className="app-header-shell sticky top-0 z-50 max-md:hidden">
+      <header
+        className={`app-header backdrop-blur-md transition-shadow ${
+          dark
+            ? 'border-b border-white/10 bg-[#060c1d]/85'
+            : 'border-b border-transparent bg-white/85'
+        }`}
+      >
       <div
         className={`app-header__inner mx-auto flex h-[72px] max-w-6xl items-center justify-between px-4 sm:px-6 ${
           user ? 'max-md:justify-center max-md:relative' : ''
@@ -146,6 +148,8 @@ export function Header({ variant = 'light' }: HeaderProps) {
           )}
         </div>
       </div>
-    </header>
+      </header>
+      <EmailVerificationBanner placement="desktop" />
+    </div>
   );
 }
