@@ -200,13 +200,16 @@ describe('P0 Phase 1 (e2e)', () => {
       expect(res.body.hasNextPage).toBe(true);
     });
 
-    it('rejects seller role', async () => {
+    it('allows seller-capable (BOTH) accounts to list their own requests', async () => {
       const seller = await createSeller();
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get('/api/requests/mine')
         .set(authHeader(seller.token))
-        .expect(403);
+        .expect(200);
+
+      expect(res.body.items).toHaveLength(0);
+      expect(res.body.total).toBe(0);
     });
   });
 
