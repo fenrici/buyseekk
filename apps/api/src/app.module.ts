@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from './config/env.validation';
 import { buildThrottlerDefinitions } from './config/throttle.config';
@@ -17,10 +18,12 @@ import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { SavedRequestsModule } from './saved-requests/saved-requests.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       skipIf: () => process.env.NODE_ENV === 'test',
       throttlers: buildThrottlerDefinitions(),
@@ -37,6 +40,7 @@ import { SavedRequestsModule } from './saved-requests/saved-requests.module';
     UploadsModule,
     SavedSearchesModule,
     SavedRequestsModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

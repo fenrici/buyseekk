@@ -70,6 +70,24 @@ enum SecurityEvent {
   LOGOUT
 }
 
+enum NotificationType {
+  NEW_OFFER
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  NEW_MESSAGE
+  REQUEST_EXPIRING
+  REQUEST_INACTIVE
+  REQUEST_CLOSED
+  EMAIL_VERIFIED
+}
+
+enum NotificationEntityType {
+  REQUEST
+  OFFER
+  CHAT
+  USER
+}
+
 /// Estados almacenados. INACTIVA, ARCHIVADA y PENDIENTE_DE_CONFIRMACION se derivan de lastBuyerActivityAt.
 enum RequestStatus {
   ACTIVA
@@ -111,6 +129,24 @@ model User {
   passwordResetTokens       PasswordResetToken[]
   refreshTokens             RefreshToken[]
   securityLogs              SecurityLog[]
+  notifications             Notification[]
+}
+
+model Notification {
+  id         String                  @id @default(cuid())
+  userId     String
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  title      String
+  message    String
+  entityId   String?
+  entityType NotificationEntityType?
+  read       Boolean                 @default(false)
+  createdAt  DateTime                @default(now())
+
+  @@index([userId, read, createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, type, entityId])
 }
 
 model EmailVerificationToken {
@@ -247,6 +283,7 @@ model Offer {
   message               String
   imageUrls             String[]    @default([])
   status                OfferStatus @default(PENDIENTE)
+  dismissedBySeller     Boolean     @default(false)
   requestTitle          String
   requestBudget         Int
   requestBudgetPeriod   String?

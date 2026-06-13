@@ -18,6 +18,7 @@ import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/sp
 import { assertValidImageUrls } from '../common/utils/image-urls';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { RatingsService } from '../ratings/ratings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
@@ -27,6 +28,7 @@ export class OffersService {
   constructor(
     private prisma: PrismaService,
     private ratings: RatingsService,
+    private notifications: NotificationsService,
   ) {}
 
   private withComparison<T extends { price: number; currency: string; requestBudget: number }>(offer: T) {
@@ -91,9 +93,24 @@ export class OffersService {
       },
       include: {
         seller: { select: { id: true, name: true, country: true } },
-        request: { select: { id: true, title: true, imageUrls: true } },
+        request: {
+          select: {
+            id: true,
+            title: true,
+            imageUrls: true,
+            userId: true,
+            user: { select: { locale: true } },
+          },
+        },
       },
     });
+
+    await this.notifications.notifyNewOffer(
+      request.userId,
+      offer.request.user.locale,
+      offer.id,
+      offer.requestTitle,
+    );
 
     return this.withComparison(offer);
   }
@@ -185,7 +202,7 @@ export class OffersService {
   async sent(sellerId: string, page?: number, limit?: number) {
     const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
 
-    const where = { sellerId };
+    const where = { sellerId, dismissedBySeller: false };
 
     const [offers, total] = await Promise.all([
       this.prisma.offer.findMany({
@@ -280,7 +297,7 @@ export class OffersService {
       const updatedOffer = await tx.offer.findUniqueOrThrow({
         where: { id: offerId },
         include: {
-          seller: { select: { id: true, name: true } },
+          seller: { select: { id: true, name: true, locale: true } },
           request: { select: { id: true, title: true } },
         },
       });
@@ -316,6 +333,13 @@ export class OffersService {
       return { updated: updatedOffer, chat: newChat };
     });
 
+    await this.notifications.notifyOfferAccepted(
+      updated.sellerId,
+      updated.seller.locale,
+      updated.id,
+      updated.requestTitle,
+    );
+
     return { ...this.withComparison(updated), chatId: chat.id };
   }
 
@@ -345,7 +369,36 @@ export class OffersService {
       data: { status: RequestStatus.NEGOCIANDO },
     });
 
-    const updated = await this.prisma.offer.findUniqueOrThrow({ where: { id: offerId } });
+    const updated = await this.prisma.offer.findUniqueOrThrow({
+      where: { id: offerId },
+      include: { seller: { select: { locale: true } } },
+    });
+
+    await this.notifications.notifyOfferRejected(
+      updated.sellerId,
+      updated.seller.locale,
+      updated.id,
+      updated.requestTitle,
+    );
+
     return this.withComparison(updated);
+  }
+
+  /** El vendedor descarta de su lista una oferta rechazada (soft-dismiss). */
+  async dismiss(offerId: string, sellerId: string) {
+    const offer = await this.prisma.offer.findUnique({ where: { id: offerId } });
+    if (!offer || offer.sellerId !== sellerId) {
+      throw new NotFoundException('Oferta no encontrada');
+    }
+    if (offer.status !== OfferStatus.RECHAZADA) {
+      throw new BadRequestException('Solo podés descartar ofertas rechazadas');
+    }
+
+    await this.prisma.offer.update({
+      where: { id: offerId },
+      data: { dismissedBySeller: true },
+    });
+
+    return { ok: true };
   }
 }

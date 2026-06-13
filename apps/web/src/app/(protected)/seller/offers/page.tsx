@@ -69,7 +69,14 @@ function SentOffersTab() {
               </div>
             )}
             {offers.map((o) => (
-              <SellerSentOfferCard key={o.id} offer={o} />
+              <SellerSentOfferCard
+                key={o.id}
+                offer={o}
+                onDismissed={(id) => {
+                  setOffers((prev) => prev.filter((x) => x.id !== id));
+                  setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
+                }}
+              />
             ))}
             {offers.length > 0 && (
               <PaginationControls

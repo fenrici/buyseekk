@@ -25,6 +25,7 @@ export async function createTestApp(): Promise<INestApplication<App>> {
 
 export async function resetDatabase(prisma: PrismaService) {
   await prisma.securityLog.deleteMany();
+  await prisma.notification.deleteMany();
   await prisma.message.deleteMany();
   await prisma.chat.deleteMany();
   await prisma.rating.deleteMany();

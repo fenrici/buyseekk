@@ -7,13 +7,17 @@ import { OfferStatus, RequestStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
 
 @Injectable()
 export class ChatsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   private formatPartner(
     offer: {
@@ -177,6 +181,8 @@ export class ChatsService {
       data: { chatId, fromRole: role, text: dto.text.trim() },
     });
 
+    await this.notifyMessageRecipient(chatId, userId, role);
+
     // Solo la actividad del comprador renueva el ciclo de vida
     if (role === 'buyer') {
       const now = new Date();
@@ -196,5 +202,34 @@ export class ChatsService {
       text: message.text,
       createdAt: message.createdAt,
     };
+  }
+
+  async notifyMessageRecipient(chatId: string, senderId: string, senderRole: 'buyer' | 'seller') {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        offer: {
+          include: {
+            seller: { select: { id: true, name: true, locale: true } },
+            request: { include: { user: { select: { id: true, name: true, locale: true } } } },
+          },
+        },
+      },
+    });
+    if (!chat) return;
+
+    const recipient =
+      senderRole === 'buyer'
+        ? { id: chat.offer.seller.id, locale: chat.offer.seller.locale, senderName: chat.offer.request.user.name }
+        : { id: chat.offer.request.user.id, locale: chat.offer.request.user.locale, senderName: chat.offer.seller.name };
+
+    if (recipient.id === senderId) return;
+
+    await this.notifications.notifyNewMessage(
+      recipient.id,
+      recipient.locale,
+      chatId,
+      recipient.senderName,
+    );
   }
 }

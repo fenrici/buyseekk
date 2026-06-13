@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { formatMoney } from '@/lib/api';
+import { api, formatMoney } from '@/lib/api';
 import { offerStatusLabel, useLocale, useT } from '@/lib/i18n';
 import type { OfferItem } from '@/lib/types';
 import { CompareBlock } from '@/components/CompareBlock';
@@ -12,10 +13,29 @@ const STATUS_CLASS: Record<string, string> = {
   PENDIENTE: 'offer-status-badge--pending',
 };
 
-export function SellerSentOfferCard({ offer }: { offer: OfferItem }) {
+export function SellerSentOfferCard({
+  offer,
+  onDismissed,
+}: {
+  offer: OfferItem;
+  onDismissed?: (id: string) => void;
+}) {
   const t = useT();
   const locale = useLocale();
+  const [dismissing, setDismissing] = useState(false);
   const statusClass = STATUS_CLASS[offer.status] ?? STATUS_CLASS.PENDIENTE;
+
+  async function handleDismiss() {
+    if (dismissing) return;
+    if (!window.confirm(t('seller.dismissOfferConfirm'))) return;
+    setDismissing(true);
+    try {
+      await api(`/offers/${offer.id}`, { method: 'DELETE' });
+      onDismissed?.(offer.id);
+    } catch {
+      setDismissing(false);
+    }
+  }
 
   return (
     <article className="offer-received-card">
@@ -39,6 +59,19 @@ export function SellerSentOfferCard({ offer }: { offer: OfferItem }) {
           <Link href={`/chats/${offer.chatId}`} className="btn btn-primary text-sm">
             💬 {t('seller.openChat')}
           </Link>
+        </div>
+      )}
+
+      {offer.status === 'RECHAZADA' && (
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            className="btn btn-ghost text-sm text-slate-400"
+            onClick={handleDismiss}
+            disabled={dismissing}
+          >
+            {t('seller.dismissOffer')}
+          </button>
         </div>
       )}
     </article>

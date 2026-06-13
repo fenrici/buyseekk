@@ -20,6 +20,7 @@ import {
   VerifyEmailDto,
 } from './auth.dto';
 import { EmailService } from './email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SecurityContext, SecurityLogService } from './security-log.service';
 import { generateSecureToken, hashToken } from './token.util';
 
@@ -36,6 +37,7 @@ export class AuthService {
     private config: ConfigService,
     private email: EmailService,
     private securityLog: SecurityLogService,
+    private notifications: NotificationsService,
   ) {}
 
   private toPublicUser(user: User) {
@@ -256,6 +258,8 @@ export class AuthService {
       ip: ctx.ip,
       userAgent: ctx.userAgent,
     });
+
+    await this.notifications.notifyEmailVerified(user.id, user.locale);
 
     return { user: this.toPublicUser(user), alreadyVerified: false };
   }

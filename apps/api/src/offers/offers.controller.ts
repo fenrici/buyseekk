@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -57,5 +57,12 @@ export class OffersController {
   @Roles('buyer')
   reject(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offers.reject(id, user.id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Delete(':id')
+  @Roles('seller')
+  dismiss(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.dismiss(id, user.id);
   }
 }

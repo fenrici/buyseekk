@@ -23,6 +23,7 @@ import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { CreateRequestDto } from './requests.dto';
@@ -67,6 +68,7 @@ export class RequestsService {
   constructor(
     private prisma: PrismaService,
     private ratings: RatingsService,
+    private notifications: NotificationsService,
   ) {}
 
   private formatRequest(req: Awaited<ReturnType<typeof this.findByIdRaw>>) {
@@ -831,6 +833,12 @@ export class RequestsService {
         pausedAt: null,
       },
     });
+
+    const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { locale: true } });
+    if (buyer) {
+      await this.notifications.notifyRequestClosed(userId, buyer.locale, id, req.title);
+    }
+
     return this.formatRequest(await this.findByIdRaw(id));
   }
 

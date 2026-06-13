@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
+import { useNotifications } from '@/providers/NotificationsProvider';
 import { useMobileNavBadges } from '@/hooks/useMobileNavBadges';
 import { useMobileNavContext } from '@/hooks/useMobileNavContext';
 
@@ -148,13 +149,18 @@ export function MobileBottomNav() {
   const tab = searchParams.get('tab');
   const context = useMobileNavContext(user);
   const badges = useMobileNavBadges(user, context);
+  const { unreadCount } = useNotifications();
 
   if (!user || !context) return null;
 
   // Hilo de chat activo: full-screen sin bottom nav (la lista /chats sí lo muestra).
   if (pathname.startsWith('/chats/')) return null;
 
-  const tabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
+  const profileBadge = badges.profile + unreadCount;
+  const baseTabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
+  const tabs = baseTabs.map((item) =>
+    item.id === 'profile' ? { ...item, badge: profileBadge } : item,
+  );
 
   return (
     <nav className="mobile-bottom-nav" aria-label={t('mobileNav.aria')}>

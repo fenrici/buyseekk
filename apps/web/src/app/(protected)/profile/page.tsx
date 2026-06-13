@@ -7,12 +7,14 @@ import { User } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/providers/AuthProvider';
+import { useNotifications } from '@/providers/NotificationsProvider';
 import { useModeSwitch } from '@/providers/ModeSwitchProvider';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { logoutSession } from '@/lib/session';
 
 export default function ProfileEditPage() {
   const { user, setSession } = useAuth();
+  const { unreadCount } = useNotifications();
   const { switchMode, switching } = useModeSwitch();
   const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -123,6 +125,29 @@ export default function ProfileEditPage() {
             {t('profile.viewPublic')}
           </Link>
         </div>
+
+        <Link href="/notifications" className="profile-notif-link">
+          <span className="profile-notif-link__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+              <path d="M15 17H9l-1 2h8l-1-2z" strokeLinejoin="round" />
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7z" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span className="profile-notif-link__text">
+            <span className="profile-notif-link__title">{t('notifications.title')}</span>
+            <span className="profile-notif-link__sub">
+              {unreadCount > 0
+                ? t('notifications.unreadCount', { count: String(unreadCount > 99 ? '99+' : unreadCount) })
+                : t('notifications.allRead')}
+            </span>
+          </span>
+          {unreadCount > 0 && (
+            <span className="profile-notif-link__badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          )}
+          <span className="profile-notif-link__chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
 
         <form onSubmit={handleSubmit} className="card mt-8 space-y-5 p-6">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
