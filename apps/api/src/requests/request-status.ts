@@ -1,43 +1,58 @@
 import { RequestStatus } from '@prisma/client';
-import { REQUEST_ARCHIVE_DAYS, REQUEST_INACTIVE_DAYS } from '@buyseekk/shared';
+import {
+  archiveCutoff,
+  confirmationCutoff,
+  effectiveRequestStatus,
+  inactiveAfterConfirmCutoff,
+  isVisibleToSellers,
+  sortRequestsForSeller,
+  type EffectiveRequestStatus,
+  type RequestLifecycleInput,
+} from '@buyseekk/shared';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export {
+  archiveCutoff,
+  confirmationCutoff,
+  effectiveRequestStatus,
+  inactiveAfterConfirmCutoff,
+  isVisibleToSellers,
+  sortRequestsForSeller,
+  type EffectiveRequestStatus,
+  type RequestLifecycleInput,
+};
 
-/**
- * Estado visible de una solicitud. ACTIVA/NEGOCIANDO/CERRADA se almacenan;
- * INACTIVA (10 días sin actividad, oculta a vendedores) y ARCHIVADA (30 días)
- * se derivan de lastActivityAt; "Seguir buscando" reabre con solo tocar la fecha.
- */
-export type EffectiveRequestStatus =
-  | 'ACTIVA'
-  | 'NEGOCIANDO'
-  | 'INACTIVA'
-  | 'CERRADA'
-  | 'ARCHIVADA';
-
-export function inactiveCutoff(now = Date.now()) {
-  return new Date(now - REQUEST_INACTIVE_DAYS * DAY_MS);
-}
-
-export function archiveCutoff(now = Date.now()) {
-  return new Date(now - REQUEST_ARCHIVE_DAYS * DAY_MS);
-}
-
-export function effectiveRequestStatus(req: {
+type LifecycleRow = {
   status: RequestStatus;
-  lastActivityAt: Date;
-}): EffectiveRequestStatus {
-  if (req.status === RequestStatus.CERRADA) return 'CERRADA';
-  const idleMs = Date.now() - req.lastActivityAt.getTime();
-  if (idleMs >= REQUEST_ARCHIVE_DAYS * DAY_MS) return 'ARCHIVADA';
-  if (idleMs >= REQUEST_INACTIVE_DAYS * DAY_MS) return 'INACTIVA';
-  return req.status === RequestStatus.NEGOCIANDO ? 'NEGOCIANDO' : 'ACTIVA';
+  lastBuyerActivityAt: Date;
+  pausedAt: Date | null;
+};
+
+export function toLifecycleInput(req: LifecycleRow): RequestLifecycleInput {
+  return {
+    status: req.status as RequestLifecycleInput['status'],
+    lastBuyerActivityAt: req.lastBuyerActivityAt,
+    pausedAt: req.pausedAt,
+  };
 }
 
-/** Condiciones de visibilidad para vendedores y listados públicos (oculta inactivas >10d). */
-export function visibleToSellersWhere() {
+/** Condiciones Prisma: oculta Pendiente de confirmación y Archivada; muestra Inactiva. */
+export function visibleToSellersWhere(now = Date.now()) {
+  const confirmation = confirmationCutoff(now);
+  const inactive = inactiveAfterConfirmCutoff(now);
+  const archive = archiveCutoff(now);
+
   return {
     status: { not: RequestStatus.CERRADA },
-    lastActivityAt: { gte: inactiveCutoff() },
+    lastBuyerActivityAt: { gte: archive },
+    OR: [
+      { lastBuyerActivityAt: { gte: confirmation } },
+      { lastBuyerActivityAt: { lt: inactive } },
+    ],
+    NOT: {
+      AND: [
+        { lastBuyerActivityAt: { lt: confirmation } },
+        { lastBuyerActivityAt: { gte: inactive } },
+      ],
+    },
   };
 }

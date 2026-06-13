@@ -18,7 +18,7 @@ import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/sp
 import { assertValidImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { inactiveCutoff } from '../requests/request-status';
+import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
 
 @Injectable()
@@ -47,7 +47,7 @@ export class OffersService {
     if (request.status === RequestStatus.CERRADA) {
       throw new BadRequestException('La solicitud está cerrada y no acepta nuevas ofertas');
     }
-    if (request.lastActivityAt < inactiveCutoff()) {
+    if (!isVisibleToSellers(toLifecycleInput(request))) {
       throw new NotFoundException('Solicitud no encontrada');
     }
 
@@ -91,12 +91,6 @@ export class OffersService {
         seller: { select: { id: true, name: true, country: true } },
         request: { select: { id: true, title: true, imageUrls: true } },
       },
-    });
-
-    // Una oferta nueva cuenta como actividad de la solicitud
-    await this.prisma.request.update({
-      where: { id: dto.requestId },
-      data: { lastActivityAt: new Date() },
     });
 
     return this.withComparison(offer);
@@ -314,7 +308,7 @@ export class OffersService {
       });
       await tx.request.update({
         where: { id: offer.requestId },
-        data: { lastActivityAt: new Date() },
+        data: { lastBuyerActivityAt: new Date(), lastActivityAt: new Date() },
       });
 
       return { updated: updatedOffer, chat: newChat };
@@ -339,10 +333,14 @@ export class OffersService {
       throw new BadRequestException('La oferta ya fue procesada');
     }
 
-    // Rechazar también es respuesta del comprador: cuenta como actividad
+    const now = new Date();
     await this.prisma.request.update({
       where: { id: offer.requestId },
-      data: { lastActivityAt: new Date() },
+      data: { lastBuyerActivityAt: now, lastActivityAt: now },
+    });
+    await this.prisma.request.updateMany({
+      where: { id: offer.requestId, status: RequestStatus.ACTIVA },
+      data: { status: RequestStatus.NEGOCIANDO },
     });
 
     const updated = await this.prisma.offer.findUniqueOrThrow({ where: { id: offerId } });

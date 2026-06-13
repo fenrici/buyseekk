@@ -1,10 +1,11 @@
-import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
+import { Country, Currency, Locale, RequestCategory, SellerType, UserMode, UserRole } from '@prisma/client';
 
 export type AuthUser = {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  activeMode: UserMode;
   sellerType?: SellerType | null;
   sellerCategory?: RequestCategory | null;
   country: Country;
@@ -12,10 +13,12 @@ export type AuthUser = {
   currency: Currency;
 };
 
+import { isBuyerCapableRole, isSellerCapableRole } from '@buyseekk/shared';
+
 export function isBuyerCapable(role: UserRole) {
-  return role === UserRole.BUYER || role === UserRole.BOTH;
+  return isBuyerCapableRole(role);
 }
 
 export function isSellerCapable(role: UserRole) {
-  return role === UserRole.SELLER || role === UserRole.BOTH;
+  return isSellerCapableRole(role);
 }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Country, Currency, Locale, User, UserRole } from '@prisma/client';
+import { Country, Currency, Locale, User, UserMode, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { defaultCurrencyForCountry, defaultLocaleForCountry } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -52,13 +52,19 @@ export class AuthService {
       dto.currency ??
       (defaultCurrencyForCountry(dto.country as 'AR' | 'US') === 'USD' ? Currency.USD : Currency.ARS);
 
+    // Toda cuenta puede comprar. Si elige vendedor, habilitamos ambas capacidades (BOTH)
+    // y arrancamos en modo vendedor; de lo contrario es comprador.
+    const role = isSeller ? UserRole.BOTH : UserRole.BUYER;
+    const activeMode = isSeller ? UserMode.SELLER : UserMode.BUYER;
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         passwordHash,
         name: dto.name,
-        role: dto.role,
+        role,
+        activeMode,
         sellerType: isSeller ? dto.sellerType : null,
         sellerCategory: isSeller ? dto.sellerCategory : null,
         country: dto.country,

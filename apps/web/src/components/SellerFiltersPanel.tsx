@@ -99,10 +99,7 @@ export function SellerFiltersPanel({
         <div className="explore-pills seller-filter-pills">
           <button
             type="button"
-            onClick={() => {
-              onLocationChange('');
-              onZoneChange('');
-            }}
+            onClick={() => onLocationChange('')}
             className={`explore-pill ${location === '' ? 'active' : ''}`}
             aria-pressed={location === ''}
           >
@@ -112,10 +109,7 @@ export function SellerFiltersPanel({
             <button
               key={city}
               type="button"
-              onClick={() => {
-                onLocationChange(city);
-                onZoneChange('');
-              }}
+              onClick={() => onLocationChange(city)}
               className={`explore-pill ${location === city ? 'active' : ''}`}
               aria-pressed={location === city}
             >

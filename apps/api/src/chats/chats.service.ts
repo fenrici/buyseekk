@@ -172,12 +172,13 @@ export class ChatsService {
       data: { chatId, fromRole: role, text: dto.text.trim() },
     });
 
-    // Todo mensaje renueva la actividad; si responde el comprador → NEGOCIANDO
-    await this.prisma.request.update({
-      where: { id: chat.offer.requestId },
-      data: { lastActivityAt: new Date() },
-    });
+    // Solo la actividad del comprador renueva el ciclo de vida
     if (role === 'buyer') {
+      const now = new Date();
+      await this.prisma.request.update({
+        where: { id: chat.offer.requestId },
+        data: { lastBuyerActivityAt: now, lastActivityAt: now },
+      });
       await this.prisma.request.updateMany({
         where: { id: chat.offer.requestId, status: RequestStatus.ACTIVA },
         data: { status: RequestStatus.NEGOCIANDO },

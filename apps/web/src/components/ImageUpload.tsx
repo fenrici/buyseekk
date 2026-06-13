@@ -88,7 +88,9 @@ export function ImageUpload({
                 type="button"
                 onClick={() => removeAt(i)}
                 disabled={uploading}
-                className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                aria-label={t('images.remove')}
+                title={t('images.remove')}
+                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-sm font-bold text-white shadow-md transition hover:bg-black/80 disabled:opacity-50"
               >
                 ✕
               </button>

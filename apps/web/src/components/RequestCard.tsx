@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { REQUEST_REMINDER_DAYS } from '@buyseekk/shared';
 import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
 import { RequestMeta } from '@/components/RequestMeta';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
+import { SaveRequestButton } from '@/components/SaveRequestButton';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { useT } from '@/lib/i18n';
 import { RequestItem, User } from '@/lib/types';
@@ -23,21 +23,12 @@ type BuyerProps = {
   locale: User['locale'];
   onDelete: (id: string) => void | Promise<void>;
   onClose?: (id: string) => void | Promise<void>;
+  onArchive?: (id: string) => void | Promise<void>;
   onRenew?: (id: string) => void | Promise<void>;
   onUpdated?: () => void;
 };
 
 type Props = SellerProps | BuyerProps;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function daysIdle(lastActivityAt?: string | null, createdAt?: string | null) {
-  const iso = lastActivityAt ?? createdAt;
-  if (!iso) return 0;
-  const ts = new Date(iso).getTime();
-  if (!Number.isFinite(ts)) return 0;
-  return (Date.now() - ts) / DAY_MS;
-}
 
 export function RequestCard(props: Props) {
   const t = useT();
@@ -47,8 +38,11 @@ export function RequestCard(props: Props) {
   if (props.variant === 'seller') {
     return (
       <article className="card card-listing h-full">
-        <div className="flex h-full flex-col p-5">
-          <div className="mb-2">
+        <div className="relative flex h-full flex-col p-5">
+          <div className="absolute right-3 top-3 z-10">
+            <SaveRequestButton requestId={request.id} initialSaved={request.isSaved} />
+          </div>
+          <div className="mb-2 pr-10">
             <RequestStatusBadge status={request.status} />
           </div>
           <RequestMeta request={request} locale={locale} size="sm" />
@@ -59,8 +53,9 @@ export function RequestCard(props: Props) {
           <RequestActivity
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}
-            lastActivityAt={request.lastActivityAt}
+            lastBuyerActivityAt={request.lastBuyerActivityAt ?? request.lastActivityAt}
             createdAt={request.createdAt}
+            showPublished
             className="mt-1"
           />
           <div className="mt-auto pt-4">
@@ -87,10 +82,9 @@ export function RequestCard(props: Props) {
   const hasAccepted = (request.offers ?? []).some((o) => o.status === 'ACEPTADA');
   const isClosed = request.status === 'CERRADA';
   const isArchived = request.status === 'ARCHIVADA';
-  const showReminder =
-    !isClosed &&
-    !isArchived &&
-    daysIdle(request.lastActivityAt, request.createdAt) >= REQUEST_REMINDER_DAYS;
+  const isPending = request.status === 'PENDIENTE_DE_CONFIRMACION';
+  const isNegotiating = request.status === 'NEGOCIANDO';
+  const canEdit = !hasAccepted && !isClosed && !isArchived && !isNegotiating;
 
   const actionBtn =
     'shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold sm:text-sm';
@@ -122,14 +116,14 @@ export function RequestCard(props: Props) {
               <RequestActivity
                 offersCount={request.offersCount}
                 conversationsCount={request.conversationsCount}
-                lastActivityAt={request.lastActivityAt}
+                lastBuyerActivityAt={request.lastBuyerActivityAt ?? request.lastActivityAt}
                 createdAt={request.createdAt}
                 className="mt-1 truncate"
               />
             </div>
 
             <div className="mt-3 flex gap-2 overflow-x-auto border-t border-white/10 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-              {!hasAccepted && !isClosed && !isArchived && (
+              {canEdit && (
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
@@ -145,6 +139,19 @@ export function RequestCard(props: Props) {
                   className={`${actionBtn} border-indigo-200 text-indigo-600`}
                 >
                   {t('reminder.keep')}
+                </button>
+              )}
+              {!isClosed && !isArchived && props.onArchive && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t('buyer.archiveConfirm'))) {
+                      void props.onArchive?.(request.id);
+                    }
+                  }}
+                  className={`${actionBtn} border-amber-200 text-amber-700`}
+                >
+                  {t('buyer.archiveAction')}
                 </button>
               )}
               {!isClosed && props.onClose && (
@@ -173,27 +180,10 @@ export function RequestCard(props: Props) {
               </button>
             </div>
 
-            {showReminder && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
-                <p className="text-sm font-bold text-amber-700">{t('reminder.title')}</p>
-                <p className="mt-0.5 text-xs text-amber-700/80">{t('reminder.hint')}</p>
-                <div className="mt-2 flex gap-2 sm:mt-3">
-                  <button
-                    type="button"
-                    onClick={() => void props.onRenew?.(request.id)}
-                    className="btn btn-primary shrink-0 px-3 py-1.5 text-sm"
-                  >
-                    {t('reminder.keep')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void props.onClose?.(request.id)}
-                    className="btn btn-ghost shrink-0 border px-3 py-1.5 text-sm"
-                  >
-                    {t('reminder.close')}
-                  </button>
-                </div>
-              </div>
+            {isPending && (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                {t('reminder.hint')}
+              </p>
             )}
           </>
         ) : (

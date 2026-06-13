@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { OfferStatus, RatingType, SellerType } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Locale, OfferStatus, RatingType, SellerType, UserMode } from '@prisma/client';
+import {
+  canEnterMode,
+  hasCompletedSellerProfile,
+  parseSellerFiltersJson,
+  roleAfterEnablingSeller,
+} from '@buyseekk/shared';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateProfileDto } from './users.dto';
+import { LastSearchFiltersDto, SellerProfileDto, UpdateProfileDto } from './users.dto';
 
 const PUBLIC_PROFILE_SELECT = {
   id: true,
@@ -95,5 +101,100 @@ export class UsersService {
 
     const { passwordHash: _, ...safe } = updated;
     return safe;
+  }
+
+  private toSafeUser<T extends { passwordHash: string }>(user: T) {
+    const { passwordHash: _drop, ...safe } = user;
+    return safe;
+  }
+
+  async getSettings(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return this.toSafeUser(user);
+  }
+
+  async updateLanguage(userId: string, locale: Locale) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  /**
+   * Cambia el modo de uso activo. No otorga permisos: para entrar en modo vendedor
+   * la cuenta debe tener la capacidad SELLER (role BOTH/SELLER) y un perfil de vendedor.
+   */
+  async updateActiveMode(userId: string, activeMode: UserMode) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    if (!canEnterMode(activeMode, user)) {
+      throw new BadRequestException('Necesitás completar tu perfil de vendedor');
+    }
+
+    if (user.activeMode === activeMode) return this.toSafeUser(user);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { activeMode },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  /**
+   * Onboarding de vendedor (una sola vez): habilita la capacidad SELLER conservando
+   * la de comprador (role BOTH), guarda tipo y rubro, y activa el modo vendedor.
+   */
+  async createSellerProfile(userId: string, dto: SellerProfileDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    const isBusiness = dto.sellerType === SellerType.BUSINESS;
+    const nextRole = roleAfterEnablingSeller(user.role);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: nextRole,
+        activeMode: UserMode.SELLER,
+        sellerType: dto.sellerType,
+        sellerCategory: dto.sellerCategory,
+        businessName: isBusiness ? dto.businessName?.trim() || null : null,
+        city: dto.city?.trim() || user.city || null,
+      },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  async updateSellerProfile(userId: string, dto: SellerProfileDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (!hasCompletedSellerProfile(user)) {
+      throw new BadRequestException('Todavía no tenés un perfil de vendedor');
+    }
+
+    const isBusiness = dto.sellerType === SellerType.BUSINESS;
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        sellerType: dto.sellerType,
+        sellerCategory: dto.sellerCategory,
+        businessName: isBusiness ? dto.businessName?.trim() || null : null,
+        city: dto.city?.trim() || user.city || null,
+      },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  async updateLastSearchFilters(userId: string, dto: LastSearchFiltersDto) {
+    const parsed = parseSellerFiltersJson(dto.filters);
+    if (!parsed) throw new BadRequestException('Filtros inválidos');
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastSellerFilters: parsed },
+    });
+    return this.toSafeUser(updated);
   }
 }

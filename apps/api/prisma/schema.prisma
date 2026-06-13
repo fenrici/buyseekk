@@ -13,6 +13,12 @@ enum UserRole {
   BOTH
 }
 
+/// Modo de uso activo de la cuenta. No es un permiso: las capacidades reales viven en UserRole.
+enum UserMode {
+  BUYER
+  SELLER
+}
+
 enum SellerType {
   PERSONAL
   BUSINESS
@@ -54,7 +60,7 @@ enum RatingType {
   NO_RESPONSE
 }
 
-/// Estados almacenados. INACTIVA y ARCHIVADA se derivan de lastActivityAt.
+/// Estados almacenados. INACTIVA, ARCHIVADA y PENDIENTE_DE_CONFIRMACION se derivan de lastBuyerActivityAt.
 enum RequestStatus {
   ACTIVA
   NEGOCIANDO
@@ -66,7 +72,8 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
-  role            UserRole         @default(BOTH)
+  role            UserRole         @default(BUYER)
+  activeMode      UserMode         @default(BUYER)
   sellerType      SellerType?
   sellerCategory  RequestCategory?
   country         Country
@@ -78,6 +85,7 @@ model User {
   phone           String?
   website         String?
   city            String?
+  lastSellerFilters Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -85,6 +93,35 @@ model User {
   offers           Offer[]
   ratingsGiven     Rating[] @relation("RatingsGiven")
   ratingsReceived  Rating[] @relation("RatingsReceived")
+  savedSearches    SavedSearch[]
+  savedRequests    SavedRequest[]
+}
+
+model SavedSearch {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  category  RequestCategory?
+  filters   Json
+  isDefault Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, isDefault])
+}
+
+model SavedRequest {
+  id        String   @id @default(cuid())
+  sellerId  String
+  seller    User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([sellerId, requestId])
+  @@index([sellerId, createdAt])
 }
 
 model Request {
@@ -112,16 +149,19 @@ model Request {
   carYearMin   Int?
   maxMileage   Int?
   active       Boolean         @default(true)
-  status         RequestStatus @default(ACTIVA)
-  lastActivityAt DateTime      @default(now())
-  closedAt       DateTime?
+  status               RequestStatus @default(ACTIVA)
+  lastActivityAt       DateTime      @default(now())
+  lastBuyerActivityAt  DateTime      @default(now())
+  pausedAt             DateTime?
+  closedAt             DateTime?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
   offers Offer[]
+  savedBy SavedRequest[]
 
   @@index([userId, active])
-  @@index([country, active, lastActivityAt])
+  @@index([country, active, lastBuyerActivityAt])
   @@index([category, active])
   @@index([category, country, carBrand, carModel])
   @@index([category, country, location, zone])

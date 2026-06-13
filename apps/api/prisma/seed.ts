@@ -1,6 +1,7 @@
 import {
   PrismaClient,
   UserRole,
+  UserMode,
   SellerType,
   Country,
   Currency,
@@ -270,6 +271,48 @@ const DEMO_REQUESTS: DemoRequest[] = [
   },
 ];
 
+/** 7 días + 12 h sin actividad del comprador → Pendiente de confirmación */
+function pendingBuyerActivityAt() {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const HOUR_MS = 60 * 60 * 1000;
+  return new Date(Date.now() - 7 * DAY_MS - 12 * HOUR_MS);
+}
+
+const PENDING_DEMO_REQUESTS: DemoRequest[] = [
+  {
+    title: '[Demo] Pendiente — VW Golf Recoleta',
+    category: RequestCategory.AUTOS,
+    operation: OperationType.COMPRA,
+    requirements: 'Golf 1.4 TSI, automático, hasta 70.000 km, service al día.',
+    budget: 22000,
+    currency: Currency.USD,
+    location: 'Buenos Aires',
+    zone: 'Recoleta',
+    country: Country.AR,
+    imageUrls: ['/images/bmw-serie3.jpg'],
+    carBrand: 'Volkswagen',
+    carModel: 'Golf',
+    carColor: 'Gris',
+    carYearMin: 2016,
+    maxMileage: 70000,
+  },
+  {
+    title: '[Demo] Pendiente — Monoambiente Palermo',
+    category: RequestCategory.INMOBILIARIA,
+    operation: OperationType.ALQUILER,
+    requirements: 'Monoambiente luminoso, amoblado, hasta USD 900/mes.',
+    budget: 900,
+    currency: Currency.USD,
+    budgetPeriod: '/mes',
+    location: 'Palermo, CABA',
+    zone: 'Palermo Soho',
+    country: Country.AR,
+    bedrooms: 1,
+    maxSqm: 45,
+    imageUrls: ['/images/dept-palermo.jpg'],
+  },
+];
+
 async function upsertDemoRequest(userId: string, data: DemoRequest) {
   const { title, ...fields } = data;
   const existing = await prisma.request.findFirst({ where: { title, userId } });
@@ -278,6 +321,28 @@ async function upsertDemoRequest(userId: string, data: DemoRequest) {
     return existing.id;
   }
   const created = await prisma.request.create({ data: { ...fields, title, userId } });
+  return created.id;
+}
+
+async function upsertPendingDemoRequest(userId: string, data: DemoRequest) {
+  const { title, ...fields } = data;
+  const staleAt = pendingBuyerActivityAt();
+  const createdAt = new Date(staleAt.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const existing = await prisma.request.findFirst({ where: { title, userId } });
+  const lifecycle = {
+    active: true,
+    lastBuyerActivityAt: staleAt,
+    lastActivityAt: staleAt,
+    pausedAt: null,
+    createdAt,
+  };
+  if (existing) {
+    await prisma.request.update({ where: { id: existing.id }, data: { ...fields, ...lifecycle } });
+    return existing.id;
+  }
+  const created = await prisma.request.create({
+    data: { ...fields, title, userId, ...lifecycle },
+  });
   return created.id;
 }
 
@@ -352,6 +417,8 @@ async function upsertDemoSeller(data: {
   return prisma.user.upsert({
     where: { email: data.email },
     update: {
+      role: UserRole.BOTH,
+      activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
       sellerCategory: data.sellerCategory,
       businessName: data.businessName,
@@ -361,7 +428,8 @@ async function upsertDemoSeller(data: {
       passwordHash: data.passwordHash,
       name: data.name,
       businessName: data.businessName,
-      role: UserRole.SELLER,
+      role: UserRole.BOTH,
+      activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
       sellerCategory: data.sellerCategory,
       country: data.country,
@@ -429,6 +497,8 @@ async function main() {
   const seller = await prisma.user.upsert({
     where: { email: 'vendedor@buyseekk.com' },
     update: {
+      role: UserRole.BOTH,
+      activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
       sellerCategory: RequestCategory.AUTOS,
     },
@@ -436,7 +506,8 @@ async function main() {
       email: 'vendedor@buyseekk.com',
       passwordHash,
       name: 'Luxury Motors Miami',
-      role: UserRole.SELLER,
+      role: UserRole.BOTH,
+      activeMode: UserMode.SELLER,
       sellerType: SellerType.BUSINESS,
       sellerCategory: RequestCategory.AUTOS,
       country: Country.US,
@@ -502,6 +573,10 @@ async function main() {
     await upsertDemoRequest(userId, demo);
   }
 
+  for (const demo of PENDING_DEMO_REQUESTS) {
+    await upsertPendingDemoRequest(buyerAR.id, demo);
+  }
+
   const ferrari = await prisma.request.findFirst({
     where: { title: '[Demo] Ferrari 488 GTB — Brickell' },
   });
@@ -524,7 +599,7 @@ async function main() {
   }
 
   console.log('Seed OK');
-  console.log('  comprador@buyseekk.com / demo1234 (AR) — 6 ofertas pendientes');
+  console.log('  comprador@buyseekk.com / demo1234 (AR) — 2 solicitudes en Pendiente de confirmación');
   console.log('  comprador.us@buyseekk.com / demo1234 (US)');
   console.log('  vendedor@buyseekk.com / demo1234 (US seller)');
 }

@@ -85,6 +85,13 @@ export class RequestsController {
   }
 
   @Throttle({ default: THROTTLE_LIMITS.write })
+  @Patch(':id/pause')
+  @Roles('buyer')
+  pause(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requests.pause(user.id, id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
   @Delete(':id')
   @Roles('buyer')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {

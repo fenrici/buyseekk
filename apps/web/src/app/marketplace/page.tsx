@@ -6,37 +6,35 @@ import { api } from '@/lib/api';
 import { PaginatedResult, PublicRequestItem } from '@/lib/types';
 import { PublicHeader } from '@/components/PublicHeader';
 import { RequestMeta } from '@/components/RequestMeta';
-import { PaginationControls } from '@/components/PaginationControls';
+import { GuestCta } from '@/components/GuestCta';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { timeAgo, useLocale, useT } from '@/lib/i18n';
+
+/** Límite de solicitudes visibles para invitados antes de pedir registro. */
+const GUEST_LIMIT = 20;
 
 export default function ExplorePage() {
   const t = useT();
   const locale = useLocale();
   const [items, setItems] = useState<PublicRequestItem[]>([]);
-  const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
-  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [category, setCategory] = useState('');
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setPage(1);
-  }, [category, country]);
-
-  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError('');
-    const params = new URLSearchParams({ page: String(page) });
+    const params = new URLSearchParams({ page: '1', limit: String(GUEST_LIMIT) });
     if (category) params.set('category', category);
     if (country) params.set('country', country);
     api<PaginatedResult<PublicRequestItem>>(`/public/requests?${params}`)
       .then((data) => {
         if (cancelled) return;
-        setItems(data.items);
-        setMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
+        setItems(data.items.slice(0, GUEST_LIMIT));
+        setTotal(data.total);
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : t('common.error'));
@@ -47,7 +45,7 @@ export default function ExplorePage() {
     return () => {
       cancelled = true;
     };
-  }, [page, category, country]);
+  }, [category, country]);
 
   const categoryFilters = [
     { id: '', label: t('explore.all') },
@@ -66,7 +64,7 @@ export default function ExplorePage() {
       <PublicHeader activeRoute="/marketplace" />
 
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-12 lg:pt-16">
-        {/* Mobile hero — intacto */}
+        {/* Mobile hero — exploración invitado, sin acciones que aún no puede hacer */}
         <div className="explore-hero-mobile">
           <div className="max-w-2xl">
             <h1
@@ -82,17 +80,6 @@ export default function ExplorePage() {
               {t('explore.subtitleMobile')}
             </p>
           </div>
-
-          <div className="explore-cta-bar portal-animate" style={{ animationDelay: '0.18s' }}>
-            <div className="explore-cta-actions">
-              <Link href="/register" className="explore-cta-primary">
-                {t('explore.ctaOfferShort')}
-              </Link>
-              <Link href="/register" className="explore-cta-secondary">
-                {t('explore.ctaPostShort')}
-              </Link>
-            </div>
-          </div>
         </div>
 
         {/* Desktop hero */}
@@ -100,14 +87,6 @@ export default function ExplorePage() {
           <div className="explore-hero-copy">
             <h1 className="explore-hero-title">{t('explore.title')}</h1>
             <p className="explore-hero-subtitle">{t('explore.subtitle')}</p>
-            <div className="explore-hero-actions">
-              <Link href="/register" className="explore-cta-desktop explore-cta-desktop--primary">
-                {t('explore.ctaOfferShort')}
-              </Link>
-              <Link href="/register" className="explore-cta-desktop explore-cta-desktop--secondary">
-                {t('explore.ctaPostDesktop')}
-              </Link>
-            </div>
           </div>
         </div>
 
@@ -182,9 +161,10 @@ export default function ExplorePage() {
 
         <div className="mt-5 grid gap-4 sm:mt-8 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((r, i) => (
-            <article
+            <Link
               key={r.id}
-              className="explore-card"
+              href={`/marketplace/${r.id}`}
+              className="explore-card block"
               style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}
             >
               <div className="flex h-full flex-col p-4 lg:p-5">
@@ -210,24 +190,20 @@ export default function ExplorePage() {
                       {r.offersCount} {t('explore.offers')}
                     </span>
                   </div>
-                  <Link href="/register" className="explore-card-cta">
-                    {t('explore.ctaOfferShort')}
-                  </Link>
+                  <span className="explore-card-cta">{t('guest.viewDetail')}</span>
                 </div>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
 
-        <div className="mt-8">
-          <PaginationControls
-            page={meta.page}
-            totalPages={meta.totalPages}
-            total={meta.total}
-            onPageChange={setPage}
-            itemLabel={t('buyer.tabMine').toLowerCase()}
-          />
-        </div>
+        {!loading && !error && items.length > 0 && (
+          <GuestCta className="mt-10" />
+        )}
+
+        {!loading && total > GUEST_LIMIT && (
+          <p className="mt-4 text-center text-xs text-slate-500">{t('guest.limitNote')}</p>
+        )}
       </main>
     </div>
   );

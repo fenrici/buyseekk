@@ -12,6 +12,7 @@ export interface User {
   email: string;
   name: string;
   role: 'BUYER' | 'SELLER' | 'BOTH';
+  activeMode: 'BUYER' | 'SELLER';
   sellerType?: 'PERSONAL' | 'BUSINESS' | null;
   sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
   country: 'AR' | 'US';
@@ -23,6 +24,7 @@ export interface User {
   phone?: string | null;
   website?: string | null;
   city?: string | null;
+  lastSellerFilters?: Record<string, unknown> | null;
 }
 
 export interface PublicProfile {
@@ -49,12 +51,19 @@ export interface PublicProfile {
   }[];
 }
 
-export type RequestStatusValue = 'ACTIVA' | 'NEGOCIANDO' | 'INACTIVA' | 'CERRADA' | 'ARCHIVADA';
+export type RequestStatusValue =
+  | 'ACTIVA'
+  | 'NEGOCIANDO'
+  | 'PENDIENTE_DE_CONFIRMACION'
+  | 'INACTIVA'
+  | 'CERRADA'
+  | 'ARCHIVADA';
 
 export interface RequestItem {
   id: string;
   status?: RequestStatusValue;
   lastActivityAt?: string;
+  lastBuyerActivityAt?: string;
   conversationsCount?: number;
   createdAt?: string;
   title: string;
@@ -81,6 +90,9 @@ export interface RequestItem {
   pendingOffersCount: number;
   hasOffers: boolean;
   offers?: { id: string; status: string }[];
+  isSaved?: boolean;
+  savedAt?: string | null;
+  myOffer?: { id: string; status: string; chatId?: string | null } | null;
   user: {
     id: string;
     name: string;
@@ -94,6 +106,7 @@ export interface PublicRequestItem {
   id: string;
   status?: RequestStatusValue;
   lastActivityAt?: string;
+  lastBuyerActivityAt?: string;
   conversationsCount?: number;
   category: string;
   operation: string;

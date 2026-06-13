@@ -16,6 +16,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { RequestMeta } from '@/components/RequestMeta';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
+import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { useT } from '@/lib/i18n';
 
 export default function RequestDetailPage() {
@@ -69,11 +70,21 @@ export default function RequestDetailPage() {
     return <PortalLoadingScreen />;
   }
 
+  const canOffer = canSellerOfferOnRequest(request.status, request.myOffer);
+
   return (
     <div className="panel-dark">
       <Header variant="dark" />
-      <main className="mx-auto grid max-w-5xl gap-8 px-4 py-10 md:grid-cols-2">
-        <div>
+      <main className="mx-auto max-w-5xl px-4 py-10">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="portal-header-link mb-6 inline-flex items-center gap-1"
+        >
+          ← {t('common.back')}
+        </button>
+        <div className="grid gap-8 md:grid-cols-2">
+          <div>
           {(request.imageUrls?.length ?? 0) > 0 && (
             <div className="mb-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -82,8 +93,9 @@ export default function RequestDetailPage() {
               <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
             </div>
           )}
-          <div className="mb-2">
+          <div className="mb-2 flex items-start justify-between gap-3">
             <RequestStatusBadge status={request.status} />
+            <SaveRequestButton requestId={request.id} initialSaved={request.isSaved} />
           </div>
           <RequestMeta request={request} locale={user.locale} size="md" />
           <p className="mt-2 text-sm text-slate-400">
@@ -96,43 +108,59 @@ export default function RequestDetailPage() {
           <RequestActivity
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}
-            lastActivityAt={request.lastActivityAt}
+            lastBuyerActivityAt={request.lastBuyerActivityAt ?? request.lastActivityAt}
             createdAt={request.createdAt}
+            showPublished
             className="mt-1"
           />
         </div>
-        <form onSubmit={sendOffer} className="card h-fit p-6">
-          <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
-          {error && <ValidationAlerts message={error} className="mt-3" />}
-          <div className="mt-4 space-y-4">
-            <input
-              className="input w-full"
-              type="number"
-              min={1}
-              max={maxAmountFor(
-                currency as 'USD' | 'ARS',
-                request.operation === 'ALQUILER' || !!request.budgetPeriod,
-              )}
-              placeholder={t('request.pricePlaceholder')}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
-            />
-            <select className="input w-full" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              <option value="USD">USD</option>
-              <option value="ARS">ARS</option>
-            </select>
-            <textarea className="input w-full" rows={4} placeholder={t('request.messagePlaceholder')} value={message} onChange={(e) => setMessage(e.target.value)} required />
-            <ImageUpload
-              label={t('request.productPhotos')}
-              hint={t('request.productPhotosHint')}
-              value={imageUrls}
-              onChange={setImageUrls}
-              required
-            />
-            <button className="btn btn-accent w-full">{t('request.submitOffer')}</button>
+        {canOffer ? (
+          <form onSubmit={sendOffer} className="card h-fit p-6">
+            <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
+            {error && <ValidationAlerts message={error} className="mt-3" />}
+            <div className="mt-4 space-y-4">
+              <input
+                className="input w-full"
+                type="number"
+                min={1}
+                max={maxAmountFor(
+                  currency as 'USD' | 'ARS',
+                  request.operation === 'ALQUILER' || !!request.budgetPeriod,
+                )}
+                placeholder={t('request.pricePlaceholder')}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+              />
+              <select className="input w-full" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                <option value="USD">USD</option>
+                <option value="ARS">ARS</option>
+              </select>
+              <textarea className="input w-full" rows={4} placeholder={t('request.messagePlaceholder')} value={message} onChange={(e) => setMessage(e.target.value)} required />
+              <ImageUpload
+                label={t('request.productPhotos')}
+                hint={t('request.productPhotosHint')}
+                value={imageUrls}
+                onChange={setImageUrls}
+                required
+              />
+              <button className="btn btn-accent w-full">{t('request.submitOffer')}</button>
+            </div>
+          </form>
+        ) : (
+          <div className="card h-fit p-6">
+            <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
+            <p className="mt-3 text-sm text-slate-400">
+              {request.myOffer ? t('savedRequest.alreadyOffered') : t('savedRequest.cannotOffer')}
+            </p>
+            {request.myOffer?.chatId && (
+              <Link href={`/chats/${request.myOffer.chatId}`} className="btn btn-accent mt-4 inline-flex w-full justify-center">
+                {t('savedRequest.viewChat')}
+              </Link>
+            )}
           </div>
-        </form>
+        )}
+        </div>
       </main>
     </div>
   );

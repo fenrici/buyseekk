@@ -1,15 +1,38 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PublicHeader } from '@/components/PublicHeader';
+import { SplashScreen } from '@/components/SplashScreen';
 import { useT } from '@/lib/i18n';
+
+const SPLASH_FLAG = 'buyseekk_splash_seen';
 
 export default function HomePage() {
   const t = useT();
+  const [showSplash, setShowSplash] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem(SPLASH_FLAG);
+    if (!seen) setShowSplash(true);
+    setReady(true);
+  }, []);
+
+  function finishSplash() {
+    sessionStorage.setItem(SPLASH_FLAG, '1');
+    setShowSplash(false);
+  }
+
+  if (!ready) return null;
+
+  if (showSplash) {
+    return <SplashScreen onDone={finishSplash} />;
+  }
 
   return (
     <main className="portal">
-      <section className="portal-screen" aria-label="BuySeek">
+      <section className="portal-screen" aria-label="Buyseek">
         <div className="portal-bg" aria-hidden="true" />
         <div className="portal-overlay" aria-hidden="true" />
         <div className="portal-glow" aria-hidden="true" />
@@ -17,22 +40,20 @@ export default function HomePage() {
         <PublicHeader activeRoute="/" />
 
         <div className="portal-content">
-          <h1 className="portal-title portal-animate" style={{ animationDelay: '0.1s' }}>
-            {t('home.title1')}
-            <br />
-            {t('home.title2')}
+          <h1 className="portal-title portal-animate" style={{ animationDelay: '0.05s' }}>
+            {t('home.welcomeTitle')}
           </h1>
 
-          <p className="portal-subtitle portal-animate" style={{ animationDelay: '0.18s' }}>
-            {t('home.subtitle')}
+          <p className="portal-subtitle portal-animate" style={{ animationDelay: '0.14s' }}>
+            {t('home.welcomeSubtitle')}
           </p>
 
-          <div className="portal-ctas portal-animate" style={{ animationDelay: '0.26s' }}>
-            <Link href="/login?role=buyer" className="portal-cta portal-cta-primary">
-              {t('home.ctaBuyer')}
+          <div className="portal-ctas portal-animate" style={{ animationDelay: '0.22s' }}>
+            <Link href="/login" className="portal-cta portal-cta-primary">
+              {t('home.welcomeLogin')}
             </Link>
-            <Link href="/login?role=seller" className="portal-cta portal-cta-secondary">
-              {t('home.ctaSeller')}
+            <Link href="/register" className="portal-cta portal-cta-secondary">
+              {t('home.welcomeRegister')}
             </Link>
           </div>
 
@@ -41,10 +62,10 @@ export default function HomePage() {
             className="portal-explore-link portal-animate"
             style={{ animationDelay: '0.3s' }}
           >
-            {t('home.exploreLink')}
+            {t('home.welcomeGuest')}
           </Link>
 
-          <p className="portal-chips portal-animate" style={{ animationDelay: '0.34s' }}>
+          <p className="portal-chips portal-animate" style={{ animationDelay: '0.36s' }}>
             {t('home.chipLine')}
           </p>
         </div>

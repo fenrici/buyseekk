@@ -15,6 +15,7 @@ type EditMode = 'full' | 'limited' | 'locked';
 function resolveEditMode(request: RequestItem): EditMode {
   const offers = request.offers ?? [];
   if (offers.some((o) => o.status === 'ACEPTADA')) return 'locked';
+  if (request.status === 'NEGOCIANDO') return 'locked';
   if (request.pendingOffersCount > 0) return 'limited';
   return 'full';
 }
@@ -39,9 +40,13 @@ export function EditRequestForm({
   const [imageUrls, setImageUrls] = useState<string[]>(request.imageUrls ?? []);
 
   if (mode === 'locked') {
+    const lockedMessage =
+      request.status === 'NEGOCIANDO'
+        ? t('buyer.editNegotiatingLocked')
+        : t('buyer.editLocked');
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        <p>{t('buyer.editLocked')}</p>
+        <p>{lockedMessage}</p>
         <button type="button" onClick={onCancel} className="btn btn-ghost mt-3 text-sm">
           {t('common.cancel')}
         </button>

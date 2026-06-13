@@ -15,6 +15,8 @@ import { RequestsModule } from './requests/requests.module';
 import { StorageModule } from './storage/storage.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
+import { SavedSearchesModule } from './saved-searches/saved-searches.module';
+import { SavedRequestsModule } from './saved-requests/saved-requests.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { UsersModule } from './users/users.module';
     OffersModule,
     RatingsModule,
     UploadsModule,
+    SavedSearchesModule,
+    SavedRequestsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

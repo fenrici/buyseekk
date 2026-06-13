@@ -7,13 +7,18 @@ import { User } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/providers/AuthProvider';
-import { useT } from '@/lib/i18n';
+import { useModeSwitch } from '@/providers/ModeSwitchProvider';
+import { setStoredLocale, useT } from '@/lib/i18n';
 import { logoutSession } from '@/lib/session';
 
 export default function ProfileEditPage() {
   const { user, setSession } = useAuth();
+  const { switchMode, switching } = useModeSwitch();
   const t = useT();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [langSaving, setLangSaving] = useState<'ES' | 'EN' | null>(null);
+  const [langSaved, setLangSaved] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const [form, setForm] = useState({
     name: '',
     bio: '',
@@ -39,9 +44,30 @@ export default function ProfileEditPage() {
     });
   }, [user?.id]);
 
+  async function handleLanguage(locale: 'ES' | 'EN') {
+    if (!user || langSaving || locale === user.locale) return;
+    setLangSaving(locale);
+    setLangSaved(false);
+    try {
+      const updated = await api<User>('/users/me/language', {
+        method: 'PATCH',
+        body: JSON.stringify({ locale }),
+      });
+      setSession(updated);
+      setStoredLocale(updated.locale);
+      setLangSaved(true);
+      window.setTimeout(() => setLangSaved(false), 2200);
+    } catch {
+      // se mantiene el idioma anterior
+    } finally {
+      setLangSaving(null);
+    }
+  }
+
   if (!user) return null;
 
   const isBusiness = user.sellerType === 'BUSINESS';
+  const isSeller = user.activeMode === 'SELLER';
 
   function update(field: keyof typeof form, value: string) {
     setSaved(false);
@@ -152,6 +178,19 @@ export default function ProfileEditPage() {
             />
           </div>
 
+          <div>
+            <label htmlFor="profile-email" className="text-sm font-semibold text-slate-700">
+              {t('auth.email')}
+            </label>
+            <input
+              id="profile-email"
+              className="input mt-1 w-full opacity-70"
+              value={user.email}
+              readOnly
+              disabled
+            />
+          </div>
+
           {isBusiness && (
             <div>
               <label htmlFor="profile-business" className="text-sm font-semibold text-slate-700">
@@ -220,11 +259,76 @@ export default function ProfileEditPage() {
           </button>
         </form>
 
-        <div className="mt-8 border-t border-white/10 pt-8">
-          <button type="button" onClick={logoutSession} className="profile-logout-btn">
-            {t('nav.logout')}
-          </button>
-        </div>
+        <section className="card mt-6 space-y-6 p-6">
+          <div className="settings-block">
+            <p className="settings-block-label">{t('settings.usageMode')}</p>
+            <p className="settings-mode-current">
+              {isSeller ? t('settings.currentModeSeller') : t('settings.currentModeBuyer')}
+            </p>
+            <p className="settings-hint">
+              {isSeller ? t('settings.modeSellerDesc') : t('settings.modeBuyerDesc')}
+            </p>
+            <button
+              type="button"
+              className="settings-mode-switch"
+              disabled={switching}
+              onClick={() => switchMode(isSeller ? 'BUYER' : 'SELLER')}
+            >
+              {switching
+                ? t('settings.switching')
+                : isSeller
+                  ? t('settings.switchToBuyer')
+                  : t('settings.switchToSeller')}
+            </button>
+          </div>
+
+          <div className="settings-block border-t border-white/10 pt-6">
+            <p className="settings-block-label">{t('settings.preferences')}</p>
+            <span className="settings-hint">{t('settings.language')}</span>
+            <div className="settings-segmented" role="group" aria-label={t('settings.language')}>
+              <button
+                type="button"
+                className={`settings-seg-btn ${user.locale === 'ES' ? 'active' : ''}`}
+                aria-pressed={user.locale === 'ES'}
+                disabled={!!langSaving}
+                onClick={() => handleLanguage('ES')}
+              >
+                {t('settings.languageEs')}
+              </button>
+              <button
+                type="button"
+                className={`settings-seg-btn ${user.locale === 'EN' ? 'active' : ''}`}
+                aria-pressed={user.locale === 'EN'}
+                disabled={!!langSaving}
+                onClick={() => handleLanguage('EN')}
+              >
+                {t('settings.languageEn')}
+              </button>
+            </div>
+            {langSaved && <p className="settings-hint settings-hint--ok">{t('settings.languageUpdated')}</p>}
+          </div>
+        </section>
+
+        <section className="card mt-6 space-y-3 p-6">
+          <h2 className="text-lg font-bold text-white">{t('settings.account')}</h2>
+          {confirmLogout ? (
+            <div className="profile-logout-confirm">
+              <p className="settings-hint">{t('settings.logoutConfirm')}</p>
+              <div className="profile-logout-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setConfirmLogout(false)}>
+                  {t('common.cancel')}
+                </button>
+                <button type="button" className="profile-logout-btn profile-logout-btn--confirm" onClick={logoutSession}>
+                  {t('settings.logoutConfirmYes')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="profile-logout-btn" onClick={() => setConfirmLogout(true)}>
+              {t('settings.logout')}
+            </button>
+          )}
+        </section>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { PublicRequestsQueryDto } from './public-requests.query.dto';
@@ -13,5 +13,11 @@ export class PublicRequestsController {
   @Get()
   list(@Query() query: PublicRequestsQueryDto) {
     return this.requests.listPublic(query);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.search })
+  @Get(':id')
+  one(@Param('id') id: string) {
+    return this.requests.getPublicOne(id);
   }
 }

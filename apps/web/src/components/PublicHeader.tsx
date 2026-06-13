@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { clearStoredLocale, Locale, setGuestLocale, useLocale, useT } from '@/lib/i18n';
-import { clearToken } from '@/lib/api';
+import { resolveNavMode } from '@buyseekk/shared';
+import { Locale, setGuestLocale, useLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
-import { isBuyerRole, isSellerRole } from '@/lib/auth';
 
 const LANG_OPTIONS: { value: Locale; label: string }[] = [
   { value: 'ES', label: 'ES' },
@@ -72,29 +71,16 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
     </>
   );
 
+  const navMode = user ? resolveNavMode({ role: user.role, activeMode: user.activeMode }) : null;
+
   const userActions = user ? (
     <>
-      {isBuyerRole(user.role) && (
-        <Link href="/buyer" className="portal-header-link">
-          {t('nav.buyerPanel')}
-        </Link>
-      )}
-      {isSellerRole(user.role) && (
-        <Link href="/seller" className="portal-header-link">
-          {t('nav.sellerPanel')}
-        </Link>
-      )}
-      <button
-        type="button"
-        className="portal-header-link"
-        onClick={() => {
-          clearToken();
-          clearStoredLocale();
-          window.location.href = '/';
-        }}
-      >
-        {t('nav.logout')}
-      </button>
+      <Link href={navMode === 'SELLER' ? '/seller' : '/buyer'} className="portal-header-link">
+        {navMode === 'SELLER' ? t('nav.sellerPanel') : t('nav.buyerPanel')}
+      </Link>
+      <Link href="/profile" className="portal-header-cta">
+        {t('nav.profile')}
+      </Link>
     </>
   ) : null;
 
@@ -134,30 +120,19 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
                 <Link href="/" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
                   {t('nav.home')}
                 </Link>
-                {isBuyerRole(user.role) && (
-                  <Link href="/buyer" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
-                    {t('nav.buyerPanel')}
-                  </Link>
-                )}
-                {isSellerRole(user.role) && (
-                  <Link href="/seller" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
-                    {t('nav.sellerPanel')}
-                  </Link>
-                )}
+                <Link
+                  href={navMode === 'SELLER' ? '/seller' : '/buyer'}
+                  className="portal-mobile-link"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {navMode === 'SELLER' ? t('nav.sellerPanel') : t('nav.buyerPanel')}
+                </Link>
                 <Link href="/chats" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
                   {t('nav.messages')}
                 </Link>
-                <button
-                  type="button"
-                  className="portal-mobile-link text-left"
-                  onClick={() => {
-                    clearToken();
-                    clearStoredLocale();
-                    window.location.href = '/';
-                  }}
-                >
-                  {t('nav.logout')}
-                </button>
+                <Link href="/profile" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
+                  {t('nav.profile')}
+                </Link>
               </nav>
             ) : (
               <nav className="portal-mobile-nav">

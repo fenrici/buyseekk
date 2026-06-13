@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { resolveInitialLocale } from '@buyseekk/shared';
 import { formatMoney } from '../api';
 import { useAuth } from '@/providers/AuthProvider';
 import { en, es, Locale } from './translations';
@@ -51,8 +52,14 @@ export function translate(locale: Locale, key: string, vars?: Record<string, str
   return text;
 }
 
+/** Preferencia manual guardada tiene prioridad; si no, se detecta del navegador. */
+export function initialGuestLocale(): Locale {
+  const browserLang = typeof navigator === 'undefined' ? null : navigator.language || navigator.languages?.[0] || null;
+  return resolveInitialLocale(getStoredLocale(), browserLang);
+}
+
 export function guessLocale(): Locale {
-  return getStoredLocale() ?? 'ES';
+  return initialGuestLocale();
 }
 
 export function useLocale(): Locale {
@@ -60,7 +67,7 @@ export function useLocale(): Locale {
   const [guestLocale, setGuestLocaleState] = useState<Locale>('ES');
 
   useEffect(() => {
-    if (!user) setGuestLocaleState(getStoredLocale() ?? 'ES');
+    if (!user) setGuestLocaleState(initialGuestLocale());
   }, [user]);
 
   useEffect(() => {

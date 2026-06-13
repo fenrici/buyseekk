@@ -10,6 +10,7 @@ import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { CreateRequestForm } from '@/components/CreateRequestForm';
 import { RequestCard } from '@/components/RequestCard';
+import { RequestConfirmationModal } from '@/components/RequestConfirmationModal';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
 
@@ -28,6 +29,16 @@ export function BuyerPanel() {
   const [mineMeta, setMineMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [mineLoading, setMineLoading] = useState(false);
+  const [pendingQueue, setPendingQueue] = useState<RequestItem[]>([]);
+  const [modalBusy, setModalBusy] = useState(false);
+
+  async function loadPendingConfirmations() {
+    const raw = await api<PaginatedResult<RequestItem> | RequestItem[]>(
+      '/requests/mine?page=1&limit=50&scope=open',
+    );
+    const data = normalizePaginated(raw);
+    setPendingQueue(data.items.filter((r) => r.status === 'PENDIENTE_DE_CONFIRMACION'));
+  }
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -38,6 +49,11 @@ export function BuyerPanel() {
     if (tabParam === 'publish' || tabParam === 'mine') setTab(tabParam);
   }, [searchParams, router]);
 
+  useEffect(() => {
+    if (!user) return;
+    loadPendingConfirmations().catch(() => {});
+  }, [user]);
+
   async function loadMine(page = minePage, scope = mineScope) {
     const raw = await api<PaginatedResult<RequestItem> | RequestItem[]>(
       `/requests/mine?page=${page}&scope=${scope}`,
@@ -46,6 +62,9 @@ export function BuyerPanel() {
     setMyRequests(data.items);
     setMineMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
     setMinePage(data.page);
+    if (scope === 'open') {
+      setPendingQueue(data.items.filter((r) => r.status === 'PENDIENTE_DE_CONFIRMACION'));
+    }
   }
 
   useEffect(() => {
@@ -88,19 +107,63 @@ export function BuyerPanel() {
     }
   }
 
-  async function renewRequest(id: string) {
+  async function archiveRequest(id: string) {
     try {
-      await api(`/requests/${id}/renew`, { method: 'PATCH' });
-      await loadMine(minePage);
+      await api(`/requests/${id}/pause`, { method: 'PATCH' });
+      await loadMine(minePage, mineScope);
+      await loadPendingConfirmations();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
     }
   }
 
+  async function renewRequest(id: string) {
+    try {
+      await api(`/requests/${id}/renew`, { method: 'PATCH' });
+      await loadMine(minePage);
+      await loadPendingConfirmations();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
+  async function handleModalAction(
+    id: string,
+    action: 'keep' | 'bought' | 'pause' | 'delete',
+  ) {
+    setModalBusy(true);
+    setError('');
+    try {
+      if (action === 'keep') await api(`/requests/${id}/renew`, { method: 'PATCH' });
+      else if (action === 'bought') await api(`/requests/${id}/close`, { method: 'PATCH' });
+      else if (action === 'pause') await api(`/requests/${id}/pause`, { method: 'PATCH' });
+      else await api(`/requests/${id}`, { method: 'DELETE' });
+      await loadMine(minePage, mineScope);
+      await loadPendingConfirmations();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    } finally {
+      setModalBusy(false);
+    }
+  }
+
+  const pendingRequest = pendingQueue[0];
+
   if (!user) return null;
 
   return (
     <div className="panel-dark">
+      {pendingRequest && (
+        <RequestConfirmationModal
+          request={pendingRequest}
+          locale={user.locale}
+          busy={modalBusy}
+          onKeep={() => handleModalAction(pendingRequest.id, 'keep')}
+          onBought={() => handleModalAction(pendingRequest.id, 'bought')}
+          onPause={() => handleModalAction(pendingRequest.id, 'pause')}
+          onDelete={() => handleModalAction(pendingRequest.id, 'delete')}
+        />
+      )}
       <Header variant="dark" />
       <main className="mx-auto max-w-4xl px-4 py-10">
         <h1 className="text-3xl font-bold text-white">{t('buyer.title')}</h1>
@@ -150,6 +213,7 @@ export function BuyerPanel() {
                 locale={user.locale}
                 onDelete={removeRequest}
                 onClose={closeRequest}
+                onArchive={archiveRequest}
                 onRenew={renewRequest}
                 onUpdated={() => loadMine(minePage)}
               />

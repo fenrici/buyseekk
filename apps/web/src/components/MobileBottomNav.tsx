@@ -109,7 +109,7 @@ function sellerTabs(badges: { offers: number; profile: number }, t: (k: string) 
     {
       id: 'explore',
       href: '/seller',
-      label: t('nav.explore'),
+      label: t('nav.sellerPanel'),
       icon: IconGrid,
       isActive: (pathname) => pathname === '/seller' || pathname.startsWith('/requests/'),
     },
@@ -118,7 +118,8 @@ function sellerTabs(badges: { offers: number; profile: number }, t: (k: string) 
       href: '/seller/offers',
       label: t('mobileNav.offers'),
       icon: IconTag,
-      isActive: (pathname) => pathname.startsWith('/seller/offers'),
+      isActive: (pathname) =>
+        pathname.startsWith('/seller/offers') || pathname.startsWith('/seller/saved'),
       badge: badges.offers,
     },
     {

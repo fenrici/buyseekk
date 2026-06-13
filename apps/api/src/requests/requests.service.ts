@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Country, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
+import { Country, Currency, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
 import {
   citiesForCountry,
+  archivedBuyerActivityAt,
   isValidBrand,
   isValidCarYear,
   isValidColor,
@@ -29,6 +30,9 @@ import { MineRequestsQueryDto } from './mine-requests.query.dto';
 import {
   archiveCutoff,
   effectiveRequestStatus,
+  isVisibleToSellers,
+  sortRequestsForSeller,
+  toLifecycleInput,
   visibleToSellersWhere,
 } from './request-status';
 import { UpdateRequestDto } from './update-request.dto';
@@ -67,14 +71,67 @@ export class RequestsService {
   private formatRequest(req: Awaited<ReturnType<typeof this.findByIdRaw>>) {
     if (!req) return null;
     const pendingOffers = req.offers.filter((o) => o.status === OfferStatus.PENDIENTE).length;
+    const lifecycle = toLifecycleInput(req);
     return {
       ...req,
-      status: effectiveRequestStatus(req),
+      status: effectiveRequestStatus(lifecycle),
+      lastBuyerActivityAt: req.lastBuyerActivityAt,
+      lastActivityAt: req.lastBuyerActivityAt,
       offersCount: req.offers.length,
       pendingOffersCount: pendingOffers,
       conversationsCount: req.offers.filter((o) => o.chat).length,
       hasOffers: req.offers.length > 0,
     };
+  }
+
+  private async attachSellerMeta<T extends { id: string }>(
+    items: T[],
+    sellerId: string,
+  ): Promise<
+    (T & {
+      isSaved: boolean;
+      myOffer: { id: string; status: string; chatId: string | null } | null;
+    })[]
+  > {
+    if (items.length === 0) return [];
+    const ids = items.map((i) => i.id);
+    const [savedRows, offerRows] = await Promise.all([
+      this.prisma.savedRequest.findMany({
+        where: { sellerId, requestId: { in: ids } },
+        select: { requestId: true },
+      }),
+      this.prisma.offer.findMany({
+        where: { sellerId, requestId: { in: ids } },
+        select: { id: true, requestId: true, status: true, chat: { select: { id: true } } },
+      }),
+    ]);
+    const savedSet = new Set(savedRows.map((r) => r.requestId));
+    const offerMap = new Map(offerRows.map((o) => [o.requestId, o]));
+    return items.map((item) => {
+      const mine = offerMap.get(item.id);
+      return {
+        ...item,
+        isSaved: savedSet.has(item.id),
+        myOffer: mine
+          ? { id: mine.id, status: mine.status, chatId: mine.chat?.id ?? null }
+          : null,
+      };
+    });
+  }
+
+  async formatManyForSeller(
+    rows: NonNullable<Awaited<ReturnType<typeof this.findByIdRaw>>>[],
+    sellerId: string,
+  ) {
+    const ratingMap = await this.ratings.getStatsForUsers(rows.map((r) => r.userId));
+    const formatted = rows.map((r) => ({
+      ...this.formatRequest(r)!,
+      user: {
+        ...r.user,
+        rating: ratingMap[r.userId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
+      },
+    }));
+    return this.attachSellerMeta(formatted, sellerId);
   }
 
   private async findByIdRaw(id: string) {
@@ -285,20 +342,35 @@ export class RequestsService {
 
     const { page, limit, skip } = parsePagination(filters.page, filters.limit);
 
-    const [items, total] = await Promise.all([
+    const [allMatching, total] = await Promise.all([
       this.prisma.request.findMany({
         where,
-        skip,
-        take: limit,
-        // Las inactivas pierden visibilidad: quedan al final del listado
-        orderBy: { lastActivityAt: 'desc' },
-        include: {
-          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-          offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+        select: {
+          id: true,
+          status: true,
+          lastBuyerActivityAt: true,
+          pausedAt: true,
         },
       }),
       this.prisma.request.count({ where }),
     ]);
+
+    const sortedIds = sortRequestsForSeller(allMatching).map((r) => r.id);
+    const pageIds = sortedIds.slice(skip, skip + limit);
+
+    const items =
+      pageIds.length === 0
+        ? []
+        : await this.prisma.request.findMany({
+            where: { id: { in: pageIds } },
+            include: {
+              user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+              offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+            },
+          });
+
+    const orderMap = new Map(pageIds.map((id, index) => [id, index]));
+    items.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
 
     const ratingMap = await this.ratings.getStatsForUsers(items.map((r) => r.userId));
 
@@ -310,7 +382,7 @@ export class RequestsService {
       },
     }));
 
-    return toPaginatedResult(enriched, total, page, limit);
+    return toPaginatedResult(await this.attachSellerMeta(enriched, user.id), total, page, limit);
   }
 
   /** Listado público (sin auth): solo solicitudes activas con datos sanitizados. */
@@ -333,7 +405,7 @@ export class RequestsService {
         where,
         skip,
         take: limit,
-        orderBy: { lastActivityAt: 'desc' },
+        orderBy: { lastBuyerActivityAt: 'desc' },
         include: {
           user: { select: { name: true } },
           offers: { select: { id: true, chat: { select: { id: true } } } },
@@ -342,10 +414,48 @@ export class RequestsService {
       this.prisma.request.count({ where }),
     ]);
 
-    const sanitized = items.map((r) => ({
+    const sorted = sortRequestsForSeller(items);
+
+    const sanitized = sorted.map((r) => this.sanitizePublic(r));
+
+    return toPaginatedResult(sanitized, total, page, limit);
+  }
+
+  /** Forma sanitizada de una solicitud pública (sin datos sensibles del comprador). */
+  private sanitizePublic(r: {
+    id: string;
+    status: RequestStatus;
+    lastBuyerActivityAt: Date;
+    pausedAt: Date | null;
+    category: RequestCategory;
+    operation: OperationType;
+    title: string;
+    requirements: string;
+    budget: number;
+    budgetPeriod: string | null;
+    negotiable: boolean;
+    currency: Currency;
+    location: string;
+    zone: string | null;
+    country: Country;
+    bedrooms: number | null;
+    minSqm: number | null;
+    maxSqm: number | null;
+    carBrand: string | null;
+    carModel: string | null;
+    carColor: string | null;
+    carYearMin: number | null;
+    maxMileage: number | null;
+    imageUrls: string[];
+    createdAt: Date;
+    offers: { id: string; chat: { id: string } | null }[];
+    user: { name: string };
+  }) {
+    return {
       id: r.id,
-      status: effectiveRequestStatus(r),
-      lastActivityAt: r.lastActivityAt,
+      status: effectiveRequestStatus(toLifecycleInput(r)),
+      lastActivityAt: r.lastBuyerActivityAt,
+      lastBuyerActivityAt: r.lastBuyerActivityAt,
       conversationsCount: r.offers.filter((o) => o.chat).length,
       category: r.category,
       operation: r.operation,
@@ -375,9 +485,22 @@ export class RequestsService {
         .join('')
         .slice(0, 2)
         .toUpperCase(),
-    }));
+    };
+  }
 
-    return toPaginatedResult(sanitized, total, page, limit);
+  /** Detalle público (sin auth) de una solicitud visible. */
+  async getPublicOne(id: string) {
+    const req = await this.prisma.request.findUnique({
+      where: { id },
+      include: {
+        user: { select: { name: true } },
+        offers: { select: { id: true, chat: { select: { id: true } } } },
+      },
+    });
+    if (!req || !req.active || !isVisibleToSellers(toLifecycleInput(req))) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    return this.sanitizePublic(req);
   }
 
   async locationsForSeller(user: {
@@ -413,14 +536,14 @@ export class RequestsService {
     if (query.scope === 'open') {
       where.active = true;
       where.status = { not: RequestStatus.CERRADA };
-      where.lastActivityAt = { gte: archiveCutoff() };
+      where.lastBuyerActivityAt = { gte: archiveCutoff() };
     } else if (query.scope === 'closed') {
       where.active = true;
       where.status = RequestStatus.CERRADA;
     } else if (query.scope === 'archived') {
       where.active = true;
       where.status = { not: RequestStatus.CERRADA };
-      where.lastActivityAt = { lt: archiveCutoff() };
+      where.lastBuyerActivityAt = { lt: archiveCutoff() };
     }
 
     const [items, total] = await Promise.all([
@@ -428,7 +551,7 @@ export class RequestsService {
         where,
         skip,
         take: limit,
-        orderBy: { lastActivityAt: 'desc' },
+        orderBy: { lastBuyerActivityAt: 'desc' },
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
           offers: {
@@ -467,6 +590,9 @@ export class RequestsService {
     if (req.userId !== userId) throw new ForbiddenException();
     if (req.status === RequestStatus.CERRADA) {
       throw new BadRequestException('No podés editar una solicitud cerrada');
+    }
+    if (req.status === RequestStatus.NEGOCIANDO) {
+      throw new BadRequestException('No podés editar una solicitud en negociación');
     }
 
     const hasAccepted = req.offers.some((o) => o.status === OfferStatus.ACEPTADA);
@@ -619,6 +745,7 @@ export class RequestsService {
         ...(dto.carColor !== undefined ? { carColor: dto.carColor } : {}),
         ...(dto.carYearMin !== undefined ? { carYearMin: dto.carYearMin } : {}),
         ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
+        lastBuyerActivityAt: new Date(),
         lastActivityAt: new Date(),
       },
       include: {
@@ -644,10 +771,12 @@ export class RequestsService {
     const req = await this.findByIdRaw(id);
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
 
-    // Cerradas y archivadas dejan de ser visibles para vendedores
-    const effective = effectiveRequestStatus(req);
-    if (viewer && (effective === 'CERRADA' || effective === 'ARCHIVADA')) {
-      throw new NotFoundException('Solicitud no encontrada');
+    // Cerradas, archivadas y pendientes dejan de ser visibles para vendedores (salvo si las guardó)
+    if (viewer && !isVisibleToSellers(toLifecycleInput(req))) {
+      const saved = await this.prisma.savedRequest.findUnique({
+        where: { sellerId_requestId: { sellerId: viewer.id, requestId: id } },
+      });
+      if (!saved) throw new NotFoundException('Solicitud no encontrada');
     }
 
     if (viewer && viewer.role !== UserRole.BUYER && req.country !== viewer.country) {
@@ -664,7 +793,21 @@ export class RequestsService {
       throw new NotFoundException('Solicitud no encontrada');
     }
 
-    return this.formatRequest(req);
+    const formatted = this.formatRequest(req)!;
+    if (viewer && isSellerCapable(viewer.role)) {
+      const rating = await this.ratings.getStatsForUsers([req.userId]);
+      const withUser = {
+        ...formatted,
+        user: {
+          ...req.user,
+          rating: rating[req.userId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
+        },
+      };
+      const [enriched] = await this.attachSellerMeta([withUser], viewer.id);
+      return enriched;
+    }
+
+    return formatted;
   }
 
   /** Cierre manual del comprador: deja de aceptar ofertas, visible en su historial. */
@@ -678,12 +821,18 @@ export class RequestsService {
 
     await this.prisma.request.update({
       where: { id },
-      data: { status: RequestStatus.CERRADA, closedAt: new Date(), lastActivityAt: new Date() },
+      data: {
+        status: RequestStatus.CERRADA,
+        closedAt: new Date(),
+        lastBuyerActivityAt: new Date(),
+        lastActivityAt: new Date(),
+        pausedAt: null,
+      },
     });
     return this.formatRequest(await this.findByIdRaw(id));
   }
 
-  /** "Seguir buscando": renueva la actividad y reabre Activa/Negociando según corresponda. */
+  /** "Seguir buscando": renueva actividad del comprador y reabre Activa/Negociando. */
   async renew(userId: string, id: string) {
     const req = await this.prisma.request.findUnique({ where: { id } });
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
@@ -692,9 +841,31 @@ export class RequestsService {
       throw new BadRequestException('La solicitud está cerrada');
     }
 
+    const now = new Date();
     await this.prisma.request.update({
       where: { id },
-      data: { lastActivityAt: new Date() },
+      data: { lastBuyerActivityAt: now, lastActivityAt: now, pausedAt: null },
+    });
+    return this.formatRequest(await this.findByIdRaw(id));
+  }
+
+  /** Pausar búsqueda: archiva de inmediato (fuera de exploración, reactivable con renew). */
+  async pause(userId: string, id: string) {
+    const req = await this.prisma.request.findUnique({ where: { id } });
+    if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
+    if (req.userId !== userId) throw new ForbiddenException();
+    if (req.status === RequestStatus.CERRADA) {
+      throw new BadRequestException('La solicitud está cerrada');
+    }
+
+    const archivedAt = archivedBuyerActivityAt();
+    await this.prisma.request.update({
+      where: { id },
+      data: {
+        lastBuyerActivityAt: archivedAt,
+        lastActivityAt: archivedAt,
+        pausedAt: null,
+      },
     });
     return this.formatRequest(await this.findByIdRaw(id));
   }
