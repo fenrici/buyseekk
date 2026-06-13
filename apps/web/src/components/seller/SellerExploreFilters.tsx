@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { citiesForCountry, clearAllSellerFilters, type SellerFilterState } from '@buyseekk/shared';
+import { citiesForCountry, clearAllSellerFilters, countActiveSellerFilters, type SellerFilterState } from '@buyseekk/shared';
 import { api } from '@/lib/api';
 import { buildSellerFilterChips, summarizeSellerFilters, type SavedSearchItem } from '@/lib/seller-filter-labels';
 import { useT } from '@/lib/i18n';
@@ -101,6 +101,12 @@ export function SellerExploreFilters({ explore }: Props) {
   const showCategoryFilter = !lockedCategory;
   const desktopCategory = lockedCategory || filters.category;
   const draftCategory = lockedCategory || draft.category;
+  const draftActiveCount = countActiveSellerFilters(draft, lockedCategory);
+
+  function saveFromSheet() {
+    applyFilters(draft, true);
+    setSaveOpen(true);
+  }
 
   const categoryFilters = [
     { id: '', label: t('seller.all') },
@@ -325,6 +331,15 @@ export function SellerExploreFilters({ explore }: Props) {
                 >
                   {t('seller.clearFilters')}
                 </button>
+                {draftActiveCount > 0 && (
+                  <button
+                    type="button"
+                    className="seller-filter-footer-save"
+                    onClick={saveFromSheet}
+                  >
+                    {t('savedSearch.save')}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="seller-filter-footer-apply"
