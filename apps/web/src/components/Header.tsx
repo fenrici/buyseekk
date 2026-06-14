@@ -31,7 +31,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
   const navMode = user ? resolveNavMode({ role: user.role, activeMode: user.activeMode }) : null;
 
   useEffect(() => {
-    if (!user) {
+    if (!user || user.role === 'ADMIN') {
       setPendingRatings(0);
       setPendingOffers(0);
       return;
@@ -58,6 +58,11 @@ export function Header({ variant = 'light' }: HeaderProps) {
     ) : null;
 
   const navLinks = !loading && user && (
+    user.role === 'ADMIN' ? (
+      <Link href="/admin" className={`${navLinkCls} font-semibold text-amber-400`}>
+        Admin
+      </Link>
+    ) : (
     <>
       {navMode === 'BUYER' ? (
         <>
@@ -87,6 +92,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
         {badge(pendingRatings)}
       </Link>
     </>
+    )
   );
 
   return (

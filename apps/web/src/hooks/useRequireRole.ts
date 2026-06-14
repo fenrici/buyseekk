@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { isBuyerRole, isSellerRole } from '@/lib/auth';
+import { isAdminRole, isBuyerRole, isSellerRole } from '@/lib/auth';
 import { useAuth } from '@/providers/AuthProvider';
 
 export function useRequireRole(role: 'buyer' | 'seller') {
@@ -11,6 +11,11 @@ export function useRequireRole(role: 'buyer' | 'seller') {
 
   useEffect(() => {
     if (loading || !user) return;
+    // Los administradores no operan como comprador/vendedor: van al panel admin.
+    if (isAdminRole(user.role)) {
+      router.replace('/admin');
+      return;
+    }
     if (role === 'buyer' && !isBuyerRole(user.role)) {
       router.replace('/seller');
     }

@@ -486,6 +486,27 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: 'admin@buyseekk.com' },
+    update: {
+      role: UserRole.ADMIN,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      blocked: false,
+    },
+    create: {
+      email: 'admin@buyseekk.com',
+      passwordHash,
+      name: 'Admin Buyseek',
+      role: UserRole.ADMIN,
+      country: Country.AR,
+      locale: Locale.ES,
+      currency: Currency.USD,
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+    },
+  });
+
   const buyerUS = await prisma.user.upsert({
     where: { email: 'comprador.us@buyseekk.com' },
     update: { emailVerified: true, emailVerifiedAt: new Date() },
@@ -614,6 +635,7 @@ async function main() {
   console.log('  comprador@buyseekk.com / demo1234 (AR) — 2 solicitudes en Pendiente de confirmación');
   console.log('  comprador.us@buyseekk.com / demo1234 (US)');
   console.log('  vendedor@buyseekk.com / demo1234 (US seller)');
+  console.log('  admin@buyseekk.com / demo1234 (ADMIN)');
 }
 
 main()

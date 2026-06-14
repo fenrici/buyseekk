@@ -17,6 +17,7 @@ import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/spam-content';
 import { assertValidImageUrls } from '../common/utils/image-urls';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -47,6 +48,7 @@ export class OffersService {
     });
 
     if (!request || !request.active) throw new NotFoundException('Solicitud no encontrada');
+    if (request.hiddenByModeration) throw new NotFoundException('Solicitud no encontrada');
     if (request.status === RequestStatus.CERRADA) {
       throw new BadRequestException('La solicitud está cerrada y no acepta nuevas ofertas');
     }
@@ -56,6 +58,7 @@ export class OffersService {
 
     const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
     if (!seller) throw new ForbiddenException();
+    assertAccountActive(seller);
     assertEmailVerified(seller);
     if (seller.country !== request.country) {
       throw new ForbiddenException('Solo podés ofertar en solicitudes de tu país');
@@ -120,6 +123,7 @@ export class OffersService {
 
     const where = {
       status: OfferStatus.PENDIENTE,
+      hiddenByModeration: false,
       request: { userId, active: true },
     };
 
@@ -154,6 +158,7 @@ export class OffersService {
     const offers = await this.prisma.offer.findMany({
       where: {
         status: OfferStatus.PENDIENTE,
+        hiddenByModeration: false,
         request: { userId, active: true },
       },
       orderBy: { createdAt: 'desc' },

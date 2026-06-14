@@ -11,6 +11,7 @@ enum UserRole {
   BUYER
   SELLER
   BOTH
+  ADMIN
 }
 
 /// Modo de uso activo de la cuenta. No es un permiso: las capacidades reales viven en UserRole.
@@ -68,6 +69,37 @@ enum SecurityEvent {
   PASSWORD_CHANGED
   EMAIL_VERIFIED
   LOGOUT
+  ADMIN_USER_BLOCKED
+  ADMIN_USER_UNBLOCKED
+  ADMIN_USER_EMAIL_VERIFIED
+  ADMIN_OFFER_DELETED
+  ADMIN_REQUEST_CLOSED
+  ADMIN_REQUEST_REACTIVATED
+  ADMIN_REQUEST_DELETED
+  ADMIN_MESSAGE_DELETED
+  ADMIN_REPORT_STATUS_CHANGED
+  ADMIN_USER_UNSUSPENDED
+  AUTO_REVIEW_TRIGGERED
+  AUTO_HIDE_REQUEST
+  AUTO_HIDE_OFFER
+  AUTO_SUSPEND_USER
+  AUTO_RESTORE_CONTENT
+}
+
+enum ReportReason {
+  SPAM
+  SCAM
+  INAPPROPRIATE_CONTENT
+  FAKE_OFFER
+  ABUSIVE_BEHAVIOR
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
 }
 
 enum NotificationType {
@@ -116,6 +148,12 @@ model User {
   lastSellerFilters Json?
   emailVerified    Boolean   @default(false)
   emailVerifiedAt  DateTime?
+  blocked          Boolean   @default(false)
+  blockedAt        DateTime?
+  blockedReason    String?
+  suspended        Boolean   @default(false)
+  suspendedAt      DateTime?
+  suspendedReason  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -130,6 +168,43 @@ model User {
   refreshTokens             RefreshToken[]
   securityLogs              SecurityLog[]
   notifications             Notification[]
+  reportsMade               Report[] @relation("ReportsMade")
+  reportsAgainst            Report[] @relation("ReportsAgainst")
+  reportsReviewed           Report[] @relation("ReportsReviewed")
+
+  @@index([blocked])
+  @@index([suspended])
+  @@index([role])
+}
+
+model Report {
+  id                  String       @id @default(cuid())
+  reporterId          String
+  reporter            User         @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId      String?
+  reportedUser        User?        @relation("ReportsAgainst", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  requestId           String?
+  offerId             String?
+  chatId              String?
+  messageId           String?
+  reason              ReportReason
+  details             String?
+  status              ReportStatus @default(PENDING)
+  weight              Int          @default(1)
+  resolvedByAdmin     Boolean      @default(false)
+  autoTriggeredAction String?
+  reporterIp          String?
+  reporterUserAgent   String?
+  createdAt           DateTime     @default(now())
+  reviewedAt          DateTime?
+  reviewedById        String?
+  reviewedBy          User?        @relation("ReportsReviewed", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reportedUserId])
+  @@index([reporterId])
+  @@index([requestId])
+  @@index([offerId])
 }
 
 model Notification {
@@ -253,6 +328,8 @@ model Request {
   carYearMin   Int?
   maxMileage   Int?
   active       Boolean         @default(true)
+  hiddenByModeration       Boolean @default(false)
+  moderationReviewRequired Boolean @default(false)
   status               RequestStatus @default(ACTIVA)
   lastActivityAt       DateTime      @default(now())
   lastBuyerActivityAt  DateTime      @default(now())
@@ -284,6 +361,8 @@ model Offer {
   imageUrls             String[]    @default([])
   status                OfferStatus @default(PENDIENTE)
   dismissedBySeller     Boolean     @default(false)
+  hiddenByModeration       Boolean  @default(false)
+  moderationReviewRequired Boolean  @default(false)
   requestTitle          String
   requestBudget         Int
   requestBudgetPeriod   String?

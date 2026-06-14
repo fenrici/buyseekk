@@ -22,3 +22,7 @@ export function isBuyerCapable(role: UserRole) {
 export function isSellerCapable(role: UserRole) {
   return isSellerCapableRole(role);
 }
+
+export function isAdmin(role: UserRole) {
+  return role === UserRole.ADMIN;
+}

@@ -7,6 +7,7 @@ import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { ChatThread } from '@/components/ChatThread';
 import { RatingPanel } from '@/components/RatingPanel';
+import { ReportButton } from '@/components/ReportButton';
 import { useChatViewport } from '@/hooks/useChatViewport';
 import { useT } from '@/lib/i18n';
 import type { ChatDetail } from '@/lib/types';
@@ -75,6 +76,9 @@ export default function ChatDetailPage() {
               </button>
             </div>
             <RatingPanel offerId={offerId} />
+            <div className="mt-3">
+              <ReportButton target={{ chatId: id }} />
+            </div>
           </div>
         </div>
       )}
@@ -106,6 +110,9 @@ export default function ChatDetailPage() {
               {showRating ? t('rating.hidePanel') : t('rating.showPanel')}
             </button>
             {showRating && <RatingPanel offerId={offerId} />}
+            <div className="mt-3">
+              <ReportButton target={{ chatId: id }} />
+            </div>
           </div>
         )}
       </main>

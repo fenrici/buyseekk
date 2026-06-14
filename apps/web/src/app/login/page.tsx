@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getToken, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
-import { getDashboardPathForMode } from '@/lib/auth';
+import { getPostLoginPath } from '@/lib/auth';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { PublicHeader } from '@/components/PublicHeader';
 import { setStoredLocale, useT } from '@/lib/i18n';
@@ -56,7 +56,7 @@ function LoginForm() {
       setAuthTokens(res.token, res.refreshToken);
       setStoredLocale(res.user.locale);
       setSession(res.user);
-      router.replace(getDashboardPathForMode(res.user.activeMode));
+      router.replace(getPostLoginPath(res.user));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {

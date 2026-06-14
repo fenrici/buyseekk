@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
+import { NonAdminGuard } from '../common/guards/non-admin.guard';
 import { AuthUser } from '../common/types/auth-user';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { ChatDetailQueryDto } from './chat-detail.query.dto';
@@ -10,7 +11,7 @@ import { SendMessageDto } from './chats.dto';
 import { ChatsService } from './chats.service';
 
 @Controller('chats')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, NonAdminGuard)
 export class ChatsController {
   constructor(private chats: ChatsService) {}
 

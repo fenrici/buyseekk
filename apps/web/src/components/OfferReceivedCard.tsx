@@ -5,6 +5,7 @@ import { OfferItem } from '@/lib/types';
 import { CompareBlock } from '@/components/CompareBlock';
 import { OfferDecisionBar } from '@/components/OfferDecisionBar';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
+import { ReportButton } from '@/components/ReportButton';
 
 type Props = {
   offer: OfferItem;
@@ -40,6 +41,9 @@ export function OfferReceivedCard({
         onAccept={onAccept}
         onReject={onReject}
       />
+      <div className="mt-2 flex justify-end">
+        <ReportButton target={{ offerId: offer.id }} />
+      </div>
     </article>
   );
 }

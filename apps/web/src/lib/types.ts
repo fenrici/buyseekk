@@ -11,7 +11,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'BUYER' | 'SELLER' | 'BOTH';
+  role: 'BUYER' | 'SELLER' | 'BOTH' | 'ADMIN';
   activeMode: 'BUYER' | 'SELLER';
   sellerType?: 'PERSONAL' | 'BUSINESS' | null;
   sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
@@ -27,6 +27,12 @@ export interface User {
   lastSellerFilters?: Record<string, unknown> | null;
   emailVerified: boolean;
   emailVerifiedAt?: string | null;
+  blocked?: boolean;
+  blockedAt?: string | null;
+  blockedReason?: string | null;
+  suspended?: boolean;
+  suspendedAt?: string | null;
+  suspendedReason?: string | null;
 }
 
 export interface PublicProfile {
@@ -91,6 +97,8 @@ export interface RequestItem {
   offersCount: number;
   pendingOffersCount: number;
   hasOffers: boolean;
+  hiddenByModeration?: boolean;
+  moderationReviewRequired?: boolean;
   offers?: { id: string; status: string }[];
   isSaved?: boolean;
   savedAt?: string | null;
@@ -224,6 +232,8 @@ export interface OfferItem {
   message: string;
   imageUrls?: string[];
   status: string;
+  hiddenByModeration?: boolean;
+  moderationReviewRequired?: boolean;
   requestTitle: string;
   requestBudget: number;
   requestBudgetPeriod?: string | null;

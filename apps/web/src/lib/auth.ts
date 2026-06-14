@@ -15,6 +15,16 @@ export function isSellerRole(role: User['role']) {
   return isSellerCapableRole(role);
 }
 
+export function isAdminRole(role: User['role']) {
+  return role === 'ADMIN';
+}
+
+/** Ruta de inicio tras login: los admin van al panel admin; el resto a su dashboard. */
+export function getPostLoginPath(user: Pick<User, 'role' | 'activeMode'>) {
+  if (isAdminRole(user.role)) return '/admin';
+  return getDashboardPathForMode(user.activeMode);
+}
+
 /** Una cuenta ya completó el onboarding de vendedor si tiene capacidad y datos de vendedor. */
 export function hasSellerProfile(user: Pick<User, 'role' | 'sellerType' | 'sellerCategory'>) {
   return hasCompletedSellerProfile(user);

@@ -17,6 +17,7 @@ import { RequestMeta } from '@/components/RequestMeta';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
+import { ReportButton } from '@/components/ReportButton';
 import { useT } from '@/lib/i18n';
 
 export default function RequestDetailPage() {
@@ -93,6 +94,12 @@ export default function RequestDetailPage() {
               <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
             </div>
           )}
+          {user.id === request.user.id &&
+            (request.hiddenByModeration || request.moderationReviewRequired) && (
+              <div className="mb-3 rounded-xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-200">
+                {t('account.underReview')}
+              </div>
+            )}
           <div className="mb-2 flex items-start justify-between gap-3">
             <RequestStatusBadge status={request.status} />
             <SaveRequestButton requestId={request.id} initialSaved={request.isSaved} />
@@ -113,6 +120,11 @@ export default function RequestDetailPage() {
             showPublished
             className="mt-1"
           />
+          {user.id !== request.user.id && (
+            <div className="mt-4">
+              <ReportButton target={{ requestId: request.id, reportedUserId: request.user.id }} />
+            </div>
+          )}
         </div>
         {canOffer ? (
           <form onSubmit={sendOffer} className="card h-fit p-6">

@@ -7,6 +7,7 @@ import {
   roleAfterEnablingSeller,
 } from '@buyseekk/shared';
 import { validateImageUrls } from '../common/utils/image-urls';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LastSearchFiltersDto, SellerProfileDto, UpdateProfileDto } from './users.dto';
@@ -77,6 +78,7 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const current = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!current) throw new NotFoundException('Usuario no encontrado');
+    assertAccountActive(current);
 
     if (dto.avatarUrl?.trim()) validateImageUrls([dto.avatarUrl.trim()]);
 
@@ -150,6 +152,7 @@ export class UsersService {
   async createSellerProfile(userId: string, dto: SellerProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    assertAccountActive(user);
 
     const isBusiness = dto.sellerType === SellerType.BUSINESS;
     const nextRole = roleAfterEnablingSeller(user.role);
@@ -171,6 +174,7 @@ export class UsersService {
   async updateSellerProfile(userId: string, dto: SellerProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    assertAccountActive(user);
     if (!hasCompletedSellerProfile(user)) {
       throw new BadRequestException('Todavía no tenés un perfil de vendedor');
     }

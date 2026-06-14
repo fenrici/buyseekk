@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nest
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
+import { NonAdminGuard } from '../common/guards/non-admin.guard';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateRatingDto } from './ratings.dto';
 import { RatingsService } from './ratings.service';
@@ -13,11 +14,13 @@ export class RatingsController {
 
   @Throttle({ default: THROTTLE_LIMITS.write })
   @Post()
+  @UseGuards(NonAdminGuard)
   create(@Req() req: { user: { id: string } }, @Body() dto: CreateRatingDto) {
     return this.ratings.create(req.user.id, dto);
   }
 
   @Get('pending')
+  @UseGuards(NonAdminGuard)
   pending(@Req() req: { user: { id: string } }, @Query() query: PaginationQueryDto) {
     return this.ratings.pending(req.user.id, query.page, query.limit);
   }

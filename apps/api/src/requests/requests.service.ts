@@ -20,6 +20,7 @@ import {
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
 import { validateImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
@@ -159,6 +160,7 @@ export class RequestsService {
     if (!isBuyerCapable(user.role)) {
       throw new ForbiddenException('Solo compradores pueden publicar solicitudes');
     }
+    assertAccountActive(user);
     assertEmailVerified(user);
     validateImageUrls(dto.imageUrls);
     assertCleanPublicText(dto.requirements, 'los requisitos');
@@ -302,6 +304,7 @@ export class RequestsService {
       active: true,
       country: user.country,
       userId: { not: user.id },
+      hiddenByModeration: false,
       ...visibleToSellersWhere(),
     };
 
@@ -399,7 +402,11 @@ export class RequestsService {
   }) {
     const { page, limit, skip } = parsePagination(filters.page, filters.limit);
 
-    const where: Record<string, unknown> = { active: true, ...visibleToSellersWhere() };
+    const where: Record<string, unknown> = {
+      active: true,
+      hiddenByModeration: false,
+      ...visibleToSellersWhere(),
+    };
     if (filters.category) where.category = filters.category;
     if (filters.country) where.country = filters.country;
     if (filters.location) where.location = filters.location;
@@ -501,7 +508,12 @@ export class RequestsService {
         offers: { select: { id: true, chat: { select: { id: true } } } },
       },
     });
-    if (!req || !req.active || !isVisibleToSellers(toLifecycleInput(req))) {
+    if (
+      !req ||
+      !req.active ||
+      req.hiddenByModeration ||
+      !isVisibleToSellers(toLifecycleInput(req))
+    ) {
       throw new NotFoundException('Solicitud no encontrada');
     }
     return this.sanitizePublic(req);
@@ -517,6 +529,7 @@ export class RequestsService {
     const where: Record<string, unknown> = {
       active: true,
       country: user.country,
+      hiddenByModeration: false,
       ...visibleToSellersWhere(),
     };
     if (user.sellerCategory) where.category = user.sellerCategory;
@@ -774,6 +787,12 @@ export class RequestsService {
   ) {
     const req = await this.findByIdRaw(id);
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
+
+    // Oculta por moderación: deja de ser visible para vendedores (sigue visible para el dueño,
+    // que accede por su propio listado, no por este endpoint de vendedor).
+    if (viewer && req.hiddenByModeration && req.userId !== viewer.id) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
 
     // Cerradas, archivadas y pendientes dejan de ser visibles para vendedores (salvo si las guardó)
     if (viewer && !isVisibleToSellers(toLifecycleInput(req))) {

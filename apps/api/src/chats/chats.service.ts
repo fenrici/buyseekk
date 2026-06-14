@@ -7,6 +7,7 @@ import { OfferStatus, RequestStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
@@ -174,6 +175,7 @@ export class ChatsService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new ForbiddenException();
+    assertAccountActive(user);
     assertEmailVerified(user);
 
     const role = this.assertParticipant(chat, userId);

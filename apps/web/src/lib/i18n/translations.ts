@@ -220,6 +220,35 @@ export const es = {
     unreadCount: '{count} sin leer',
     allRead: 'Estás al día',
   },
+  report: {
+    button: 'Reportar',
+    title: 'Reportar',
+    reasonLabel: 'Motivo',
+    detailsLabel: 'Detalles (opcional)',
+    detailsPlaceholder: 'Contanos qué pasó...',
+    submit: 'Enviar reporte',
+    cancel: 'Cancelar',
+    success: 'Reporte enviado. Gracias por avisarnos.',
+    error: 'No se pudo enviar el reporte. Intentá de nuevo.',
+    alreadyReported: 'Ya reportaste este contenido.',
+    reasons: {
+      SPAM: 'Spam',
+      SCAM: 'Estafa',
+      INAPPROPRIATE_CONTENT: 'Contenido inapropiado',
+      FAKE_OFFER: 'Oferta falsa',
+      ABUSIVE_BEHAVIOR: 'Comportamiento abusivo',
+      OTHER: 'Otro',
+    },
+  },
+  account: {
+    blockedTitle: 'Cuenta bloqueada',
+    blockedMessage:
+      'Tu cuenta está bloqueada. No podés publicar solicitudes, enviar ofertas, chatear ni editar tu perfil. Si creés que es un error, contactá al soporte.',
+    suspendedTitle: 'Cuenta suspendida',
+    suspendedMessage:
+      'Tu cuenta está temporalmente suspendida mientras revisamos varios reportes recibidos.',
+    underReview: 'Esta publicación está siendo revisada por la comunidad.',
+  },
   buyer: {
     title: 'Panel comprador',
     subtitle: 'Publicá lo que buscás y revisá las ofertas que te envían',
@@ -789,6 +818,35 @@ export const en: DeepString<typeof es> = {
     clearAllConfirm: 'Delete all your notifications? This cannot be undone.',
     unreadCount: '{count} unread',
     allRead: "You're all caught up",
+  },
+  report: {
+    button: 'Report',
+    title: 'Report',
+    reasonLabel: 'Reason',
+    detailsLabel: 'Details (optional)',
+    detailsPlaceholder: 'Tell us what happened...',
+    submit: 'Send report',
+    cancel: 'Cancel',
+    success: 'Report sent. Thanks for letting us know.',
+    error: 'Could not send the report. Please try again.',
+    alreadyReported: 'You already reported this content.',
+    reasons: {
+      SPAM: 'Spam',
+      SCAM: 'Scam',
+      INAPPROPRIATE_CONTENT: 'Inappropriate content',
+      FAKE_OFFER: 'Fake offer',
+      ABUSIVE_BEHAVIOR: 'Abusive behavior',
+      OTHER: 'Other',
+    },
+  },
+  account: {
+    blockedTitle: 'Account blocked',
+    blockedMessage:
+      'Your account is blocked. You cannot post requests, send offers, chat or edit your profile. If you think this is a mistake, contact support.',
+    suspendedTitle: 'Account suspended',
+    suspendedMessage:
+      'Your account is temporarily suspended while we review several reports received.',
+    underReview: 'This listing is under community review.',
   },
   buyer: {
     title: 'Buyer panel',

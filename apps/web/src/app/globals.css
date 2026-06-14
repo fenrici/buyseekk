@@ -1418,6 +1418,10 @@ button.portal-mobile-link {
   margin-bottom: 1.25rem;
 }
 
+.notif-page__head > div:first-child {
+  min-width: 0;
+}
+
 .notif-page__actions {
   display: flex;
   align-items: center;
@@ -1449,6 +1453,49 @@ button.portal-mobile-link {
 .notif-page__clear-all svg {
   width: 15px;
   height: 15px;
+}
+
+@media (max-width: 640px) {
+  .notif-page__head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .notif-page__actions {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .notif-page__mark-all {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.12);
+    text-align: center;
+    line-height: 1.3;
+    white-space: normal;
+  }
+
+  .notif-page__clear-all {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0.45rem 0.75rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .notif-page__clear-all span {
+    display: none;
+  }
+
+  .notif-page__clear-all {
+    padding: 0.45rem 0.55rem;
+  }
 }
 
 .notif-page__title {
@@ -4175,3 +4222,20 @@ html.chat-viewport-lock body {
 .chat-thread__composer-send {
   flex-shrink: 0;
 }
+
+/* Reporte: texto blanco en select/textarea (panel oscuro hereda color azul) */
+.report-dialog select,
+.report-dialog textarea {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+.report-dialog textarea::placeholder {
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.report-dialog select option {
+  color: #0f172a;
+  background: #fff;
+}
+

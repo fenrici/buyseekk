@@ -5,7 +5,7 @@
  * - role (capacidades reales): 'BUYER' | 'SELLER' | 'BOTH'. Se usa para autorizar.
  * - activeMode (interfaz visible): 'BUYER' | 'SELLER'. NUNCA es una medida de seguridad.
  */
-export type AppUserRole = 'BUYER' | 'SELLER' | 'BOTH';
+export type AppUserRole = 'BUYER' | 'SELLER' | 'BOTH' | 'ADMIN';
 export type AppUserMode = 'BUYER' | 'SELLER';
 export type AppLocale = 'ES' | 'EN';
 

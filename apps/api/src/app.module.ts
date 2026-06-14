@@ -19,6 +19,8 @@ import { UsersModule } from './users/users.module';
 import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 import { SavedRequestsModule } from './saved-requests/saved-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     SavedSearchesModule,
     SavedRequestsModule,
     NotificationsModule,
+    ReportsModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

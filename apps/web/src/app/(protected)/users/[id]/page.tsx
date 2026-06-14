@@ -9,6 +9,7 @@ import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { StarRating } from '@/components/StarRating';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
+import { ReportButton } from '@/components/ReportButton';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLocale, useT } from '@/lib/i18n';
 
@@ -134,12 +135,18 @@ export default function PublicProfilePage() {
                 </div>
               )}
 
-              {user?.id === profile.id && (
+              {user?.id === profile.id ? (
                 <div className="mt-5 border-t border-white/10 pt-4">
                   <Link href="/profile" className="btn btn-ghost text-sm">
                     {t('profile.editTitle')}
                   </Link>
                 </div>
+              ) : (
+                user && (
+                  <div className="mt-5 border-t border-white/10 pt-4">
+                    <ReportButton target={{ reportedUserId: profile.id }} variant="button" />
+                  </div>
+                )
               )}
             </section>
 

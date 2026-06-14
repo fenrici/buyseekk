@@ -52,6 +52,12 @@ export function SellerSentOfferCard({
         </span>
       </div>
 
+      {(offer.hiddenByModeration || offer.moderationReviewRequired) && (
+        <div className="mb-3 rounded-lg border border-amber-300/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-200">
+          {t('account.underReview')}
+        </div>
+      )}
+
       <CompareBlock offer={offer} perspective="seller" />
 
       {offer.status === 'ACEPTADA' && offer.chatId && (
