@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
+import { EmailModule } from '../email/email.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import {
   EmailNotificationChannel,
   InAppNotificationChannel,
@@ -13,6 +15,8 @@ import { NotificationsService } from './notifications.service';
 
 @Module({
   imports: [
+    PrismaModule,
+    EmailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

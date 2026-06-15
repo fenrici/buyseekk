@@ -8,7 +8,6 @@ import {
   CAR_COLORS,
   carYearPresets,
   citiesForCountry,
-  maxAmountFor,
   MILEAGE_PRESETS,
   modelsForBrand,
   SQM_PRESETS,
@@ -16,10 +15,19 @@ import {
 } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
-import { ValidationAlerts } from '@/components/ValidationAlerts';
+import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 import { spamFieldErrors } from '@/lib/spam';
 import { User } from '@/lib/types';
 import { ImageUpload } from '@/components/ImageUpload';
+import { UsLocationPicker } from '@/components/UsLocationPicker';
+import { MoneyInput } from '@/components/MoneyInput';
+import { moneyInputLocale } from '@/lib/money-input';
+import {
+  effectiveCountry,
+  getDefaultRegisterCurrency,
+  showCountrySelectors,
+  showCurrencySelectors,
+} from '@/lib/launch-country';
 
 const TOTAL_STEPS = 3;
 
@@ -148,23 +156,26 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const cities = citiesForCountry(user.country);
+  const marketCountry = effectiveCountry(user.country);
+  const marketCurrency = showCurrencySelectors() ? user.currency : getDefaultRegisterCurrency();
+  const useUsLocations = marketCountry === 'US';
+  const cities = citiesForCountry(marketCountry);
   const defaultBrand = CAR_BRAND_LIST[0] ?? '';
   const [form, setForm] = useState<FormState>({
     category: 'AUTOS',
     title: '',
     requirements: '',
     budget: '',
-    location: cities[0] ?? '',
-    country: user.country,
-    currency: user.currency,
+    location: useUsLocations ? 'Miami, FL' : cities[0] ?? '',
+    country: marketCountry,
+    currency: marketCurrency,
     operation: 'COMPRA',
     carBrand: defaultBrand,
     carModel: modelsForBrand(defaultBrand)[0] ?? '',
     carColor: CAR_COLORS[0],
     carYearMin: String(carYearPresets()[3] ?? new Date().getFullYear() - 3),
     maxMileage: String(MILEAGE_PRESETS[2] ?? 30000),
-    zone: zonesForCountryAndCity(user.country, cities[0] ?? '')[0] ?? '',
+    zone: useUsLocations ? '' : zonesForCountryAndCity(user.country, cities[0] ?? '')[0] ?? '',
     bedrooms: '2',
     minSqm: '',
     maxSqm: '',
@@ -200,8 +211,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         next.carColor = CAR_COLORS[0];
         next.carYearMin = String(carYearPresets()[3] ?? new Date().getFullYear() - 3);
         next.maxMileage = String(MILEAGE_PRESETS[2] ?? 30000);
-        const autoZones = zonesForCountryAndCity(next.country, next.location);
-        next.zone = autoZones[0] ?? '';
+        next.zone = useUsLocations ? '' : zonesForCountryAndCity(next.country, next.location)[0] ?? '';
         next.bedrooms = '2';
         next.minSqm = '';
         next.maxSqm = '';
@@ -222,7 +232,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
 
   function validateStep(targetStep: number): string | null {
     if (targetStep >= 1) {
-      if (!form.zone) return t('request.zoneRequired');
+      if (!useUsLocations && !form.zone) return t('request.zoneRequired');
       if (isAuto) {
         if (!form.carBrand || !form.carModel || !form.carColor || !form.carYearMin || !form.maxMileage) {
           return t('request.autoRequired');
@@ -241,7 +251,11 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
       if (budgetLimitErrorKey(budget, form.currency, isRent)) {
         return t('request.budgetMax', { max: budgetMaxLabel(form.currency, isRent) });
       }
-      if (!form.location) return t('request.zoneRequired');
+      if (!form.location) return t('request.areaRequired');
+      if (useUsLocations && !isAuto) {
+        const hoods = zonesForCountryAndCity(form.country, form.location);
+        if (hoods.length > 0 && !form.zone) return t('request.neighborhoodRequired');
+      }
     }
     if (targetStep >= 3) {
       if (form.requirements.trim().length < 10) return t('request.requirementsMin');
@@ -296,7 +310,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         payload.carColor = form.carColor;
         payload.carYearMin = parseInt(form.carYearMin, 10);
         payload.maxMileage = parseInt(form.maxMileage, 10);
-        payload.zone = form.zone;
+        if (!useUsLocations) payload.zone = form.zone;
         payload.title = form.title.trim() || t('request.autoTitle', { brand: form.carBrand, model: form.carModel });
       } else {
         payload.title = form.title.trim();
@@ -326,7 +340,6 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
 
   const progressLabel = t('request.stepProgress', { step: String(step), total: String(TOTAL_STEPS) });
   const isRent = form.operation === 'ALQUILER';
-  const budgetMax = maxAmountFor(form.currency, isRent);
 
   return (
     <form onSubmit={handleSubmit} className="publish-form card p-4 sm:p-6">
@@ -337,7 +350,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         {step === 3 && t('request.stepDetailsHint')}
       </p>
 
-      {error && <ValidationAlerts message={error} className="mb-4" />}
+      {error && <EmailVerificationErrorAlert message={error} className="mb-4" />}
 
       {step === 1 && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -456,14 +469,16 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
             </div>
           )}
 
-          <label className="block md:col-span-2">
-            <span className="text-xs font-semibold text-slate-600">{t('request.zone')} *</span>
-            <select className="input mt-1 w-full" value={form.zone} onChange={(e) => updateField('zone', e.target.value)}>
-              {zones.map((z) => (
-                <option key={z} value={z}>{z}</option>
-              ))}
-            </select>
-          </label>
+          {!useUsLocations && (
+            <label className="block md:col-span-2">
+              <span className="text-xs font-semibold text-slate-600">{t('request.zone')} *</span>
+              <select className="input mt-1 w-full" value={form.zone} onChange={(e) => updateField('zone', e.target.value)}>
+                {zones.map((z) => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       )}
 
@@ -471,23 +486,33 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
             <span className="text-xs font-semibold text-slate-600">{t('request.budgetPlaceholder')} *</span>
-            <input
+            <MoneyInput
               className="input mt-1 w-full"
-              type="number"
-              min={1}
-              max={budgetMax}
               value={form.budget}
-              onChange={(e) => updateField('budget', e.target.value)}
+              onChange={(digits) => updateField('budget', digits)}
+              locale={moneyInputLocale(form.currency)}
             />
           </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-600">{t('request.city')} *</span>
-            <select className="input mt-1 w-full" value={form.location} onChange={(e) => updateField('location', e.target.value)}>
-              {citiesForCountry(form.country as User['country']).map((city) => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-          </label>
+          {useUsLocations ? (
+            <UsLocationPicker
+              className="md:col-span-2 grid gap-4"
+              category={form.category}
+              location={form.location}
+              zone={form.zone}
+              onLocationChange={(loc) => updateField('location', loc)}
+              onZoneChange={(z) => updateField('zone', z)}
+            />
+          ) : (
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-600">{t('request.city')} *</span>
+              <select className="input mt-1 w-full" value={form.location} onChange={(e) => updateField('location', e.target.value)}>
+                {citiesForCountry(form.country as User['country']).map((city) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {showCurrencySelectors() && (
           <label className="block">
             <span className="text-xs font-semibold text-slate-600">{t('auth.currency')}</span>
             <select className="input mt-1 w-full" value={form.currency} onChange={(e) => updateField('currency', e.target.value)}>
@@ -495,6 +520,8 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
               <option value="USD">USD</option>
             </select>
           </label>
+          )}
+          {showCountrySelectors() && (
           <label className="block">
             <span className="text-xs font-semibold text-slate-600">{t('auth.country')}</span>
             <input
@@ -503,6 +530,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
               readOnly
             />
           </label>
+          )}
           <div className="md:col-span-2">
             <p className="text-xs font-semibold text-slate-600">{t('request.negotiable')}</p>
             <p className="mt-1 text-xs text-slate-500">{t('request.negotiableHint')}</p>

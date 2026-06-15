@@ -7,14 +7,16 @@ import {
   type SubscriptionPlan,
 } from '@buyseekk/shared';
 import { api } from '@/lib/api';
-import { useT } from '@/lib/i18n';
 import { planPriceLabel } from '@/lib/subscription-display';
+import { useT } from '@/lib/i18n';
 import type { User } from '@/lib/types';
-import { ProfilePlanTeaser } from './ProfilePlanTeaser';
+import { ProfilePricingCard } from './ProfilePricingCard';
 
 type SavedSearch = { id: string };
 type OfferItem = { createdAt: string };
 type Paginated<T> = { items: T[] };
+
+const PRICING_PLANS: SubscriptionPlan[] = ['FREE', 'PLUS', 'ENTERPRISE'];
 
 function startOfUtcDay(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -31,9 +33,8 @@ type Props = {
 
 export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
   const t = useT();
-  const plan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
-  const isFree = plan === 'FREE';
-  const hasPlus = plan === 'PLUS' || plan === 'ENTERPRISE';
+  const currentPlan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
+  const hasPlus = currentPlan === 'PLUS' || currentPlan === 'ENTERPRISE';
 
   const [offersToday, setOffersToday] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
@@ -69,67 +70,55 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
 
   const offerLimit = hasPlus ? null : FREE_DAILY_OFFER_LIMIT;
   const alertLimit = hasPlus ? null : FREE_MAX_SMART_ALERTS;
+  const summaryFeatures = featureList(t(`subscription.pricingFeatures.${currentPlan}`));
 
   return (
-    <div className="profile-billing">
-      {isFree && <ProfilePlanTeaser plan={plan} showUpgrade={false} />}
-      <section className="profile-billing__current card">
-        <p className="profile-billing__eyebrow">{t('profile.billingCurrent')}</p>
-        <h2 className="profile-billing__plan-name">{t(`subscription.plan.${plan}`)}</h2>
-        <p className="profile-billing__price">{planPriceLabel(plan, t)}</p>
-        {isSeller && (
-          <div className="profile-billing__usage">
-            <div className="profile-billing__usage-row">
-              <span>{t('subscription.offersToday')}</span>
-              <strong>{usageLoading ? '…' : offerLimit ? `${offersToday}/${offerLimit}` : t('subscription.unlimited')}</strong>
-            </div>
-            <div className="profile-billing__usage-row">
-              <span>{t('subscription.smartAlertsLabel')}</span>
-              <strong>{usageLoading ? '…' : alertLimit ? `${alertCount}/${alertLimit}` : t('subscription.unlimited')}</strong>
-            </div>
+    <div className="pricing-page">
+      <section className="pricing-current" aria-labelledby="pricing-current-title">
+        <p id="pricing-current-title" className="pricing-current__eyebrow">
+          {t('profile.billingCurrent')}
+        </p>
+        <div className="pricing-current__main">
+          <div className="pricing-current__identity">
+            <h2 className="pricing-current__plan">{t(`subscription.plan.${currentPlan}`)}</h2>
+            <span className="pricing-current__badge">{t('subscription.currentPlan')}</span>
           </div>
-        )}
-        <ul className="profile-billing__limits">
-          {featureList(t(`subscription.profileFeatures.${plan}`)).map((line) => (
+          <p className="pricing-current__price">
+            {currentPlan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(currentPlan, t)}
+          </p>
+        </div>
+        <ul className="pricing-current__features">
+          {summaryFeatures.map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>
+        {isSeller && (
+          <div className="pricing-current__usage">
+            <div className="pricing-current__usage-item">
+              <span>{t('subscription.offersToday')}</span>
+              <strong>
+                {usageLoading ? '…' : offerLimit ? `${offersToday}/${offerLimit}` : t('subscription.unlimited')}
+              </strong>
+            </div>
+            <div className="pricing-current__usage-item">
+              <span>{t('subscription.smartAlertsLabel')}</span>
+              <strong>
+                {usageLoading ? '…' : alertLimit ? `${alertCount}/${alertLimit}` : t('subscription.unlimited')}
+              </strong>
+            </div>
+          </div>
+        )}
       </section>
 
-      {isFree && (
-        <section className="profile-billing__tier card profile-billing__tier--plus">
-          <div className="profile-billing__tier-head">
-            <h3>{t('subscription.plan.PLUS')}</h3>
-            <span>{planPriceLabel('PLUS', t)}</span>
-          </div>
-          <ul>
-            {featureList(t('subscription.compare.PLUS')).map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-          <button type="button" className="profile-billing__upgrade" disabled title={t('subscription.comingSoon')}>
-            {t('subscription.upgradeCta')}
-            <span className="profile-billing__soon">{t('subscription.comingSoon')}</span>
-          </button>
-        </section>
-      )}
-
-      <section className="profile-billing__tier card profile-billing__tier--enterprise">
-        <div className="profile-billing__tier-head">
-          <h3>{t('subscription.plan.ENTERPRISE')}</h3>
-          <span>{planPriceLabel('ENTERPRISE', t)}</span>
-        </div>
-        <ul>
-          {featureList(t('subscription.compare.ENTERPRISE')).map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        {plan !== 'ENTERPRISE' && (
-          <button type="button" className="profile-billing__upgrade profile-billing__upgrade--ghost" disabled>
-            {t('profile.contactEnterprise')}
-            <span className="profile-billing__soon">{t('subscription.comingSoon')}</span>
-          </button>
-        )}
+      <section className="pricing-grid" aria-label={t('subscription.compareTitle')}>
+        {PRICING_PLANS.map((plan) => (
+          <ProfilePricingCard
+            key={plan}
+            plan={plan}
+            currentPlan={currentPlan}
+            highlighted={plan === 'PLUS'}
+          />
+        ))}
       </section>
     </div>
   );

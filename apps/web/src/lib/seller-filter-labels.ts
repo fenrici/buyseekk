@@ -1,4 +1,5 @@
 import type { SellerFilterState } from '@buyseekk/shared';
+import { formatUsAreaDisplay } from '@buyseekk/shared';
 
 export type SavedSearchItem = {
   id: string;
@@ -29,7 +30,9 @@ export function buildSellerFilterChips(
       label: state.operation === 'ALQUILER' ? t('request.rent') : t('request.buy'),
     });
   }
-  if (state.location) chips.push({ key: 'location', label: state.location });
+  if (state.location) {
+    chips.push({ key: 'location', label: formatUsAreaDisplay(state.location) });
+  }
   if (state.zone) chips.push({ key: 'zone', label: state.zone });
   const cat = lockedCategory || state.category;
   if (cat !== 'AUTOS') {

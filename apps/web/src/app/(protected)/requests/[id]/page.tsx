@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
-import { ValidationAlerts } from '@/components/ValidationAlerts';
+import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 import { spamFieldErrors } from '@/lib/spam';
-import { maxAmountFor } from '@buyseekk/shared';
 import { RequestItem } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { ImageGallery } from '@/components/ImageGallery';
@@ -19,6 +18,9 @@ import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusB
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { ReportButton } from '@/components/ReportButton';
 import { useT } from '@/lib/i18n';
+import { showCurrencySelectors } from '@/lib/launch-country';
+import { MoneyInput } from '@/components/MoneyInput';
+import { moneyInputLocale } from '@/lib/money-input';
 
 export default function RequestDetailPage() {
   const t = useT();
@@ -129,25 +131,16 @@ export default function RequestDetailPage() {
         {canOffer ? (
           <form onSubmit={sendOffer} className="card h-fit p-6">
             <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
-            {error && <ValidationAlerts message={error} className="mt-3" />}
+            {error && <EmailVerificationErrorAlert message={error} className="mt-3" />}
             <div className="mt-4 space-y-4">
-              <input
+              <MoneyInput
                 className="input w-full"
-                type="number"
-                min={1}
-                max={maxAmountFor(
-                  currency as 'USD' | 'ARS',
-                  request.operation === 'ALQUILER' || !!request.budgetPeriod,
-                )}
-                placeholder={t('request.pricePlaceholder')}
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={setPrice}
+                locale={moneyInputLocale(currency as 'USD' | 'ARS')}
+                placeholder={t('request.pricePlaceholder')}
                 required
               />
-              <select className="input w-full" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                <option value="USD">USD</option>
-                <option value="ARS">ARS</option>
-              </select>
               <textarea className="input w-full" rows={4} placeholder={t('request.messagePlaceholder')} value={message} onChange={(e) => setMessage(e.target.value)} required />
               <ImageUpload
                 label={t('request.productPhotos')}

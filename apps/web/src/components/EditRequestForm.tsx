@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/api';
-import { maxAmountFor } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
 import { ValidationAlerts } from '@/components/ValidationAlerts';
 import { spamFieldErrors } from '@/lib/spam';
 import { RequestItem } from '@/lib/types';
 import { ImageUpload } from '@/components/ImageUpload';
+import { MoneyInput } from '@/components/MoneyInput';
+import { moneyInputLocale } from '@/lib/money-input';
 
 type EditMode = 'full' | 'limited' | 'locked';
 
@@ -131,16 +132,11 @@ export function EditRequestForm({
 
       <label className="block">
         <span className="text-xs font-semibold text-slate-600">{t('request.budgetPlaceholder')}</span>
-        <input
+        <MoneyInput
           className="input mt-1 w-full"
-          type="number"
-          min={1}
-          max={maxAmountFor(
-            request.currency as 'USD' | 'ARS',
-            request.operation === 'ALQUILER' || !!request.budgetPeriod,
-          )}
           value={budget}
-          onChange={(e) => setBudget(e.target.value)}
+          onChange={setBudget}
+          locale={moneyInputLocale(request.currency as 'USD' | 'ARS')}
           required
         />
       </label>

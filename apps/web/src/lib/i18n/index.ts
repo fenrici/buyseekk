@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resolveInitialLocale } from '@buyseekk/shared';
 import { formatMoney } from '../api';
+import { LAUNCH_COUNTRY } from '@/lib/launch-country';
 import { useAuth } from '@/providers/AuthProvider';
 import { en, es, Locale } from './translations';
 
@@ -55,7 +56,10 @@ export function translate(locale: Locale, key: string, vars?: Record<string, str
 /** Preferencia manual guardada tiene prioridad; si no, se detecta del navegador. */
 export function initialGuestLocale(): Locale {
   const browserLang = typeof navigator === 'undefined' ? null : navigator.language || navigator.languages?.[0] || null;
-  return resolveInitialLocale(getStoredLocale(), browserLang);
+  const stored = getStoredLocale();
+  if (stored === 'ES' || stored === 'EN') return stored;
+  if (LAUNCH_COUNTRY === 'US') return 'EN';
+  return resolveInitialLocale(null, browserLang);
 }
 
 export function guessLocale(): Locale {

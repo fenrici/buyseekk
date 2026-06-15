@@ -77,7 +77,7 @@ export async function registerUser(
   },
   options: { verify?: boolean } = { verify: true },
 ): Promise<AuthResponse> {
-  const body = { ...payload };
+  const body = { acceptedTerms: true, ...payload };
   if (body.role === 'SELLER' || body.role === 'BOTH') {
     if (!body.sellerType) body.sellerType = 'BUSINESS';
     if (!body.sellerCategory) body.sellerCategory = 'AUTOS';

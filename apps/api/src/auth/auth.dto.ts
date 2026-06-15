@@ -1,5 +1,5 @@
 import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { Equals, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -15,6 +15,10 @@ export class RegisterDto {
 
   @IsEnum(UserRole)
   role!: UserRole;
+
+  @IsBoolean()
+  @Equals(true, { message: 'Debés aceptar los términos y la política de privacidad' })
+  acceptedTerms!: boolean;
 
   @IsOptional()
   @IsEnum(SellerType)

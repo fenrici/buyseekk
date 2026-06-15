@@ -90,6 +90,19 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   PLUS_FEATURES_UNLOCKED?: string;
+
+  @IsOptional()
+  @IsString()
+  WEB_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  NOTIFICATION_EMAILS_ENABLED?: string;
+
+  /** Single-country launch: US or AR. When set, API defaults and enforces this market. */
+  @IsOptional()
+  @IsIn(['AR', 'US'])
+  LAUNCH_COUNTRY?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

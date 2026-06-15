@@ -11,8 +11,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'BuySeek — Inverted Marketplace',
-  description: 'Post what you need. Get real offers for cars and real estate.',
+  title: 'Buyseek — Inverted marketplace for cars & real estate',
+  description:
+    'Post what you need. Get offers from sellers. Cars and real estate across the United States.',
+  openGraph: {
+    title: 'Buyseek',
+    description: 'Buyers post requests. Sellers send offers. Built for the US market.',
+    type: 'website',
+  },
 };
 
 export const viewport = {

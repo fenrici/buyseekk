@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PublicHeader } from '@/components/PublicHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 import { SplashScreen } from '@/components/SplashScreen';
 import { useT } from '@/lib/i18n';
+import { isUsLaunch } from '@/lib/launch-country';
 
 const SPLASH_FLAG = 'buyseekk_splash_seen';
 
@@ -27,7 +29,7 @@ export default function HomePage() {
   if (!ready) return null;
 
   if (showSplash) {
-    return <SplashScreen onDone={finishSplash} />;
+    return <SplashScreen onDone={finishSplash} duration={2000} />;
   }
 
   return (
@@ -45,7 +47,7 @@ export default function HomePage() {
           </h1>
 
           <p className="portal-subtitle portal-animate" style={{ animationDelay: '0.14s' }}>
-            {t('home.welcomeSubtitle')}
+            {isUsLaunch() ? t('home.welcomeSubtitleUS') : t('home.welcomeSubtitle')}
           </p>
 
           <div className="portal-ctas portal-animate" style={{ animationDelay: '0.22s' }}>
@@ -66,9 +68,10 @@ export default function HomePage() {
           </Link>
 
           <p className="portal-chips portal-animate" style={{ animationDelay: '0.36s' }}>
-            {t('home.chipLine')}
+            {isUsLaunch() ? t('home.chipLineUS') : t('home.chipLine')}
           </p>
         </div>
+        <SiteFooter />
       </section>
     </main>
   );

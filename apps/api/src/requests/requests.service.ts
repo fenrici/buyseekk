@@ -17,6 +17,11 @@ import {
   parsePagination,
   toPaginatedResult,
   zonesForCountryAndCity,
+  expandUsAreaFilter,
+  isValidUsAreaLocation,
+  isValidUsNeighborhood,
+  neighborhoodsForUsArea,
+  parseUsAreaLocation,
 } from '@buyseekk/shared';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
@@ -28,6 +33,7 @@ import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
+import { getLaunchCountry } from '../config/launch-country.config';
 import { CreateRequestDto } from './requests.dto';
 import { ListRequestsQueryDto } from './list-requests.query.dto';
 import { MineRequestsQueryDto } from './mine-requests.query.dto';
@@ -179,19 +185,30 @@ export class RequestsService {
     if (dto.country !== user.country) {
       throw new BadRequestException('Solo podés publicar solicitudes en tu país');
     }
-    const allowedCities = citiesForCountry(user.country);
-    if (!allowedCities.includes(dto.location)) {
-      throw new BadRequestException('Ciudad no válida para tu país');
+
+    if (user.country === Country.US) {
+      if (!isValidUsAreaLocation(dto.location)) {
+        throw new BadRequestException('Área no válida');
+      }
+    } else {
+      const allowedCities = citiesForCountry(user.country);
+      if (!allowedCities.includes(dto.location)) {
+        throw new BadRequestException('Ciudad no válida para tu país');
+      }
     }
 
     if (dto.category === RequestCategory.AUTOS) {
       if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.carYearMin == null || dto.maxMileage == null) {
         throw new BadRequestException('Marca, modelo, color, año y millaje son obligatorios para autos');
       }
-      if (!dto.zone) throw new BadRequestException('Zona obligatoria para autos');
-      const autoZones = zonesForCountryAndCity(user.country, dto.location);
-      if (!autoZones.includes(dto.zone)) {
-        throw new BadRequestException('Zona no válida para tu país y ciudad');
+      if (user.country === Country.US) {
+        dto.zone = undefined;
+      } else {
+        if (!dto.zone) throw new BadRequestException('Zona obligatoria para autos');
+        const autoZones = zonesForCountryAndCity(user.country, dto.location);
+        if (!autoZones.includes(dto.zone)) {
+          throw new BadRequestException('Zona no válida para tu país y ciudad');
+        }
       }
       if (!isValidBrand(dto.carBrand)) throw new BadRequestException('Marca no válida');
       if (!isValidModel(dto.carBrand, dto.carModel)) throw new BadRequestException('Modelo no válido');
@@ -202,10 +219,22 @@ export class RequestsService {
       }
     } else if (dto.category === RequestCategory.INMOBILIARIA) {
       if (!dto.title?.trim()) throw new BadRequestException('Título obligatorio');
-      if (!dto.zone) throw new BadRequestException('Zona obligatoria para inmuebles');
-      const allowedZones = zonesForCountryAndCity(user.country, dto.location);
-      if (!allowedZones.includes(dto.zone)) {
-        throw new BadRequestException('Zona no válida para tu país y ciudad');
+      if (user.country === Country.US) {
+        const parsed = parseUsAreaLocation(dto.location);
+        if (!parsed) throw new BadRequestException('Área no válida');
+        const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
+        if (hoods.length > 0) {
+          if (!dto.zone) throw new BadRequestException('Barrio obligatorio para inmuebles');
+          if (!isValidUsNeighborhood(parsed.state, parsed.area, dto.zone)) {
+            throw new BadRequestException('Barrio no válido para el área seleccionada');
+          }
+        }
+      } else {
+        if (!dto.zone) throw new BadRequestException('Zona obligatoria para inmuebles');
+        const allowedZones = zonesForCountryAndCity(user.country, dto.location);
+        if (!allowedZones.includes(dto.zone)) {
+          throw new BadRequestException('Zona no válida para tu país y ciudad');
+        }
       }
       if (dto.bedrooms == null || dto.bedrooms < 1 || dto.bedrooms > 10) {
         throw new BadRequestException('Cantidad de habitaciones obligatoria para inmuebles');
@@ -328,7 +357,14 @@ export class RequestsService {
     }
 
     if (filters.operation) where.operation = filters.operation;
-    if (filters.location) where.location = filters.location;
+    if (filters.location) {
+      if (user.country === Country.US) {
+        const expanded = expandUsAreaFilter(filters.location);
+        where.location = expanded.length === 1 ? expanded[0] : { in: expanded };
+      } else {
+        where.location = filters.location;
+      }
+    }
     if (filters.zone) where.zone = filters.zone;
     if (filters.bedrooms) where.bedrooms = filters.bedrooms;
     if (filters.carBrand) where.carBrand = filters.carBrand;
@@ -417,7 +453,12 @@ export class RequestsService {
       ...visibleToSellersWhere(),
     };
     if (filters.category) where.category = filters.category;
-    if (filters.country) where.country = filters.country;
+    const launchCountry = getLaunchCountry();
+    if (launchCountry) {
+      where.country = launchCountry;
+    } else if (filters.country) {
+      where.country = filters.country;
+    }
     if (filters.location) where.location = filters.location;
 
     const [items, total] = await Promise.all([

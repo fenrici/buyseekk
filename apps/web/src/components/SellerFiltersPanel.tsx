@@ -1,5 +1,6 @@
 'use client';
 
+import { formatUsAreaDisplay } from '@buyseekk/shared';
 import { AutoFilters, AutoFilterValues } from '@/components/AutoFilters';
 import { RealEstateFilters, RealEstateFilterValues } from '@/components/RealEstateFilters';
 import { ZoneChips } from '@/components/ZoneChips';
@@ -48,6 +49,8 @@ export function SellerFiltersPanel({
   showCategoryFilter = true,
 }: Props) {
   const t = useT();
+  const isUs = user.country === 'US';
+  const showNeighborhoodFilter = category !== 'AUTOS' && (!isUs || category === 'INMOBILIARIA');
 
   return (
     <div className="seller-filters-panel">
@@ -95,7 +98,7 @@ export function SellerFiltersPanel({
       )}
 
       <div className="seller-filter-group">
-        <span className="seller-filter-label">{t('seller.filterCity')}</span>
+        <span className="seller-filter-label">{isUs ? t('seller.filterArea') : t('seller.filterCity')}</span>
         <div className="explore-pills seller-filter-pills">
           <button
             type="button"
@@ -103,7 +106,7 @@ export function SellerFiltersPanel({
             className={`explore-pill ${location === '' ? 'active' : ''}`}
             aria-pressed={location === ''}
           >
-            {t('seller.allCities')}
+            {isUs ? t('seller.allAreas') : t('seller.allCities')}
           </button>
           {cities.map((city) => (
             <button
@@ -113,21 +116,25 @@ export function SellerFiltersPanel({
               className={`explore-pill ${location === city ? 'active' : ''}`}
               aria-pressed={location === city}
             >
-              {city}
+              {isUs ? formatUsAreaDisplay(city) : city}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="seller-filter-group">
-        <span className="seller-filter-label">{t('request.zone')}</span>
-        <ZoneChips
-          country={user.country}
-          city={location}
-          value={zone}
-          onChange={onZoneChange}
-        />
-      </div>
+      {showNeighborhoodFilter && (
+        <div className="seller-filter-group">
+          <span className="seller-filter-label">
+            {isUs ? t('request.neighborhood') : t('request.zone')}
+          </span>
+          <ZoneChips
+            country={user.country}
+            city={location}
+            value={zone}
+            onChange={onZoneChange}
+          />
+        </div>
+      )}
 
       <RealEstateFilters
         visible={category === '' || category === 'INMOBILIARIA'}

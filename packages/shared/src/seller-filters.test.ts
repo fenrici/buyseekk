@@ -63,6 +63,12 @@ assert.equal(
   true,
 );
 
+const miamiBeachRequest = { ...bmwMiamiRequest, location: 'Miami Beach, FL', zone: null };
+assert.equal(
+  requestMatchesSellerFilters(miamiBeachRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  true,
+);
+
 const mercedesRequest = { ...bmwMiamiRequest, carBrand: 'Mercedes-Benz', carModel: 'Clase C' };
 assert.equal(
   requestMatchesSellerFilters(mercedesRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),

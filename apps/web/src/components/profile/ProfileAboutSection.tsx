@@ -16,8 +16,8 @@ export function ProfileAboutSection({ embedded }: { embedded?: boolean } = {}) {
         <strong>{APP_VERSION}</strong>
       </div>
       <div className="profile-link-list">
-        <ProfileLinkRow label={t('profile.terms')} comingSoon />
-        <ProfileLinkRow label={t('profile.privacy')} comingSoon />
+        <ProfileLinkRow label={t('profile.terms')} href="/terms" />
+        <ProfileLinkRow label={t('profile.privacy')} href="/privacy" />
       </div>
     </>
   );

@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Country, Currency, Locale, SecurityEvent, User, UserMode, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { defaultCurrencyForCountry, defaultLocaleForCountry, canEnterMode } from '@buyseekk/shared';
+import { defaultLocaleForCountry, canEnterMode } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ForgotPasswordDto,
@@ -23,6 +23,11 @@ import { EmailService } from './email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SecurityContext, SecurityLogService } from './security-log.service';
 import { generateSecureToken, hashToken } from './token.util';
+import {
+  assertRegisterCountryAllowed,
+  resolveRegisterCountry,
+  resolveRegisterCurrency,
+} from '../config/launch-country.config';
 
 export type AuthTokens = {
   token: string;
@@ -115,23 +120,23 @@ export class AuthService {
     if (existing) throw new ConflictException('Email ya registrado');
 
     const isSeller = dto.role === UserRole.SELLER || dto.role === UserRole.BOTH;
-    if (isSeller) {
-      if (!dto.sellerType || !dto.sellerCategory) {
-        throw new BadRequestException('Los vendedores deben indicar tipo y rubro');
-      }
-    } else if (dto.sellerType || dto.sellerCategory) {
+    if (!isSeller && (dto.sellerType || dto.sellerCategory)) {
       throw new BadRequestException('Solo los vendedores pueden indicar tipo y rubro');
     }
 
+    const hasSellerProfile = isSeller && !!dto.sellerType && !!dto.sellerCategory;
+
+    assertRegisterCountryAllowed(dto.country, this.config);
+    const country = resolveRegisterCountry(dto.country, this.config);
+    const currency = resolveRegisterCurrency(dto.country, dto.currency, this.config);
+
     const locale =
       dto.locale ??
-      (defaultLocaleForCountry(dto.country as 'AR' | 'US') === 'en' ? Locale.EN : Locale.ES);
-    const currency =
-      dto.currency ??
-      (defaultCurrencyForCountry(dto.country as 'AR' | 'US') === 'USD' ? Currency.USD : Currency.ARS);
+      (defaultLocaleForCountry(country) === 'en' ? Locale.EN : Locale.ES);
 
-    const role = isSeller ? UserRole.BOTH : UserRole.BUYER;
-    const activeMode = isSeller ? UserMode.SELLER : UserMode.BUYER;
+    const role = hasSellerProfile ? UserRole.BOTH : UserRole.BUYER;
+    const activeMode = hasSellerProfile ? UserMode.SELLER : UserMode.BUYER;
+    const preferredMode = isSeller ? UserMode.SELLER : UserMode.BUYER;
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
@@ -141,9 +146,10 @@ export class AuthService {
         name: dto.name,
         role,
         activeMode,
-        sellerType: isSeller ? dto.sellerType : null,
-        sellerCategory: isSeller ? dto.sellerCategory : null,
-        country: dto.country,
+        preferredMode,
+        sellerType: hasSellerProfile ? dto.sellerType : null,
+        sellerCategory: hasSellerProfile ? dto.sellerCategory : null,
+        country,
         locale,
         currency,
         emailVerified: false,

@@ -7,13 +7,14 @@ import { User } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
 
 type Placement = 'desktop' | 'mobile';
+type Variant = 'banner' | 'sidebar';
 
 type ToastState = { type: 'success' | 'info'; text: string } | null;
 
-function MailIcon() {
+function MailIcon({ className }: { className?: string }) {
   return (
     <svg
-      className="email-verify-card__icon"
+      className={className ?? 'email-verify-card__icon'}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -33,7 +34,13 @@ function Spinner() {
   return <span className="email-verify-card__spinner" aria-hidden="true" />;
 }
 
-export function EmailVerificationBanner({ placement }: { placement: Placement }) {
+export function EmailVerificationBanner({
+  placement,
+  variant = 'banner',
+}: {
+  placement?: Placement;
+  variant?: Variant;
+}) {
   const { user, setSession } = useAuth();
   const t = useT();
   const [checking, setChecking] = useState(false);
@@ -78,6 +85,55 @@ export function EmailVerificationBanner({ placement }: { placement: Placement })
       setResending(false);
     }
   }
+
+  if (variant === 'sidebar') {
+    return (
+      <>
+        <section className="profile-side-card card email-verify-sidebar" aria-labelledby="email-verify-sidebar-title">
+          <h2 id="email-verify-sidebar-title" className="profile-side-card__title">
+            {t('profile.emailVerificationTitle')}
+          </h2>
+          <p className="email-verify-sidebar__text">{t('auth.verifyEmailBanner')}</p>
+          <div className="email-verify-sidebar__actions">
+            <button
+              type="button"
+              className="email-verify-sidebar__btn email-verify-sidebar__btn--primary"
+              onClick={handleVerify}
+              disabled={checking || resending}
+            >
+              {checking ? (
+                <>
+                  <Spinner />
+                  {t('auth.verifyEmailChecking')}
+                </>
+              ) : (
+                t('auth.verifyEmailPrimary')
+              )}
+            </button>
+            <button
+              type="button"
+              className="email-verify-sidebar__btn email-verify-sidebar__btn--ghost"
+              onClick={handleResend}
+              disabled={checking || resending}
+            >
+              {resending ? t('auth.verifyEmailSending') : t('auth.verifyEmailResendShort')}
+            </button>
+          </div>
+        </section>
+        {toast && (
+          <div
+            className={`email-verify-toast email-verify-toast--${toast.type}`}
+            role="status"
+            aria-live="polite"
+          >
+            {toast.text}
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (!placement) return null;
 
   return (
     <>

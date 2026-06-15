@@ -5,10 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
-import { getDashboardPathForMode } from '@/lib/auth';
+import { getDashboardPathForMode, hasSellerProfile } from '@/lib/auth';
 import { PublicHeader } from '@/components/PublicHeader';
+import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
+import {
+  getDefaultRegisterCountry,
+  getDefaultRegisterCurrency,
+  showCountrySelectors,
+  showCurrencySelectors,
+} from '@/lib/launch-country';
 
 type Step = 'account' | 'role';
 
@@ -21,14 +28,14 @@ export default function RegisterPage() {
     email: '',
     password: '',
     name: '',
-    role: 'BUYER',
-    sellerType: 'PERSONAL',
-    sellerCategory: 'AUTOS',
-    country: 'AR',
-    currency: 'ARS',
+    role: 'BUYER' as 'BUYER' | 'SELLER',
+    country: getDefaultRegisterCountry(),
+    currency: getDefaultRegisterCurrency(),
+    acceptedTerms: false,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sellerOnboarding, setSellerOnboarding] = useState(false);
 
   function goToRoleStep() {
     if (!form.name.trim() || !form.email.trim() || form.password.length < 6) {
@@ -39,16 +46,20 @@ export default function RegisterPage() {
     setStep('role');
   }
 
-  function update(field: string, value: string) {
+  function update(field: string, value: string | boolean) {
     setForm((f) => {
       const next = { ...f, [field]: value };
       if (field === 'country' && value === 'US') next.currency = 'USD';
-      if (field === 'role' && value === 'BUYER') {
-        next.sellerType = 'PERSONAL';
-        next.sellerCategory = 'AUTOS';
-      }
       return next;
     });
+  }
+
+  function finishRegistration(user: User) {
+    if (form.role === 'SELLER' && !hasSellerProfile(user)) {
+      setSellerOnboarding(true);
+      return;
+    }
+    router.replace(getDashboardPathForMode(user.activeMode));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -57,26 +68,22 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      const payload: Record<string, string> = {
-        email: form.email,
-        password: form.password,
-        name: form.name,
-        role: form.role,
-        country: form.country,
-        currency: form.currency,
-      };
-      if (form.role === 'SELLER') {
-        payload.sellerType = form.sellerType;
-        payload.sellerCategory = form.sellerCategory;
-      }
       const res = await api<{ token: string; refreshToken: string; user: User }>('/auth/register', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          name: form.name,
+          role: form.role,
+          country: form.country,
+          currency: form.currency,
+          acceptedTerms: form.acceptedTerms,
+        }),
       });
       setAuthTokens(res.token, res.refreshToken);
       setStoredLocale(res.user.locale);
       setSession(res.user);
-      router.replace(getDashboardPathForMode(res.user.activeMode));
+      finishRegistration(res.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -84,8 +91,14 @@ export default function RegisterPage() {
     }
   }
 
+  function handleOnboardingComplete(user: User) {
+    setSession(user);
+    setSellerOnboarding(false);
+    router.replace(getDashboardPathForMode(user.activeMode));
+  }
+
   return (
-    <main className={`auth-portal auth-portal--register${form.role === 'SELLER' ? ' auth-portal--register-seller' : ''}`}>
+    <main className="auth-portal auth-portal--register">
       <section className="auth-portal-screen">
         <div className="portal-bg" aria-hidden="true" />
         <div className="portal-overlay" aria-hidden="true" />
@@ -95,7 +108,10 @@ export default function RegisterPage() {
 
         <div className="auth-portal-layout">
           <div className="auth-portal-center">
-            <div className="auth-card auth-card--register portal-animate" style={{ animationDelay: '0.12s' }}>
+            <div
+              className={`auth-card auth-card--register portal-animate${step === 'role' ? ' auth-card--role-step' : ''}`}
+              style={{ animationDelay: '0.12s' }}
+            >
               <h1 className="auth-card-title">{t('auth.registerTitle')}</h1>
               <p className="auth-card-subtitle">{t('auth.registerPageSubtitle')}</p>
 
@@ -149,36 +165,40 @@ export default function RegisterPage() {
                         required
                       />
                     </div>
-                    <div className="auth-field-grid auth-field-grid--register">
-                      <div className="auth-field">
-                        <label htmlFor="register-country" className="auth-label">
-                          {t('auth.country')}
-                        </label>
-                        <select
-                          id="register-country"
-                          className="auth-input auth-select"
-                          value={form.country}
-                          onChange={(e) => update('country', e.target.value)}
-                        >
-                          <option value="AR">{t('auth.countryAR')}</option>
-                          <option value="US">{t('auth.countryUS')}</option>
-                        </select>
+                    {showCountrySelectors() && (
+                      <div className="auth-field-grid auth-field-grid--register">
+                        <div className="auth-field">
+                          <label htmlFor="register-country" className="auth-label">
+                            {t('auth.country')}
+                          </label>
+                          <select
+                            id="register-country"
+                            className="auth-input auth-select"
+                            value={form.country}
+                            onChange={(e) => update('country', e.target.value)}
+                          >
+                            <option value="AR">{t('auth.countryAR')}</option>
+                            <option value="US">{t('auth.countryUS')}</option>
+                          </select>
+                        </div>
+                        {showCurrencySelectors() && (
+                          <div className="auth-field">
+                            <label htmlFor="register-currency" className="auth-label">
+                              {t('auth.currency')}
+                            </label>
+                            <select
+                              id="register-currency"
+                              className="auth-input auth-select"
+                              value={form.currency}
+                              onChange={(e) => update('currency', e.target.value)}
+                            >
+                              <option value="ARS">ARS</option>
+                              <option value="USD">USD</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
-                      <div className="auth-field">
-                        <label htmlFor="register-currency" className="auth-label">
-                          {t('auth.currency')}
-                        </label>
-                        <select
-                          id="register-currency"
-                          className="auth-input auth-select"
-                          value={form.currency}
-                          onChange={(e) => update('currency', e.target.value)}
-                        >
-                          <option value="ARS">ARS</option>
-                          <option value="USD">USD</option>
-                        </select>
-                      </div>
-                    </div>
+                    )}
                     <button
                       type="button"
                       onClick={goToRoleStep}
@@ -217,68 +237,45 @@ export default function RegisterPage() {
                       </button>
                     </div>
 
-                    {form.role === 'SELLER' && (
-                      <div className="auth-seller-panel">
-                        <div className="auth-seller-row">
-                          <span className="auth-seller-row-label">{t('auth.sellerType')}</span>
-                          <div className="auth-option-row auth-option-row--compact">
-                            <button
-                              type="button"
-                              className={`auth-option-btn ${form.sellerType === 'PERSONAL' ? 'active' : ''}`}
-                              onClick={() => update('sellerType', 'PERSONAL')}
-                            >
-                              {t('auth.sellerTypePersonal')}
-                            </button>
-                            <button
-                              type="button"
-                              className={`auth-option-btn ${form.sellerType === 'BUSINESS' ? 'active' : ''}`}
-                              onClick={() => update('sellerType', 'BUSINESS')}
-                            >
-                              {t('auth.sellerTypeBusiness')}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="auth-seller-row">
-                          <span className="auth-seller-row-label">{t('auth.sellerCategory')}</span>
-                          <div className="auth-option-row auth-option-row--compact">
-                            <button
-                              type="button"
-                              className={`auth-option-btn ${form.sellerCategory === 'AUTOS' ? 'active' : ''}`}
-                              onClick={() => update('sellerCategory', 'AUTOS')}
-                            >
-                              {t('seller.autos')}
-                            </button>
-                            <button
-                              type="button"
-                              className={`auth-option-btn ${form.sellerCategory === 'INMOBILIARIA' ? 'active' : ''}`}
-                              onClick={() => update('sellerCategory', 'INMOBILIARIA')}
-                            >
-                              {t('seller.realEstate')}
-                            </button>
-                          </div>
-                        </div>
-                        <p className="auth-seller-hint">{t('auth.sellerCategoryHint')}</p>
-                      </div>
-                    )}
-
                     <div className="auth-step-actions">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setError('');
-                          setStep('account');
-                        }}
-                        className="portal-cta portal-cta-secondary"
-                      >
-                        {t('auth.stepBack')}
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="portal-cta portal-cta-primary"
-                      >
-                        {loading ? t('auth.creating') : t('nav.register')}
-                      </button>
+                      <label className="auth-terms">
+                        <input
+                          type="checkbox"
+                          checked={form.acceptedTerms}
+                          onChange={(e) => update('acceptedTerms', e.target.checked)}
+                          required
+                        />
+                        <span>
+                          {t('auth.acceptTerms')}{' '}
+                          <Link href="/terms" target="_blank" rel="noopener noreferrer">
+                            {t('auth.termsLink')}
+                          </Link>{' '}
+                          {t('auth.acceptTermsAnd')}{' '}
+                          <Link href="/privacy" target="_blank" rel="noopener noreferrer">
+                            {t('auth.privacyLink')}
+                          </Link>
+                          .
+                        </span>
+                      </label>
+                      <div className="auth-step-actions__row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('');
+                            setStep('account');
+                          }}
+                          className="portal-cta portal-cta-secondary"
+                        >
+                          {t('auth.stepBack')}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading || !form.acceptedTerms}
+                          className="portal-cta portal-cta-primary"
+                        >
+                          {loading ? t('auth.creating') : t('nav.register')}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -292,6 +289,13 @@ export default function RegisterPage() {
           </div>
         </div>
       </section>
+
+      <SellerOnboardingModal
+        open={sellerOnboarding}
+        required
+        onCancel={() => setSellerOnboarding(false)}
+        onComplete={handleOnboardingComplete}
+      />
     </main>
   );
 }

@@ -18,7 +18,7 @@ export function SplashVisual({ leaving = false }: { leaving?: boolean }) {
         <span className="splash-logo" aria-hidden="true">
           ⇄
         </span>
-        <span className="splash-brand">Buyseek</span>
+        <span className="portal-logo-text portal-loading-brand splash-brand">BuySeek</span>
       </div>
     </div>
   );

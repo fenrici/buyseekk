@@ -1,12 +1,14 @@
 'use client';
 
 import { Header } from '@/components/Header';
+import { OnboardingGuide } from '@/components/OnboardingGuide';
 import { PanelListLoading } from '@/components/PanelListLoading';
 import { RequestCard } from '@/components/RequestCard';
 import { SellerExploreFilters } from '@/components/seller/SellerExploreFilters';
 import { useSellerExplore } from '@/hooks/useSellerExplore';
 import { countActiveSellerFilters } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
+import { effectiveCountry } from '@/lib/launch-country';
 
 export default function SellerPage() {
   const t = useT();
@@ -15,11 +17,13 @@ export default function SellerPage() {
 
   if (!user) return null;
 
-  const marketLabel = user.country === 'US' ? t('seller.marketUS') : t('seller.marketAR');
+  const marketLabel =
+    effectiveCountry(user.country) === 'US' ? t('seller.marketUS') : t('seller.marketAR');
   const hasActiveFilters = activeCount > 0 || countActiveSellerFilters(filters, lockedCategory) > 0;
 
   return (
     <div className="panel-dark">
+      <OnboardingGuide mode="SELLER" />
       <Header variant="dark" />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <h1 className="text-3xl font-bold text-white">{t('seller.title')}</h1>

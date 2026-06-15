@@ -1,8 +1,9 @@
 import type { Country } from './types';
+import { allUsAreaLocations, neighborhoodsForUsArea, parseUsAreaLocation } from './us-locations';
 
 export const CITIES_BY_COUNTRY: Record<Country, string[]> = {
   AR: ['Buenos Aires', 'Palermo, CABA', 'Belgrano, CABA', 'Córdoba', 'Rosario', 'Mendoza'],
-  US: ['Miami, FL', 'Miami Beach, FL', 'New York, NY', 'Los Angeles, CA', 'Houston, TX', 'Chicago, IL'],
+  US: allUsAreaLocations(),
 };
 
 /** Zonas populares por ciudad — usadas en filtros de autos e inmuebles */
@@ -18,10 +19,15 @@ export const ZONES_BY_COUNTRY_CITY: Record<Country, Record<string, string[]>> = 
   US: {
     'Miami, FL': ['Brickell', 'Wynwood', 'Little Havana', 'Edgewater', 'Design District'],
     'Miami Beach, FL': ['South Beach', 'Mid-Beach', 'North Beach'],
-    'New York, NY': ['Chelsea', 'Upper East Side', 'Williamsburg', 'Riverdale'],
-    'Los Angeles, CA': ['Beverly Hills', 'Hollywood', 'Santa Monica', 'West Hollywood'],
+    'Orlando, FL': ['Downtown', 'Winter Park', 'Lake Nona'],
+    'Tampa, FL': ['Hyde Park', 'Ybor City', 'Westshore'],
+    'Dallas, TX': ['Uptown', 'Deep Ellum', 'Preston Hollow'],
+    'Austin, TX': ['Downtown', 'South Congress', 'East Austin'],
     'Houston, TX': ['Montrose', 'River Oaks', 'The Heights'],
-    'Chicago, IL': ['Wicker Park', 'Lincoln Park', 'Lakeview'],
+    'Los Angeles, CA': ['Beverly Hills', 'Hollywood', 'Santa Monica', 'West Hollywood'],
+    'San Diego, CA': ['La Jolla', 'Gaslamp', 'Pacific Beach'],
+    'San Francisco, CA': ['SOMA', 'Marina', 'Pacific Heights'],
+    'New York, NY': ['Chelsea', 'Upper East Side', 'Williamsburg', 'Riverdale'],
   },
 };
 
@@ -30,6 +36,11 @@ export function citiesForCountry(country: Country): string[] {
 }
 
 export function zonesForCountryAndCity(country: Country, city: string): string[] {
+  if (country === 'US') {
+    const parsed = parseUsAreaLocation(city);
+    if (!parsed) return [];
+    return [...neighborhoodsForUsArea(parsed.state, parsed.area)];
+  }
   return ZONES_BY_COUNTRY_CITY[country]?.[city] ?? [];
 }
 

@@ -7,6 +7,7 @@ import { dateLocale, useLocale, useT } from '@/lib/i18n';
 import { getChatSocket } from '@/lib/socket';
 import { ChatDetail, ChatMessage } from '@/lib/types';
 import { Avatar } from './Avatar';
+import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 
 function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
   const d = new Date(iso);
@@ -257,7 +258,11 @@ export function ChatThread({
         })}
       </div>
 
-      {error && <p className="chat-thread__error shrink-0 px-4 text-xs text-red-600">{error}</p>}
+      {error && (
+        <div className="chat-thread__error-wrap shrink-0 px-4 pb-2">
+          <EmailVerificationErrorAlert message={error} />
+        </div>
+      )}
 
       <form onSubmit={handleSend} className="chat-thread__composer">
         <input

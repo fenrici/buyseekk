@@ -9,6 +9,7 @@ import { RequestMeta } from '@/components/RequestMeta';
 import { GuestCta } from '@/components/GuestCta';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { timeAgo, useLocale, useT } from '@/lib/i18n';
+import { LAUNCH_COUNTRY, isSingleCountryLaunch } from '@/lib/launch-country';
 
 /** Límite de solicitudes visibles para invitados antes de pedir registro. */
 const GUEST_LIMIT = 20;
@@ -19,7 +20,7 @@ export default function ExplorePage() {
   const [items, setItems] = useState<PublicRequestItem[]>([]);
   const [total, setTotal] = useState(0);
   const [category, setCategory] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState(LAUNCH_COUNTRY ?? '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -58,6 +59,7 @@ export default function ExplorePage() {
     { id: 'AR', label: t('auth.countryAR') },
     { id: 'US', label: t('auth.countryUS') },
   ];
+  const showCountryFilter = !isSingleCountryLaunch();
 
   return (
     <div className="panel-dark">
@@ -105,6 +107,7 @@ export default function ExplorePage() {
           </div>
 
           <div className="explore-country-wrap">
+            {showCountryFilter && (
             <select
               className="explore-country-select"
               value={country}
@@ -117,6 +120,7 @@ export default function ExplorePage() {
                 </option>
               ))}
             </select>
+            )}
           </div>
         </div>
 
@@ -137,6 +141,8 @@ export default function ExplorePage() {
                 </button>
               ))}
             </div>
+            {showCountryFilter && (
+              <>
             <div className="explore-filters-divider" aria-hidden="true" />
             <div className="explore-pills" role="group" aria-label={t('explore.allCountries')}>
               {countryFilters.map((c) => (
@@ -150,6 +156,8 @@ export default function ExplorePage() {
                 </button>
               ))}
             </div>
+              </>
+            )}
           </div>
         </div>
 

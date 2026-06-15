@@ -10,6 +10,7 @@ import { api, uploadImage } from '@/lib/api';
 import { User } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { ProfileAboutSection } from '@/components/profile/ProfileAboutSection';
+import { ProfileAccountSidebar } from '@/components/profile/ProfileAccountSidebar';
 import { ProfileCompactHeader } from '@/components/profile/ProfileCompactHeader';
 import { ProfileEditForm, type ProfileFormState } from '@/components/profile/ProfileEditForm';
 import { ProfileHelpSection } from '@/components/profile/ProfileHelpSection';
@@ -211,7 +212,12 @@ export default function ProfilePage() {
       break;
     case 'plan':
       content = (
-        <ProfileSubLayout title={t('profile.menuPlan')} onBack={goHub}>
+        <ProfileSubLayout
+          title={t('profile.menuPlan')}
+          subtitle={t('profile.billingSubtitle')}
+          onBack={goHub}
+          variant="wide"
+        >
           <ProfilePlanBillingScreen user={account} isSeller={isSeller} />
         </ProfileSubLayout>
       );
@@ -240,8 +246,19 @@ export default function ProfilePage() {
     default:
       content = (
         <div className="profile-hub">
-          <ProfileCompactHeader user={account} isSeller={isSeller} onEditProfile={openEdit} />
-          <ProfileHubMenu onNavigate={go} onLogout={logoutSession} />
+          <div className="profile-page__grid">
+            <div className="profile-page__main">
+              <ProfileCompactHeader user={account} isSeller={isSeller} onEditProfile={openEdit} />
+              <ProfileHubMenu onNavigate={go} onLogout={logoutSession} onEditProfile={openEdit} />
+            </div>
+            <aside className="profile-page__sidebar">
+              <ProfileAccountSidebar
+                user={account}
+                onUpgrade={() => go('plan')}
+                onSecurity={() => go('security')}
+              />
+            </aside>
+          </div>
         </div>
       );
   }
@@ -249,7 +266,13 @@ export default function ProfilePage() {
   return (
     <div className="panel-dark">
       <Header variant="dark" />
-      <main className="profile-page profile-page--hub">{content}</main>
+      <main
+        className={`profile-page ${
+          screen === 'hub' ? 'profile-page--hub' : screen === 'plan' ? 'profile-page--billing' : 'profile-page--sub'
+        }`}
+      >
+        {content}
+      </main>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { ReportButton } from '@/components/ReportButton';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLocale, useT } from '@/lib/i18n';
+import { formatProfileLocation } from '@/lib/profile-location';
 
 export default function PublicProfilePage() {
   const params = useParams<{ id: string }>();
@@ -84,9 +85,7 @@ export default function PublicProfilePage() {
                   </div>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    {[profile.city, profile.country === 'AR' ? t('auth.countryAR') : t('auth.countryUS')]
-                      .filter(Boolean)
-                      .join(', ')}
+                    {formatProfileLocation(profile.city, profile.country, t) ?? t('profile.locationUnknown')}
                     {' · '}
                     {t('profile.memberSince', { date: memberSince })}
                   </p>

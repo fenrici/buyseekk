@@ -11,7 +11,7 @@ const LANG_OPTIONS: { value: Locale; label: string }[] = [
   { value: 'EN', label: 'EN' },
 ];
 
-export type PublicRoute = '/' | '/login' | '/register' | '/marketplace' | '/forgot-password' | '/reset-password' | '/verify-email';
+export type PublicRoute = '/' | '/login' | '/register' | '/marketplace' | '/forgot-password' | '/reset-password' | '/verify-email' | '/help' | '/terms' | '/privacy';
 
 type PublicHeaderProps = {
   activeRoute?: PublicRoute;

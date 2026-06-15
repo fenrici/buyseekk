@@ -10,11 +10,12 @@ type SellerCategory = 'AUTOS' | 'INMOBILIARIA';
 
 type Props = {
   open: boolean;
+  required?: boolean;
   onCancel: () => void;
   onComplete: (user: User) => void;
 };
 
-export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
+export function SellerOnboardingModal({ open, required, onCancel, onComplete }: Props) {
   const t = useT();
   const [sellerType, setSellerType] = useState<SellerType>('PERSONAL');
   const [sellerCategory, setSellerCategory] = useState<SellerCategory>('AUTOS');
@@ -41,17 +42,18 @@ export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
 
   return (
     <div className="mode-onboarding-backdrop" role="dialog" aria-modal="true" aria-label={t('sellerOnboarding.title')}>
-      <div className="mode-onboarding-card">
+      <div className="mode-onboarding-card mode-onboarding-card--register">
         <h2 className="mode-onboarding-title">{t('sellerOnboarding.title')}</h2>
-        <p className="mode-onboarding-subtitle">{t('sellerOnboarding.subtitle')}</p>
 
         {error && <p className="auth-error" role="alert">{error}</p>}
 
-        <div className="auth-seller-row">
-          <span className="auth-seller-row-label">{t('auth.sellerType')}</span>
-          <div className="auth-option-row auth-option-row--compact">
+        <div className="mode-onboarding-field">
+          <p className="mode-onboarding-question">{t('auth.sellerType')}</p>
+          <div className="auth-option-row auth-option-row--compact" role="radiogroup" aria-label={t('auth.sellerType')}>
             <button
               type="button"
+              role="radio"
+              aria-checked={sellerType === 'PERSONAL'}
               className={`auth-option-btn ${sellerType === 'PERSONAL' ? 'active' : ''}`}
               onClick={() => setSellerType('PERSONAL')}
             >
@@ -59,6 +61,8 @@ export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
             </button>
             <button
               type="button"
+              role="radio"
+              aria-checked={sellerType === 'BUSINESS'}
               className={`auth-option-btn ${sellerType === 'BUSINESS' ? 'active' : ''}`}
               onClick={() => setSellerType('BUSINESS')}
             >
@@ -67,11 +71,13 @@ export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
           </div>
         </div>
 
-        <div className="auth-seller-row">
-          <span className="auth-seller-row-label">{t('auth.sellerCategory')}</span>
-          <div className="auth-option-row auth-option-row--compact">
+        <div className="mode-onboarding-field">
+          <p className="mode-onboarding-question">{t('auth.sellerCategory')}</p>
+          <div className="auth-option-row auth-option-row--compact" role="radiogroup" aria-label={t('auth.sellerCategory')}>
             <button
               type="button"
+              role="radio"
+              aria-checked={sellerCategory === 'AUTOS'}
               className={`auth-option-btn ${sellerCategory === 'AUTOS' ? 'active' : ''}`}
               onClick={() => setSellerCategory('AUTOS')}
             >
@@ -79,6 +85,8 @@ export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
             </button>
             <button
               type="button"
+              role="radio"
+              aria-checked={sellerCategory === 'INMOBILIARIA'}
               className={`auth-option-btn ${sellerCategory === 'INMOBILIARIA' ? 'active' : ''}`}
               onClick={() => setSellerCategory('INMOBILIARIA')}
             >
@@ -86,12 +94,13 @@ export function SellerOnboardingModal({ open, onCancel, onComplete }: Props) {
             </button>
           </div>
         </div>
-        <p className="auth-seller-hint">{t('auth.sellerCategoryHint')}</p>
 
         <div className="mode-onboarding-actions">
-          <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={saving}>
-            {t('sellerOnboarding.cancel')}
-          </button>
+          {!required && (
+            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={saving}>
+              {t('sellerOnboarding.cancel')}
+            </button>
+          )}
           <button type="button" className="btn btn-primary" onClick={submit} disabled={saving}>
             {saving ? t('sellerOnboarding.saving') : t('sellerOnboarding.submit')}
           </button>

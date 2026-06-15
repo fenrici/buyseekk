@@ -7,7 +7,17 @@ import type { ProfileScreen } from './profile-screens';
 type Props = {
   onNavigate: (screen: ProfileScreen) => void;
   onLogout: () => void;
+  onEditProfile: () => void;
 };
+
+function IconUser() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function IconSettings() {
   return (
@@ -23,23 +33,6 @@ function IconBell() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
       <path d="M15 17H9l-1 2h8l-1-2z" strokeLinejoin="round" />
       <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7z" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconCard() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M2 10h20" />
-    </svg>
-  );
-}
-
-function IconShield() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -71,11 +64,18 @@ function IconLogout() {
   );
 }
 
-export function ProfileHubMenu({ onNavigate, onLogout }: Props) {
+export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile }: Props) {
   const t = useT();
 
   return (
     <nav className="profile-menu card" aria-label={t('profile.menuTitle')}>
+      <ProfileMenuRow
+        icon={<IconUser />}
+        title={t('profile.menuProfile')}
+        description={t('profile.menuProfileDesc')}
+        onClick={onEditProfile}
+        className="profile-menu-row--desktop-only"
+      />
       <ProfileMenuRow
         icon={<IconSettings />}
         title={t('profile.menuPreferences')}
@@ -87,18 +87,6 @@ export function ProfileHubMenu({ onNavigate, onLogout }: Props) {
         title={t('profile.menuNotifications')}
         description={t('profile.menuNotificationsDesc')}
         onClick={() => onNavigate('notifications')}
-      />
-      <ProfileMenuRow
-        icon={<IconCard />}
-        title={t('profile.menuPlan')}
-        description={t('profile.menuPlanDesc')}
-        onClick={() => onNavigate('plan')}
-      />
-      <ProfileMenuRow
-        icon={<IconShield />}
-        title={t('profile.menuSecurity')}
-        description={t('profile.menuSecurityDesc')}
-        onClick={() => onNavigate('security')}
       />
       <ProfileMenuRow
         icon={<IconHelp />}
@@ -113,6 +101,20 @@ export function ProfileHubMenu({ onNavigate, onLogout }: Props) {
         onClick={() => onNavigate('about')}
       />
       <ProfileMenuRow
+        icon={<IconCard />}
+        title={t('profile.menuPlan')}
+        description={t('profile.menuPlanDesc')}
+        onClick={() => onNavigate('plan')}
+        className="profile-menu-row--mobile-only"
+      />
+      <ProfileMenuRow
+        icon={<IconShield />}
+        title={t('profile.menuSecurity')}
+        description={t('profile.menuSecurityDesc')}
+        onClick={() => onNavigate('security')}
+        className="profile-menu-row--mobile-only"
+      />
+      <ProfileMenuRow
         icon={<IconLogout />}
         title={t('settings.logout')}
         description={t('profile.menuLogoutDesc')}
@@ -120,5 +122,22 @@ export function ProfileHubMenu({ onNavigate, onLogout }: Props) {
         destructive
       />
     </nav>
+  );
+}
+
+function IconCard() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" strokeLinejoin="round" />
+    </svg>
   );
 }

@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { resolveNavMode } from '@buyseekk/shared';
 import { api, normalizePaginated } from '@/lib/api';
 import { Avatar } from '@/components/Avatar';
-import { EmailVerificationBanner } from '@/components/EmailVerificationBanner';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
@@ -164,7 +163,6 @@ export function Header({ variant = 'light' }: HeaderProps) {
         </div>
       </div>
       </header>
-      <EmailVerificationBanner placement="desktop" />
     </div>
   );
 }

@@ -8,13 +8,14 @@ type Props = {
   description: string;
   onClick: () => void;
   destructive?: boolean;
+  className?: string;
 };
 
-export function ProfileMenuRow({ icon, title, description, onClick, destructive }: Props) {
+export function ProfileMenuRow({ icon, title, description, onClick, destructive, className }: Props) {
   return (
     <button
       type="button"
-      className={`profile-menu-row ${destructive ? 'profile-menu-row--danger' : ''}`}
+      className={`profile-menu-row ${destructive ? 'profile-menu-row--danger' : ''} ${className ?? ''}`.trim()}
       onClick={onClick}
     >
       <span className="profile-menu-row__icon" aria-hidden>

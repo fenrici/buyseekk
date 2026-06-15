@@ -10,6 +10,7 @@ import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { CreateRequestForm } from '@/components/CreateRequestForm';
 import { RequestCard } from '@/components/RequestCard';
+import { OnboardingGuide } from '@/components/OnboardingGuide';
 import { RequestConfirmationModal } from '@/components/RequestConfirmationModal';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
@@ -107,6 +108,15 @@ export function BuyerPanel() {
     }
   }
 
+  async function closeDeal(id: string) {
+    try {
+      await api(`/requests/${id}/close`, { method: 'PATCH' });
+      router.push('/ratings');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   async function archiveRequest(id: string) {
     try {
       await api(`/requests/${id}/pause`, { method: 'PATCH' });
@@ -153,6 +163,7 @@ export function BuyerPanel() {
 
   return (
     <div className="panel-dark">
+      <OnboardingGuide mode="BUYER" />
       {pendingRequest && (
         <RequestConfirmationModal
           request={pendingRequest}
@@ -213,6 +224,7 @@ export function BuyerPanel() {
                 locale={user.locale}
                 onDelete={removeRequest}
                 onClose={closeRequest}
+                onCloseDeal={closeDeal}
                 onArchive={archiveRequest}
                 onRenew={renewRequest}
                 onUpdated={() => loadMine(minePage)}

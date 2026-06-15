@@ -19,11 +19,14 @@ export function ZoneChips({
 
   if (!city) {
     return (
-      <p className="mt-2 text-sm text-slate-400">{t('seller.pickCityForZones')}</p>
+      <p className="mt-2 text-sm text-slate-400">
+        {country === 'US' ? t('seller.pickAreaForNeighborhoods') : t('seller.pickCityForZones')}
+      </p>
     );
   }
 
   const zones = zonesForCountryAndCity(country, city);
+  const allLabel = country === 'US' ? t('seller.allNeighborhoods') : t('seller.allZones');
 
   return (
     <div className="explore-pills mt-2">
@@ -33,7 +36,7 @@ export function ZoneChips({
         className={`explore-pill ${value === '' ? 'active' : ''}`}
         aria-pressed={value === ''}
       >
-        {t('seller.allZones')}
+        {allLabel}
       </button>
       {zones.map((z) => (
         <button

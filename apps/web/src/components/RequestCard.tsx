@@ -23,6 +23,7 @@ type BuyerProps = {
   locale: User['locale'];
   onDelete: (id: string) => void | Promise<void>;
   onClose?: (id: string) => void | Promise<void>;
+  onCloseDeal?: (id: string) => void | Promise<void>;
   onArchive?: (id: string) => void | Promise<void>;
   onRenew?: (id: string) => void | Promise<void>;
   onUpdated?: () => void;
@@ -154,7 +155,33 @@ export function RequestCard(props: Props) {
                   {t('buyer.archiveAction')}
                 </button>
               )}
-              {!isClosed && props.onClose && (
+              {isNegotiating && props.onCloseDeal && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(t('buyer.dealCompleteConfirm'))) {
+                        void props.onCloseDeal?.(request.id);
+                      }
+                    }}
+                    className={`${actionBtn} border-emerald-200 text-emerald-700`}
+                  >
+                    {t('buyer.dealCompleteAction')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(t('buyer.dealFailedConfirm'))) {
+                        void props.onCloseDeal?.(request.id);
+                      }
+                    }}
+                    className={`${actionBtn} border-amber-200 text-amber-700`}
+                  >
+                    {t('buyer.dealFailedAction')}
+                  </button>
+                </>
+              )}
+              {!isClosed && !isNegotiating && props.onClose && (
                 <button
                   type="button"
                   onClick={() => {

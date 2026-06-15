@@ -3,6 +3,8 @@
 import { useRef } from 'react';
 import { Avatar } from '@/components/Avatar';
 import { useT } from '@/lib/i18n';
+import { isUsLaunch } from '@/lib/launch-country';
+import { UsLocationFields } from '@/components/profile/UsLocationFields';
 import type { User } from '@/lib/types';
 
 export type ProfileFormState = {
@@ -81,10 +83,14 @@ export function ProfileEditForm({
         <textarea id="profile-bio" className="input" rows={4} value={form.bio} onChange={(e) => onUpdate('bio', e.target.value)} placeholder={t('profile.bioPlaceholder')} maxLength={500} />
       </div>
 
-      <div className="profile-field">
-        <label htmlFor="profile-city">{t('profile.city')}</label>
-        <input id="profile-city" className="input" value={form.city} onChange={(e) => onUpdate('city', e.target.value)} placeholder={t('profile.cityPlaceholder')} maxLength={80} />
-      </div>
+      {isUsLaunch() ? (
+        <UsLocationFields value={form.city} onChange={(city) => onUpdate('city', city)} />
+      ) : (
+        <div className="profile-field">
+          <label htmlFor="profile-city">{t('profile.city')}</label>
+          <input id="profile-city" className="input" value={form.city} onChange={(e) => onUpdate('city', e.target.value)} placeholder={t('profile.cityPlaceholder')} maxLength={80} />
+        </div>
+      )}
 
       {isBusiness && (
         <div className="profile-field">

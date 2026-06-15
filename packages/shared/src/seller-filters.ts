@@ -1,4 +1,8 @@
 /** Estado de filtros del panel vendedor (Explorar solicitudes). */
+import {
+  locationMatchesUsAreaFilter,
+} from './us-locations';
+
 export type SellerFilterState = {
   category: string;
   operation: string;
@@ -153,7 +157,13 @@ export function requestMatchesSellerFilters(
   if (category && request.category !== category) return false;
 
   if (filters.operation && request.operation !== filters.operation) return false;
-  if (filters.location && request.location !== filters.location) return false;
+  if (filters.location) {
+    if (opts.sellerCountry === 'US') {
+      if (!locationMatchesUsAreaFilter(request.location, filters.location)) return false;
+    } else if (request.location !== filters.location) {
+      return false;
+    }
+  }
   if (filters.zone && request.zone !== filters.zone) return false;
 
   const cat = category || request.category;
