@@ -6,6 +6,73 @@ function isEn(locale: Locale) {
   return locale === 'EN';
 }
 
+function cityFromLocation(location: string) {
+  return location.split(',')[0]?.trim() || location;
+}
+
+/** Resumen legible de qué busca el comprador (autos / inmuebles). */
+export function matchingRequestMessage(locale: Locale, context: Record<string, string>): string {
+  const en = isEn(locale);
+  const location = cityFromLocation(context.location ?? '');
+  const category = context.category ?? '';
+
+  if (category === 'AUTOS') {
+    const brand = context.carBrand?.trim();
+    const model = context.carModel?.trim();
+    let vehicle = '';
+    if (brand && model) {
+      vehicle = en ? `a ${brand} ${model}` : `un ${brand} ${model}`;
+    } else if (brand) {
+      vehicle = en ? `a ${brand}` : `un ${brand}`;
+    } else {
+      vehicle = context.requestTitle?.trim() || (en ? 'a vehicle' : 'un vehículo');
+    }
+    return en
+      ? `A buyer in ${location} is looking for ${vehicle}.`
+      : `Un comprador de ${location} busca ${vehicle}.`;
+  }
+
+  if (category === 'INMOBILIARIA') {
+    const bedrooms = context.bedrooms?.trim();
+    const isRent = context.operation === 'ALQUILER';
+    const property = bedrooms
+      ? en
+        ? `a ${bedrooms}-bedroom property`
+        : `un departamento de ${bedrooms} ambientes`
+      : en
+        ? 'a property'
+        : 'un inmueble';
+    const operation = isRent ? (en ? 'for rent' : 'en alquiler') : en ? 'to buy' : 'en venta';
+    return en
+      ? `A buyer in ${location} is looking for ${property} ${operation}.`
+      : `Un comprador de ${location} busca ${property} ${operation}.`;
+  }
+
+  const title = context.requestTitle?.trim() || (en ? 'a new listing' : 'una nueva solicitud');
+  return en
+    ? `A buyer in ${location} published ${title}.`
+    : `Un comprador de ${location} publicó ${title}.`;
+}
+
+function matchingRequestTitle(locale: Locale, context: Record<string, string>): string {
+  const en = isEn(locale);
+  const location = cityFromLocation(context.location ?? '');
+  const category = context.category ?? '';
+
+  if (category === 'AUTOS') {
+    const brand = context.carBrand?.trim();
+    const model = context.carModel?.trim();
+    const vehicle = brand && model ? `${brand} ${model}` : brand || context.requestTitle?.trim() || (en ? 'vehicle' : 'vehículo');
+    return en ? `New alert: ${vehicle} in ${location}` : `Nueva alerta: ${vehicle} en ${location}`;
+  }
+
+  if (category === 'INMOBILIARIA') {
+    return en ? `New alert in ${location}` : `Nueva alerta en ${location}`;
+  }
+
+  return en ? 'New matching request' : 'Nueva búsqueda compatible';
+}
+
 export function notificationCopy(
   type: NotificationType,
   locale: Locale,
@@ -98,6 +165,11 @@ export function notificationCopy(
             title: 'Email verificado',
             message: 'Tu email fue verificado. Ya podés usar todas las funciones.',
           };
+    case NotificationType.NEW_MATCHING_REQUEST:
+      return {
+        title: matchingRequestTitle(locale, context),
+        message: matchingRequestMessage(locale, context),
+      };
     default:
       return en
         ? { title: 'Notification', message: 'You have a new notification' }

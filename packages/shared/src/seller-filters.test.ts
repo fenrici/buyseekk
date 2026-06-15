@@ -4,6 +4,7 @@ import {
   clearSellerFilter,
   countActiveSellerFilters,
   EMPTY_SELLER_FILTERS,
+  requestMatchesSellerFilters,
   sellerFiltersEqual,
   sellerFiltersToSearchParams,
 } from './seller-filters';
@@ -33,5 +34,39 @@ assert.equal(params.get('bedrooms'), null);
 
 assert.equal(sellerFiltersEqual(miamiBmw, { ...miamiBmw }), true);
 assert.equal(sellerFiltersEqual(miamiBmw, { ...miamiBmw, zone: 'Brickell' }), false);
+
+const bmwMiamiRequest = {
+  category: 'AUTOS',
+  country: 'US',
+  operation: 'COMPRA',
+  location: 'Miami, FL',
+  zone: 'Brickell',
+  bedrooms: null,
+  minSqm: null,
+  maxSqm: null,
+  carBrand: 'BMW',
+  carModel: 'Serie 3',
+  carColor: 'Negro',
+  carYearMin: 2019,
+  maxMileage: 40000,
+};
+
+const bmwMiamiFilters = {
+  ...EMPTY_SELLER_FILTERS,
+  category: 'AUTOS',
+  location: 'Miami, FL',
+  carBrand: 'BMW',
+};
+
+assert.equal(
+  requestMatchesSellerFilters(bmwMiamiRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  true,
+);
+
+const mercedesRequest = { ...bmwMiamiRequest, carBrand: 'Mercedes-Benz', carModel: 'Clase C' };
+assert.equal(
+  requestMatchesSellerFilters(mercedesRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  false,
+);
 
 console.log('seller-filters: all assertions passed');

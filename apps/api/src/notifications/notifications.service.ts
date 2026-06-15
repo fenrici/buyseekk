@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Locale, Notification, NotificationEntityType, NotificationType } from '@prisma/client';
-import { effectiveRequestStatus } from '@buyseekk/shared';
+import { effectiveRequestStatus, parseSellerFiltersJson, requestMatchesSellerFilters, type MatchableRequest, parseNotificationPreferences, isGatedNotificationType, isNotificationTypeEnabled } from '@buyseekk/shared';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationGateway } from './notification.gateway';
@@ -11,6 +11,23 @@ import {
 } from './notification-channels';
 import { notificationCopy } from './notification-copy';
 import { NotificationPayload } from './notification-delivery.interface';
+import { isSellerCapable } from '../common/types/auth-user';
+import { visibleToSellersWhere } from '../requests/request-status';
+
+type AlertSeller = {
+  id: string;
+  locale: Locale;
+  country: import('@prisma/client').Country;
+  role: import('@prisma/client').UserRole;
+  blocked: boolean;
+  suspended: boolean;
+};
+
+type AlertRequest = MatchableRequest & {
+  id: string;
+  userId: string;
+  title: string;
+};
 
 type CreateInput = {
   userId: string;
@@ -25,6 +42,8 @@ type CreateInput = {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private prisma: PrismaService,
     private inApp: InAppNotificationChannel,
@@ -58,6 +77,15 @@ export class NotificationsService {
   }
 
   async create(input: CreateInput) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { notificationPreferences: true },
+    });
+    if (user && isGatedNotificationType(input.type)) {
+      const prefs = parseNotificationPreferences(user.notificationPreferences);
+      if (!isNotificationTypeEnabled(prefs, input.type)) return null;
+    }
+
     const copy = notificationCopy(input.type, input.locale, input.context ?? {});
     const row = await this.prisma.notification.create({
       data: {
@@ -174,6 +202,141 @@ export class NotificationsService {
       entityId: userId,
       entityType: NotificationEntityType.USER,
     });
+  }
+
+  async notifyMatchingRequest(
+    sellerId: string,
+    locale: Locale,
+    requestId: string,
+    context: {
+      requestTitle: string;
+      location: string;
+      category: string;
+      carBrand?: string | null;
+      carModel?: string | null;
+      operation?: string;
+      bedrooms?: number | null;
+    },
+  ) {
+    if (await this.hasNotification(sellerId, NotificationType.NEW_MATCHING_REQUEST, requestId)) return;
+    return this.create({
+      userId: sellerId,
+      type: NotificationType.NEW_MATCHING_REQUEST,
+      locale,
+      entityId: requestId,
+      entityType: NotificationEntityType.REQUEST,
+      context: {
+        requestTitle: context.requestTitle,
+        location: context.location,
+        category: context.category,
+        carBrand: context.carBrand ?? '',
+        carModel: context.carModel ?? '',
+        operation: context.operation ?? '',
+        bedrooms: context.bedrooms != null ? String(context.bedrooms) : '',
+      },
+    });
+  }
+
+  private matchingContext(request: AlertRequest) {
+    return {
+      requestTitle: request.title,
+      location: request.location,
+      category: request.category,
+      carBrand: request.carBrand,
+      carModel: request.carModel,
+      operation: request.operation,
+      bedrooms: request.bedrooms,
+    };
+  }
+
+  private async tryNotifySellerForRequest(
+    seller: AlertSeller,
+    request: AlertRequest,
+    saved: { category: import('@prisma/client').RequestCategory | null; filters: unknown },
+  ) {
+    if (seller.id === request.userId) return false;
+    if (seller.blocked || seller.suspended) return false;
+    if (!isSellerCapable(seller.role)) return false;
+
+    const filters = parseSellerFiltersJson(saved.filters);
+    if (!filters) return false;
+
+    const matches = requestMatchesSellerFilters(request, filters, {
+      sellerCountry: seller.country,
+      savedCategory: saved.category,
+    });
+    if (!matches) return false;
+
+    await this.notifyMatchingRequest(seller.id, seller.locale, request.id, this.matchingContext(request));
+    return true;
+  }
+
+  /** Busca vendedores con SavedSearch compatible y emite alertas (sin bloquear creación de solicitud). */
+  async processMatchingRequestAlerts(requestId: string) {
+    const request = await this.prisma.request.findUnique({ where: { id: requestId } });
+    if (!request || !request.active || request.hiddenByModeration) return;
+
+    const savedSearches = await this.prisma.savedSearch.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            locale: true,
+            country: true,
+            role: true,
+            blocked: true,
+            suspended: true,
+          },
+        },
+      },
+    });
+
+    const notifiedSellerIds = new Set<string>();
+
+    for (const saved of savedSearches) {
+      const seller = saved.user;
+      if (notifiedSellerIds.has(seller.id)) continue;
+
+      const notified = await this.tryNotifySellerForRequest(seller, request, saved);
+      if (notified) notifiedSellerIds.add(seller.id);
+    }
+  }
+
+  /** Al guardar una búsqueda, alertar sobre solicitudes activas ya publicadas. */
+  async processMatchingAlertsForSavedSearch(savedSearchId: string) {
+    const saved = await this.prisma.savedSearch.findUnique({
+      where: { id: savedSearchId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            locale: true,
+            country: true,
+            role: true,
+            blocked: true,
+            suspended: true,
+          },
+        },
+      },
+    });
+    if (!saved) return;
+
+    const seller = saved.user;
+    const requests = await this.prisma.request.findMany({
+      where: {
+        active: true,
+        hiddenByModeration: false,
+        country: seller.country,
+        userId: { not: seller.id },
+        ...visibleToSellersWhere(),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    for (const request of requests) {
+      await this.tryNotifySellerForRequest(seller, request, saved);
+    }
   }
 
   async list(userId: string, page?: number, limit?: number) {

@@ -6,7 +6,8 @@ export type NotificationType =
   | 'REQUEST_EXPIRING'
   | 'REQUEST_INACTIVE'
   | 'REQUEST_CLOSED'
-  | 'EMAIL_VERIFIED';
+  | 'EMAIL_VERIFIED'
+  | 'NEW_MATCHING_REQUEST';
 
 export type NotificationEntityType = 'REQUEST' | 'OFFER' | 'CHAT' | 'USER';
 
@@ -37,6 +38,8 @@ export function notificationHref(item: NotificationItem, activeMode?: 'BUYER' | 
       return item.entityId ? `/requests/${item.entityId}` : activeMode === 'SELLER' ? '/seller' : '/buyer?tab=mine';
     case 'EMAIL_VERIFIED':
       return '/profile';
+    case 'NEW_MATCHING_REQUEST':
+      return item.entityId ? `/requests/${item.entityId}` : '/seller';
     default:
       return '/notifications';
   }

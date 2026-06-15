@@ -10,3 +10,5 @@ export * from './car-catalog';
 export * from './content-policy';
 export * from './money-limits';
 export * from './offer-highlights';
+export * from './subscription';
+export * from './notification-preferences';

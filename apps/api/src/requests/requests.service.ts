@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Country, Currency, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
@@ -66,6 +67,8 @@ const STRUCTURAL_FIELDS = new Set([
 
 @Injectable()
 export class RequestsService {
+  private readonly logger = new Logger(RequestsService.name);
+
   constructor(
     private prisma: PrismaService,
     private ratings: RatingsService,
@@ -271,6 +274,12 @@ export class RequestsService {
         offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
       },
     });
+
+    try {
+      await this.notifications.processMatchingRequestAlerts(req.id);
+    } catch (err) {
+      this.logger.error(`Alertas de solicitud compatible fallaron para ${req.id}`, err);
+    }
 
     return this.formatRequest(req);
   }

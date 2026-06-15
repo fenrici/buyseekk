@@ -27,6 +27,7 @@ function typeIcon(type: NotificationItem['type']) {
     REQUEST_INACTIVE: '○',
     REQUEST_CLOSED: '■',
     EMAIL_VERIFIED: '✉',
+    NEW_MATCHING_REQUEST: '🔔',
   };
   return icons[type] ?? '•';
 }

@@ -118,3 +118,75 @@ export function parseSellerFiltersJson(raw: unknown): SellerFilterState | null {
   }
   return next;
 }
+
+/** Campos de una solicitud usados para comparar con filtros guardados del vendedor. */
+export type MatchableRequest = {
+  category: string;
+  country: string;
+  operation: string;
+  location: string;
+  zone: string | null;
+  bedrooms: number | null;
+  minSqm: number | null;
+  maxSqm: number | null;
+  carBrand: string | null;
+  carModel: string | null;
+  carColor: string | null;
+  carYearMin: number | null;
+  maxMileage: number | null;
+};
+
+/**
+ * Compara una solicitud contra filtros de SavedSearch.
+ * Filtros vacíos se ignoran; la categoría puede venir del registro SavedSearch.
+ * Replica la lógica de listForSeller en el API.
+ */
+export function requestMatchesSellerFilters(
+  request: MatchableRequest,
+  filters: SellerFilterState,
+  opts: { sellerCountry: string; savedCategory?: string | null },
+): boolean {
+  if (request.country !== opts.sellerCountry) return false;
+  if (countActiveSellerFilters(filters, opts.savedCategory) === 0) return false;
+
+  const category = opts.savedCategory || filters.category || null;
+  if (category && request.category !== category) return false;
+
+  if (filters.operation && request.operation !== filters.operation) return false;
+  if (filters.location && request.location !== filters.location) return false;
+  if (filters.zone && request.zone !== filters.zone) return false;
+
+  const cat = category || request.category;
+
+  if (cat !== 'INMOBILIARIA' && request.category === 'AUTOS') {
+    if (filters.carBrand && request.carBrand !== filters.carBrand) return false;
+    if (filters.carModel && request.carModel !== filters.carModel) return false;
+    if (filters.carColor && request.carColor !== filters.carColor) return false;
+
+    if (filters.carYearMin) {
+      const year = parseInt(filters.carYearMin, 10);
+      if (!isNaN(year) && request.carYearMin != null && request.carYearMin > year) return false;
+    }
+    if (filters.maxMileage) {
+      const mileage = parseInt(filters.maxMileage, 10);
+      if (!isNaN(mileage) && request.maxMileage != null && request.maxMileage > mileage) return false;
+    }
+  }
+
+  if (cat !== 'AUTOS' && request.category === 'INMOBILIARIA') {
+    if (filters.bedrooms) {
+      const bedrooms = parseInt(filters.bedrooms, 10);
+      if (!isNaN(bedrooms) && request.bedrooms !== bedrooms) return false;
+    }
+    if (filters.minSqm) {
+      const minSqm = parseInt(filters.minSqm, 10);
+      if (!isNaN(minSqm) && request.minSqm != null && request.minSqm > minSqm) return false;
+    }
+    if (filters.maxSqm) {
+      const maxSqm = parseInt(filters.maxSqm, 10);
+      if (!isNaN(maxSqm) && request.maxSqm != null && request.maxSqm < maxSqm) return false;
+    }
+  }
+
+  return true;
+}
