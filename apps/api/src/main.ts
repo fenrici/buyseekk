@@ -1,3 +1,4 @@
+import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
@@ -24,7 +25,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port, '0.0.0.0');
-  console.log(`BuySeek API running on port ${port} (/api)`);
+  console.log(`Buyseekk API running on port ${port} (/api)`);
 }
 
 bootstrap();

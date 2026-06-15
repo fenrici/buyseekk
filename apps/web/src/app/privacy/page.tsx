@@ -13,5 +13,5 @@ export default function PrivacyPage() {
     { title: t('legal.privacy.s5Title'), body: t('legal.privacy.s5Body') },
   ];
 
-  return <LegalDocument title={t('legal.privacy.title')} updated={t('legal.updated')} sections={sections} />;
+  return <LegalDocument title={t('legal.privacy.title')} updated={t('legal.updated')} sections={sections} activeRoute="/privacy" />;
 }

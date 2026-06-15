@@ -52,7 +52,11 @@ En **Variables** del servicio API, agregá:
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
 | `STORAGE_PROVIDER` | `local` o `r2` | En prod usar `r2` (ver 2.4.1) |
 | `LAUNCH_COUNTRY` | `US` | Mercado único en lanzamiento |
-| `WEB_URL` | URL de Vercel | Links en emails de notificación |
+| `WEB_URL` | URL de Vercel | Links en emails (auth + notificaciones) |
+| `PLUS_FEATURES_UNLOCKED` | `false` o `true` | `false` aplica límites Free; `true` = lanzamiento gratis |
+| `NOTIFICATION_EMAILS_ENABLED` | `true` | Emails automáticos de notificaciones |
+| `REDIS_URL` | URL Redis | Obligatorio si escalás a 2+ réplicas API |
+| `SENTRY_DSN` | URL Sentry | Opcional — monitoreo de errores |
 | `EMAIL_PROVIDER` | `console` o `resend` | Ver 2.4.2 — **no uses `resend` sin `EMAIL_API_KEY`** |
 
 **Generar JWT_SECRET** (en tu terminal):
@@ -211,11 +215,18 @@ O desde el dashboard: servicio API → **Shell** → `ALLOW_PRODUCTION_SEED=true
 
 `vercel.json` ya define `installCommand` y `buildCommand` para el monorepo.
 
-### 3.2 Variable de entorno
+### 3.2 Variables de entorno
 
 | Variable | Valor |
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://tu-api.up.railway.app` (**con** `https://`, sin `/api` al final) |
+| `NEXT_PUBLIC_SITE_URL` | `https://tu-app.vercel.app` |
+| `NEXT_PUBLIC_LAUNCH_COUNTRY` | `US` |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `support@buyseekk.com` |
+| `NEXT_PUBLIC_STORAGE_HOST` | Hostname del CDN R2 (sin `https://`) — opcional, para `next/image` |
+| `NEXT_PUBLIC_SENTRY_DSN` | DSN de Sentry — opcional |
+
+**No setear** `NEXT_PUBLIC_ENABLE_DEMO_LOGIN` en producción.
 
 Ejemplo: `https://buyseekk-production.up.railway.app`
 
@@ -244,20 +255,28 @@ Railway redeploya automáticamente al cambiar variables.
 
 ## Parte 4 — Verificación
 
+```bash
+# Smoke test (reemplazá las URLs)
+chmod +x scripts/smoke-prod.sh
+./scripts/smoke-prod.sh https://TU-API.up.railway.app https://tu-app.vercel.app
+```
+
 1. `GET https://TU-API/api/health` → `db: ok`
-2. Abrí la URL de Vercel → login con `comprador@buyseekk.com` / `demo1234` (si corriste seed)
-3. Creá una solicitud, logueate como vendedor, enviá oferta
+2. Registro con email real → llega verificación (requiere Resend configurado)
+3. Creá una solicitud con imagen → persiste tras redeploy (requiere R2)
 4. Chat en tiempo real (WebSocket usa la misma URL del API)
 
 ---
 
-## Limitaciones actuales (staging)
+## Producción — checklist rápido
 
-| Tema | Estado |
+| Tema | Acción |
 |------|--------|
-| **Uploads** | Disco del contenedor — se pierden al redeploy. R2/S3 es el siguiente paso. |
-| **WebSocket** | Funciona con 1 instancia Railway. Multi-réplica requiere Redis adapter. |
-| **Redis** | No usado aún — podés ignorarlo en prod por ahora. |
+| **Uploads** | `STORAGE_PROVIDER=r2` + vars R2 (obligatorio) |
+| **Emails** | `EMAIL_PROVIDER=resend` + dominio verificado |
+| **WebSocket multi-réplica** | `REDIS_URL` + 1 sola réplica hasta tener Redis |
+| **Demo login** | No setear `NEXT_PUBLIC_ENABLE_DEMO_LOGIN` en Vercel |
+| **Observabilidad** | `SENTRY_DSN` (API) + `NEXT_PUBLIC_SENTRY_DSN` (web) |
 
 ---
 

@@ -12,6 +12,8 @@ import { setStoredLocale, useT } from '@/lib/i18n';
 import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { useAuth } from '@/providers/AuthProvider';
 
+const DEMO_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+
 const DEMOS = {
   buyer: { email: 'comprador@buyseekk.com', password: 'demo1234' },
   seller: { email: 'vendedor@buyseekk.com', password: 'demo1234' },
@@ -30,6 +32,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!DEMO_ENABLED) return;
     if (roleHint === 'seller') {
       setEmail(DEMOS.seller.email);
       setPassword(DEMOS.seller.password);
@@ -84,22 +87,24 @@ function LoginForm() {
             <div className="auth-card portal-animate" style={{ animationDelay: '0.12s' }}>
             <p className="auth-card-subtitle">{t('auth.loginPageSubtitle')}</p>
 
-            {(roleHint === 'buyer' || roleHint === 'seller') && (
+            {DEMO_ENABLED && (roleHint === 'buyer' || roleHint === 'seller') && (
               <p className="auth-role-hint">
                 {roleHint === 'seller' ? t('auth.loginSellerHint') : t('auth.loginBuyerHint')}
               </p>
             )}
 
-            <div className="auth-demo-grid">
-              <button type="button" onClick={() => fillDemo('buyer')} className="auth-demo-btn auth-demo-btn--buyer">
-                <span className="auth-demo-label">{t('nav.buyer')}</span>
-                <span className="auth-demo-name">Carlos M.</span>
-              </button>
-              <button type="button" onClick={() => fillDemo('seller')} className="auth-demo-btn auth-demo-btn--seller">
-                <span className="auth-demo-label">{t('nav.seller')}</span>
-                <span className="auth-demo-name">Luxury Motors</span>
-              </button>
-            </div>
+            {DEMO_ENABLED && (
+              <div className="auth-demo-grid">
+                <button type="button" onClick={() => fillDemo('buyer')} className="auth-demo-btn auth-demo-btn--buyer">
+                  <span className="auth-demo-label">{t('nav.buyer')}</span>
+                  <span className="auth-demo-name">Carlos M.</span>
+                </button>
+                <button type="button" onClick={() => fillDemo('seller')} className="auth-demo-btn auth-demo-btn--seller">
+                  <span className="auth-demo-label">{t('nav.seller')}</span>
+                  <span className="auth-demo-name">Luxury Motors</span>
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="auth-form">
               {error && <p className="auth-error" role="alert">{error}</p>}
@@ -139,7 +144,7 @@ function LoginForm() {
               </p>
             </form>
 
-            <p className="auth-demo-hint">{t('auth.demoPassword')}</p>
+            {DEMO_ENABLED && <p className="auth-demo-hint">{t('auth.demoPassword')}</p>}
             <p className="auth-footer-link">
               {t('auth.noAccount')}{' '}
               <Link href="/register">{t('auth.signup')}</Link>

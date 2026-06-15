@@ -4,10 +4,12 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import { User } from '@/lib/types';
-import { getDashboardPath } from '@/lib/auth';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
+import { useT } from '@/lib/i18n';
 
 export default function OffersRedirect() {
   const router = useRouter();
+  const t = useT();
 
   useEffect(() => {
     const token = getToken();
@@ -23,5 +25,5 @@ export default function OffersRedirect() {
       .catch(() => router.replace('/login'));
   }, [router]);
 
-  return <main className="p-8 text-center text-slate-500">Redirigiendo...</main>;
+  return <PortalLoadingScreen label={t('common.redirecting')} />;
 }

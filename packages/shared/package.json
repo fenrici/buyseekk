@@ -13,6 +13,6 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npx ts-node --transpile-only src/request-status.test.ts && npx ts-node --transpile-only src/user-mode.test.ts && npx ts-node --transpile-only src/seller-filters.test.ts"
+    "test": "npx ts-node --transpile-only src/request-status.test.ts && npx ts-node --transpile-only src/user-mode.test.ts && npx ts-node --transpile-only src/seller-filters.test.ts && npx ts-node --transpile-only src/launch-country.test.ts"
   }
 }

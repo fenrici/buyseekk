@@ -23,6 +23,7 @@ import { EmailService } from './email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SecurityContext, SecurityLogService } from './security-log.service';
 import { generateSecureToken, hashToken } from './token.util';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import {
   assertRegisterCountryAllowed,
   assertLaunchMarketAccess,
@@ -100,6 +101,8 @@ export class AuthService {
   }
 
   private getAppBaseUrl() {
+    const webUrl = this.config.get<string>('WEB_URL')?.trim();
+    if (webUrl) return webUrl.replace(/\/$/, '');
     const origin = this.config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
     return origin.split(',')[0]?.trim().replace(/\/$/, '') || 'http://localhost:3000';
   }
@@ -192,6 +195,7 @@ export class AuthService {
     }
 
     assertLaunchMarketAccess(user.country, this.config);
+    assertAccountActive(user);
 
     await this.securityLog.log(SecurityEvent.LOGIN_SUCCESS, {
       userId: user.id,
@@ -224,6 +228,7 @@ export class AuthService {
     }
 
     assertLaunchMarketAccess(stored.user.country, this.config);
+    assertAccountActive(stored.user);
 
     await this.prisma.refreshToken.update({
       where: { id: stored.id },

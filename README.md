@@ -45,12 +45,16 @@ npm run dev
 - **Web:** http://localhost:3000
 - **API:** http://localhost:4000/api
 
-## Cuentas demo (seed)
+## Cuentas demo (solo desarrollo local)
+
+Con `npm run db:seed` y `NEXT_PUBLIC_ENABLE_DEMO_LOGIN=true` en `apps/web/.env.local`:
 
 | Rol | Email | Password |
 |---|---|---|
 | Comprador | comprador@buyseekk.com | demo1234 |
 | Vendedor | vendedor@buyseekk.com | demo1234 |
+
+**Nunca** habilitar demo login ni correr seed en producción.
 
 ## API endpoints (Fase 1 / P0)
 

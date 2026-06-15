@@ -126,6 +126,10 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error('CORS_ORIGIN es obligatorio en producción');
   }
 
+  if (validated.NODE_ENV === 'production' && !validated.WEB_URL?.trim()) {
+    throw new Error('WEB_URL es obligatorio en producción (links en emails de auth y notificaciones)');
+  }
+
   if (validated.STORAGE_PROVIDER === STORAGE_PROVIDER.R2) {
     const required = [
       ['STORAGE_PUBLIC_URL', validated.STORAGE_PUBLIC_URL],

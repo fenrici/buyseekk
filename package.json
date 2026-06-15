@@ -18,7 +18,8 @@
     "db:migrate:deploy": "npm run prisma:migrate:deploy -w @buyseekk/api",
     "db:seed": "npm run prisma:seed -w @buyseekk/api",
     "build": "npm run build -w @buyseekk/shared && npm run build -w @buyseekk/api && npm run build -w @buyseekk/web",
-    "test:e2e": "npm run test:e2e -w @buyseekk/api"
+    "test:e2e": "npm run test:e2e -w @buyseekk/api",
+    "smoke": "bash scripts/smoke-prod.sh"
   },
   "engines": {
     "node": ">=20"

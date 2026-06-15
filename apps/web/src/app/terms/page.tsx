@@ -13,5 +13,5 @@ export default function TermsPage() {
     { title: t('legal.terms.s5Title'), body: t('legal.terms.s5Body') },
   ];
 
-  return <LegalDocument title={t('legal.terms.title')} updated={t('legal.updated')} sections={sections} />;
+  return <LegalDocument title={t('legal.terms.title')} updated={t('legal.updated')} sections={sections} activeRoute="/terms" />;
 }

@@ -61,6 +61,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <>
       {user.blocked && <BlockedAccountBanner reason={user.blockedReason} />}
       {!user.blocked && user.suspended && <SuspendedAccountBanner />}
+      <EmailVerificationBanner placement="desktop" />
       <EmailVerificationBanner placement="mobile" />
       <NotificationToast />
       <div className="mobile-app-shell">{children}</div>

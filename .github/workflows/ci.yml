@@ -22,6 +22,9 @@ jobs:
       - name: Build shared
         run: npm run build -w @buyseekk/shared
 
+      - name: Test shared package
+        run: npm test -w @buyseekk/shared
+
       - name: Generate Prisma client
         run: npm run prisma:generate -w @buyseekk/api
 
@@ -33,10 +36,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://buyseekk:buyseekk@localhost:5432/buyseekk
 
+      - name: Lint web
+        run: npm run lint -w @buyseekk/web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_SITE_URL: https://buyseekk.com
+
       - name: Build web
         run: npm run build -w @buyseekk/web
         env:
           NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_SITE_URL: https://buyseekk.com
           NEXT_PUBLIC_LAUNCH_COUNTRY: US
 
   test-e2e:
@@ -98,4 +108,3 @@ jobs:
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
-        continue-on-error: true

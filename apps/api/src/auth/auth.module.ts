@@ -6,6 +6,7 @@ import { EmailModule } from '../email/email.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthTokenCleanupScheduler } from './auth-token-cleanup.scheduler';
 import { JwtStrategy } from './jwt.strategy';
 import { SecurityLogService } from './security-log.service';
 
@@ -27,7 +28,7 @@ import { SecurityLogService } from './security-log.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, SecurityLogService],
+  providers: [AuthService, JwtStrategy, SecurityLogService, AuthTokenCleanupScheduler],
   exports: [AuthService, JwtModule, SecurityLogService],
 })
 export class AuthModule {}

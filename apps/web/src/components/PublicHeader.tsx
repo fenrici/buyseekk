@@ -12,7 +12,7 @@ const LANG_OPTIONS: { value: Locale; label: string }[] = [
   { value: 'EN', label: 'EN' },
 ];
 
-export type PublicRoute = '/' | '/login' | '/register' | '/marketplace' | '/forgot-password' | '/reset-password' | '/verify-email' | '/help' | '/terms' | '/privacy';
+export type PublicRoute = '/' | '/login' | '/register' | '/marketplace' | '/forgot-password' | '/reset-password' | '/verify-email' | '/help' | '/terms' | '/privacy' | '/cookies';
 
 type PublicHeaderProps = {
   activeRoute?: PublicRoute;
@@ -99,7 +99,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
     <header className="portal-header">
       <div className="portal-header-inner">
         <Link href={appHome} className="portal-logo">
-          <span className="portal-logo-text">BuySeek</span>
+          <span className="portal-logo-text">Buyseekk</span>
         </Link>
 
         <div className="portal-header-actions">

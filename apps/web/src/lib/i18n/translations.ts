@@ -655,6 +655,7 @@ export const es = {
     appVersion: 'Versión',
     terms: 'Términos de servicio',
     privacy: 'Política de privacidad',
+    cookies: 'Política de cookies',
     openNotifications: 'Ver todas las notificaciones',
     currentMode: 'Modo actual',
     switchMode: 'Cambiar modo',
@@ -782,10 +783,40 @@ export const es = {
       s5Body:
         'Podés solicitar acceso, corrección o eliminación de tu cuenta contactando a soporte. Usuarios en distintas jurisdicciones pueden tener derechos adicionales según la ley local.',
     },
+    cookies: {
+      title: 'Política de cookies',
+      s1Title: '1. Qué son las cookies',
+      s1Body:
+        'Las cookies son pequeños archivos que el navegador guarda para recordar preferencias, mantener tu sesión y medir el uso del sitio.',
+      s2Title: '2. Cookies que usamos',
+      s2Body:
+        'Usamos cookies y almacenamiento local esenciales para autenticación (tokens de sesión), idioma y consentimiento de cookies. Podemos usar analítica básica para entender el uso del producto.',
+      s3Title: '3. Cookies de terceros',
+      s3Body:
+        'Proveedores como Vercel Analytics o Sentry pueden usar cookies o identificadores similares para rendimiento y monitoreo de errores, según sus propias políticas.',
+      s4Title: '4. Tus opciones',
+      s4Body:
+        'Podés aceptar cookies no esenciales desde el banner del sitio o configurar tu navegador para bloquearlas. Las cookies esenciales son necesarias para iniciar sesión y usar la plataforma.',
+    },
+  },
+  cookies: {
+    banner: 'Usamos cookies esenciales y, con tu consentimiento, analítica para mejorar Buyseekk.',
+    learnMore: 'Más información',
+    accept: 'Aceptar',
+  },
+  errors: {
+    notFoundTitle: 'Página no encontrada',
+    notFoundBody: 'La ruta que buscás no existe o fue movida.',
+    genericTitle: 'Algo salió mal',
+    genericBody: 'Ocurrió un error inesperado. Podés intentar de nuevo o volver al inicio.',
+    goHome: 'Ir al inicio',
+    browseMarketplace: 'Ver marketplace',
+    tryAgain: 'Reintentar',
   },
   help: {
     title: 'Ayuda',
-    intro: 'Respuestas rápidas y contacto con el equipo de Buyseek.',
+    intro: 'Respuestas rápidas y contacto con el equipo de Buyseekk.',
+    supportEmailLabel: 'Email de soporte:',
     contact: 'Contactar soporte',
     report: 'Reportar un problema',
     feedback: 'Enviar feedback',
@@ -825,6 +856,7 @@ export const es = {
   },
   common: {
     loading: 'Cargando...',
+    redirecting: 'Redirigiendo...',
     saving: 'Guardando...',
     justNow: 'recién',
     error: 'Error',
@@ -1488,6 +1520,7 @@ export const en: DeepString<typeof es> = {
     appVersion: 'Version',
     terms: 'Terms of service',
     privacy: 'Privacy policy',
+    cookies: 'Cookie policy',
     openNotifications: 'View all notifications',
     currentMode: 'Current mode',
     switchMode: 'Switch mode',
@@ -1610,10 +1643,40 @@ export const en: DeepString<typeof es> = {
       s5Body:
         'You may request access, correction, or deletion of your account by contacting support. Users in different jurisdictions may have additional rights under local law.',
     },
+    cookies: {
+      title: 'Cookie policy',
+      s1Title: '1. What cookies are',
+      s1Body:
+        'Cookies are small files your browser stores to remember preferences, keep you signed in, and measure site usage.',
+      s2Title: '2. Cookies we use',
+      s2Body:
+        'We use essential cookies and local storage for authentication (session tokens), language, and cookie consent. We may use basic analytics to understand product usage.',
+      s3Title: '3. Third-party cookies',
+      s3Body:
+        'Providers such as Vercel Analytics or Sentry may use cookies or similar identifiers for performance and error monitoring, under their own policies.',
+      s4Title: '4. Your choices',
+      s4Body:
+        'You can accept non-essential cookies from the site banner or configure your browser to block them. Essential cookies are required to sign in and use the platform.',
+    },
+  },
+  cookies: {
+    banner: 'We use essential cookies and, with your consent, analytics to improve Buyseekk.',
+    learnMore: 'Learn more',
+    accept: 'Accept',
+  },
+  errors: {
+    notFoundTitle: 'Page not found',
+    notFoundBody: 'The page you are looking for does not exist or was moved.',
+    genericTitle: 'Something went wrong',
+    genericBody: 'An unexpected error occurred. You can try again or go back home.',
+    goHome: 'Go home',
+    browseMarketplace: 'Browse marketplace',
+    tryAgain: 'Try again',
   },
   help: {
     title: 'Help',
-    intro: 'Quick answers and contact with the Buyseek team.',
+    intro: 'Quick answers and contact with the Buyseekk team.',
+    supportEmailLabel: 'Support email:',
     contact: 'Contact support',
     report: 'Report a problem',
     feedback: 'Send feedback',
@@ -1653,6 +1716,7 @@ export const en: DeepString<typeof es> = {
   },
   common: {
     loading: 'Loading...',
+    redirecting: 'Redirecting...',
     saving: 'Saving...',
     justNow: 'just now',
     error: 'Error',

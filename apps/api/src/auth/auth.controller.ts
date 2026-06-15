@@ -47,7 +47,7 @@ export class AuthController {
     return this.auth.verifyEmail(dto, SecurityLogService.fromRequest(req));
   }
 
-  @SkipThrottle()
+  @Throttle({ default: THROTTLE_LIMITS.write })
   @UseGuards(JwtAuthGuard)
   @Post('resend-verification')
   resendVerification(@Req() req: { user: { id: string } }) {

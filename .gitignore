@@ -11,4 +11,4 @@ coverage/
 apps/api/dist/
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
-apps/web/.next/
+*.tsbuildinfo

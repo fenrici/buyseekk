@@ -566,6 +566,10 @@ export class RequestsService {
     ) {
       throw new NotFoundException('Solicitud no encontrada');
     }
+    const launchCountry = getLaunchCountry();
+    if (launchCountry && req.country !== launchCountry) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
     return this.sanitizePublic(req);
   }
 

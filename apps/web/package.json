@@ -6,10 +6,12 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@buyseekk/shared": "*",
+    "@sentry/nextjs": "^9.47.1",
+    "@vercel/analytics": "^1.6.1",
     "next": "^15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
