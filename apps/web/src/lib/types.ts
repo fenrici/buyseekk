@@ -33,6 +33,9 @@ export interface User {
   suspended?: boolean;
   suspendedAt?: string | null;
   suspendedReason?: string | null;
+  subscriptionPlan?: 'FREE' | 'PLUS' | 'ENTERPRISE';
+  preferredMode?: 'BUYER' | 'SELLER';
+  notificationPreferences?: import('@buyseekk/shared').NotificationPreferences;
 }
 
 export interface PublicProfile {
