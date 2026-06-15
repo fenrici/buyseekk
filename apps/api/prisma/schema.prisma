@@ -20,6 +20,12 @@ enum UserMode {
   SELLER
 }
 
+enum SubscriptionPlan {
+  FREE
+  PLUS
+  ENTERPRISE
+}
+
 enum SellerType {
   PERSONAL
   BUSINESS
@@ -111,6 +117,7 @@ enum NotificationType {
   REQUEST_INACTIVE
   REQUEST_CLOSED
   EMAIL_VERIFIED
+  NEW_MATCHING_REQUEST
 }
 
 enum NotificationEntityType {
@@ -154,6 +161,9 @@ model User {
   suspended        Boolean   @default(false)
   suspendedAt      DateTime?
   suspendedReason  String?
+  subscriptionPlan SubscriptionPlan @default(FREE)
+  preferredMode        UserMode @default(BUYER)
+  notificationPreferences Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
