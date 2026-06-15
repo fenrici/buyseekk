@@ -50,7 +50,7 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
         setSession(next);
         const elapsed = Date.now() - started;
         if (elapsed < MIN_TRANSITION_MS) await sleep(MIN_TRANSITION_MS - elapsed);
-        router.replace(getDashboardPathForMode(target));
+        router.replace(getDashboardPathForMode(next.activeMode));
         await sleep(150);
         setSwitching(false);
         showToast(

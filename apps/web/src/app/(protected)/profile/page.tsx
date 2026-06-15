@@ -58,7 +58,7 @@ export default function ProfilePage() {
     setForm(profileFormFromUser(user));
     setNotifPrefs(parseNotificationPreferences(user.notificationPreferences));
     setPreferredMode(user.preferredMode ?? user.activeMode ?? 'BUYER');
-  }, [user?.id]);
+  }, [user?.id, user?.activeMode, user?.preferredMode]);
 
   if (!user) return null;
 
@@ -107,8 +107,11 @@ export default function ProfilePage() {
   }
 
   async function handlePreferredMode(mode: 'BUYER' | 'SELLER') {
-    if (mode === preferredMode || prefsSaving) return;
+    if (mode === preferredMode || prefsSaving || switching) return;
     await patchPreferences({ preferredMode: mode });
+    if (account.activeMode !== mode) {
+      switchMode(mode);
+    }
   }
 
   async function handleNotifPref(key: keyof NotificationPreferences, value: boolean) {

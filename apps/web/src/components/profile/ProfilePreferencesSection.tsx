@@ -53,7 +53,7 @@ export function ProfilePreferencesSection({
         </div>
       </div>
 
-      <div className="profile-pref-block">
+      <div className="profile-pref-block profile-pref-block--mode">
         <p className="profile-pref-block__label">{t('profile.defaultMode')}</p>
         <p className="profile-pref-block__hint">{t('profile.defaultModeHint')}</p>
         <div className="settings-segmented" role="group" aria-label={t('profile.defaultMode')}>

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { PublicContentShell } from '@/components/PublicContentShell';
 import { useT } from '@/lib/i18n';
 
@@ -55,12 +54,6 @@ export default function HelpPage() {
           </details>
         ))}
       </div>
-
-      <nav className="public-content-page__related" aria-label={t('footer.aria')}>
-        <Link href="/terms">{t('profile.terms')}</Link>
-        <Link href="/privacy">{t('profile.privacy')}</Link>
-        <Link href="/cookies">{t('profile.cookies')}</Link>
-      </nav>
     </PublicContentShell>
   );
 }

@@ -171,7 +171,10 @@ export class UsersService {
 
     if (user.activeMode === activeMode) return this.toSafeUser(user);
 
-    const data: { activeMode: UserMode; role?: UserRole } = { activeMode };
+    const data: { activeMode: UserMode; preferredMode: UserMode; role?: UserRole } = {
+      activeMode,
+      preferredMode: activeMode,
+    };
     // Cuentas legacy con role SELLER pasan a BOTH al elegir modo comprador (pueden usar ambas interfaces).
     if (activeMode === UserMode.BUYER && user.role === UserRole.SELLER) {
       data.role = UserRole.BOTH;

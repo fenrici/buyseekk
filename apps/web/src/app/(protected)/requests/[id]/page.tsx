@@ -12,6 +12,7 @@ import { Header } from '@/components/Header';
 import { ImageGallery } from '@/components/ImageGallery';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/providers/AuthProvider';
+import { useRequireActiveMode } from '@/hooks/useRequireActiveMode';
 import { RequestMeta } from '@/components/RequestMeta';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
@@ -27,6 +28,7 @@ export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  useRequireActiveMode('seller');
   const [request, setRequest] = useState<RequestItem | null>(null);
   const [price, setPrice] = useState('');
   const [message, setMessage] = useState('');
