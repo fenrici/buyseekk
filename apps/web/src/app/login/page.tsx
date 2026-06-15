@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getToken, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
 import { getPostLoginPath } from '@/lib/auth';
@@ -51,24 +51,11 @@ function LoginForm() {
   const router = useRouter();
   const { setSession } = useAuth();
   const { ready: guestReady } = useGuestOnlyRoute();
-  const searchParams = useSearchParams();
-  const roleHint = searchParams.get('role');
   const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!DEMO_ENABLED) return;
-    if (roleHint === 'seller') {
-      setEmail(DEMOS.seller.email);
-      setPassword(DEMOS.seller.password);
-    } else if (roleHint === 'buyer') {
-      setEmail(DEMOS.buyer.email);
-      setPassword(DEMOS.buyer.password);
-    }
-  }, [roleHint]);
 
   function fillDemo(type: 'buyer' | 'seller') {
     setEmail(DEMOS[type].email);
@@ -126,12 +113,6 @@ function LoginForm() {
                     <p className="auth-login-demo__label">{t('auth.loginDefaultHint')}</p>
                     <span className="auth-login-demo__badge">{t('auth.loginDemoBadge')}</span>
                   </div>
-
-                  {(roleHint === 'buyer' || roleHint === 'seller') && (
-                    <p className="auth-role-hint">
-                      {roleHint === 'seller' ? t('auth.loginSellerHint') : t('auth.loginBuyerHint')}
-                    </p>
-                  )}
 
                   <div className="auth-login-demo-grid">
                     <button
@@ -229,14 +210,6 @@ function LoginForm() {
   );
 }
 
-function LoginFallback() {
-  return <PortalLoadingScreen />;
-}
-
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginFallback />}>
-      <LoginForm />
-    </Suspense>
-  );
+  return <LoginForm />;
 }

@@ -95,7 +95,12 @@ export default function RequestDetailPage() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {t('request.refPhotos')}
               </p>
-              <ImageGallery urls={request.imageUrls} alt={request.title} className="h-64 md:h-72" />
+              <ImageGallery
+                urls={request.imageUrls}
+                alt={request.title}
+                className="h-64 md:h-80"
+                cover
+              />
             </div>
           )}
           {user.id === request.user.id &&
@@ -131,25 +136,43 @@ export default function RequestDetailPage() {
           )}
         </div>
         {canOffer ? (
-          <form onSubmit={sendOffer} className="card h-fit p-6">
+          <form onSubmit={sendOffer} className="card offer-form h-fit p-6">
             <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
             {error && <EmailVerificationErrorAlert message={error} className="mt-3" />}
-            <div className="mt-4 space-y-4">
-              <MoneyInput
-                className="input w-full"
-                value={price}
-                onChange={setPrice}
-                locale={moneyInputLocale(currency as 'USD' | 'ARS')}
-                placeholder={t('request.pricePlaceholder')}
-                required
-              />
-              <textarea className="input w-full" rows={4} placeholder={t('request.messagePlaceholder')} value={message} onChange={(e) => setMessage(e.target.value)} required />
+            <div className="offer-form__fields">
+              <div className="offer-form__field">
+                <label htmlFor="offer-price" className="offer-form__label">
+                  {t('request.pricePlaceholder')}
+                </label>
+                <MoneyInput
+                  id="offer-price"
+                  className="input offer-form__input w-full"
+                  value={price}
+                  onChange={setPrice}
+                  locale={moneyInputLocale(currency as 'USD' | 'ARS')}
+                  required
+                />
+              </div>
+              <div className="offer-form__field">
+                <label htmlFor="offer-message" className="offer-form__label">
+                  {t('request.messagePlaceholder')}
+                </label>
+                <textarea
+                  id="offer-message"
+                  className="input offer-form__input w-full"
+                  rows={4}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                />
+              </div>
               <ImageUpload
                 label={t('request.productPhotos')}
                 hint={t('request.productPhotosHint')}
                 value={imageUrls}
                 onChange={setImageUrls}
                 required
+                variant="panel"
               />
               <button className="btn btn-accent w-full">{t('request.submitOffer')}</button>
             </div>

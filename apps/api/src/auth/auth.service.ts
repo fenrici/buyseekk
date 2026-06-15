@@ -204,11 +204,11 @@ export class AuthService {
     });
 
     let sessionUser = user;
-    const preferredMode = user.preferredMode ?? user.activeMode;
-    if (canEnterMode(preferredMode, user) && user.activeMode !== preferredMode) {
+    const activeMode = canEnterMode(user.activeMode, user) ? user.activeMode : UserMode.BUYER;
+    if (user.activeMode !== activeMode) {
       sessionUser = await this.prisma.user.update({
         where: { id: user.id },
-        data: { activeMode: preferredMode },
+        data: { activeMode },
       });
     }
 

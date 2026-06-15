@@ -46,7 +46,6 @@ export default function ProfilePage() {
   const [langSaving, setLangSaving] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
-  const [preferredMode, setPreferredMode] = useState<'BUYER' | 'SELLER'>('BUYER');
   const [form, setForm] = useState<ProfileFormState>(profileFormFromUser({} as User));
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,15 +56,13 @@ export default function ProfilePage() {
     if (!user) return;
     setForm(profileFormFromUser(user));
     setNotifPrefs(parseNotificationPreferences(user.notificationPreferences));
-    setPreferredMode(user.preferredMode ?? user.activeMode ?? 'BUYER');
-  }, [user?.id, user?.activeMode, user?.preferredMode]);
+  }, [user?.id]);
 
   if (!user) return null;
 
   const account = user;
   const isBusiness = account.sellerType === 'BUSINESS';
   const isSeller = account.activeMode === 'SELLER';
-  const canChooseSeller = account.role === 'SELLER' || account.role === 'BOTH';
 
   function goHub() {
     setScreen('hub');
@@ -88,7 +85,6 @@ export default function ProfilePage() {
       const updated = await api<User>('/users/me/preferences', { method: 'PATCH', body: JSON.stringify(body) });
       setSession(updated);
       setNotifPrefs(parseNotificationPreferences(updated.notificationPreferences));
-      if (updated.preferredMode) setPreferredMode(updated.preferredMode);
     } finally {
       setPrefsSaving(false);
     }
@@ -103,14 +99,6 @@ export default function ProfilePage() {
       setStoredLocale(updated.locale);
     } finally {
       setLangSaving(false);
-    }
-  }
-
-  async function handlePreferredMode(mode: 'BUYER' | 'SELLER') {
-    if (mode === preferredMode || prefsSaving || switching) return;
-    await patchPreferences({ preferredMode: mode });
-    if (account.activeMode !== mode) {
-      switchMode(mode);
     }
   }
 
@@ -191,12 +179,9 @@ export default function ProfilePage() {
           <ProfilePreferencesSection
             embedded
             locale={account.locale}
-            preferredMode={preferredMode}
-            canChooseSeller={canChooseSeller}
             langSaving={langSaving}
             prefsSaving={prefsSaving}
             onLanguage={handleLanguage}
-            onPreferredMode={handlePreferredMode}
           />
           <ProfileUsageModeCard
             isSeller={isSeller}

@@ -5326,6 +5326,78 @@ html:has(.panel-dark) body {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
+/* Send offer form — campos alineados */
+.offer-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.offer-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.offer-form__label,
+.image-upload--panel .image-upload__label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.image-upload--panel .image-upload__hint,
+.image-upload--panel .image-upload__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.panel-dark .offer-form__input,
+.panel-dark .image-upload--panel .image-upload__dropzone {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.panel-dark .offer-form__input::placeholder,
+.panel-dark .image-upload--panel .image-upload__dropzone {
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.panel-dark .offer-form textarea.offer-form__input {
+  min-height: 6.5rem;
+  resize: vertical;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.panel-dark .image-upload--panel .image-upload__dropzone {
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.panel-dark .image-upload--panel .image-upload__dropzone:hover:not(:disabled) {
+  border-color: rgba(129, 140, 248, 0.45);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-dark .image-upload--panel .image-upload__dropzone:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.panel-dark .image-upload--panel .image-upload__preview {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .panel-dark select.input option {
   color: #0f172a;
   background: #fff;

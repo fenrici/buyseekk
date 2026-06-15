@@ -7,17 +7,21 @@ type Props = {
   urls?: string[] | null;
   alt: string;
   className?: string;
+  /** Rellena el marco (una sola imagen). Por defecto true en detalle de solicitud. */
+  cover?: boolean;
 };
 
 const frameBase =
-  'flex items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100';
+  'relative overflow-hidden rounded-lg border border-slate-200 bg-slate-900/40';
 
-export function ImageGallery({ urls, alt, className = 'h-48' }: Props) {
+export function ImageGallery({ urls, alt, className = 'h-48', cover = false }: Props) {
   const t = useT();
   const images = (urls ?? []).map(getImageUrl).filter(Boolean) as string[];
   if (images.length === 0) return null;
 
-  const imgClass = 'max-h-full max-w-full object-contain';
+  const imgClass = cover
+    ? 'h-full w-full object-cover'
+    : 'max-h-full max-w-full object-contain';
 
   if (images.length === 1) {
     return (
@@ -32,7 +36,7 @@ export function ImageGallery({ urls, alt, className = 'h-48' }: Props) {
       {images.map((src, i) => (
         <div
           key={`${src}-${i}`}
-          className={`relative min-w-[88%] flex-shrink-0 snap-start ${frameBase} h-full`}
+          className={`relative min-w-[88%] flex-shrink-0 snap-start ${frameBase} flex h-full items-center justify-center`}
         >
           <img src={src} alt={`${alt} ${i + 1}`} className={imgClass} />
           {i === 0 && (

@@ -92,6 +92,7 @@ jobs:
           STORAGE_PROVIDER: local
           EMAIL_PROVIDER: console
           LAUNCH_COUNTRY: US
+          WEB_URL: http://localhost:3000
 
   audit:
     runs-on: ubuntu-latest
