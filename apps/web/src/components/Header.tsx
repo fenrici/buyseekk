@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { resolveNavMode } from '@buyseekk/shared';
 import { api, normalizePaginated } from '@/lib/api';
+import { getAppHomePath } from '@/lib/auth';
 import { Avatar } from '@/components/Avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
@@ -28,6 +29,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
 
   // Navegación según el modo activo (sin mezclar comprador/vendedor).
   const navMode = user ? resolveNavMode({ role: user.role, activeMode: user.activeMode }) : null;
+  const appHome = getAppHomePath(user);
 
   useEffect(() => {
     if (!user || user.role === 'ADMIN') {
@@ -110,14 +112,14 @@ export function Header({ variant = 'light' }: HeaderProps) {
       >
         {dark ? (
           <Link
-            href="/"
+            href={appHome}
             className={`portal-logo ${user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''}`}
           >
             <span className="portal-logo-text">BuySeek</span>
           </Link>
         ) : (
           <Link
-            href="/"
+            href={appHome}
             className={`flex items-center gap-2.5 text-xl font-extrabold text-[var(--dark)] ${
               user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''
             }`}

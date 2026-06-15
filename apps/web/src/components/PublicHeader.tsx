@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { resolveNavMode } from '@buyseekk/shared';
+import { getAppHomePath, getPostLoginPath, isAdminRole } from '@/lib/auth';
 import { Locale, setGuestLocale, useLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -72,11 +73,21 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
   );
 
   const navMode = user ? resolveNavMode({ role: user.role, activeMode: user.activeMode }) : null;
+  const appHome = getAppHomePath(user);
+  const dashboardHref = user ? getPostLoginPath(user) : '/';
+  const dashboardLabel = user && isAdminRole(user.role)
+    ? 'Admin'
+    : navMode === 'SELLER'
+      ? t('nav.sellerPanel')
+      : t('nav.buyerPanel');
 
   const userActions = user ? (
     <>
-      <Link href={navMode === 'SELLER' ? '/seller' : '/buyer'} className="portal-header-link">
-        {navMode === 'SELLER' ? t('nav.sellerPanel') : t('nav.buyerPanel')}
+      <Link href={dashboardHref} className="portal-header-link">
+        {dashboardLabel}
+      </Link>
+      <Link href="/chats" className="portal-header-link">
+        {t('nav.messages')}
       </Link>
       <Link href="/profile" className="portal-header-cta">
         {t('nav.profile')}
@@ -87,7 +98,7 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
   return (
     <header className="portal-header">
       <div className="portal-header-inner">
-        <Link href="/" className="portal-logo">
+        <Link href={appHome} className="portal-logo">
           <span className="portal-logo-text">BuySeek</span>
         </Link>
 
@@ -117,15 +128,12 @@ export function PublicHeader({ activeRoute = '/' }: PublicHeaderProps) {
           <div className="portal-mobile-menu">
             {!loading && user ? (
               <nav className="portal-mobile-nav">
-                <Link href="/" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
-                  {t('nav.home')}
-                </Link>
                 <Link
-                  href={navMode === 'SELLER' ? '/seller' : '/buyer'}
+                  href={dashboardHref}
                   className="portal-mobile-link"
                   onClick={() => setMenuOpen(false)}
                 >
-                  {navMode === 'SELLER' ? t('nav.sellerPanel') : t('nav.buyerPanel')}
+                  {dashboardLabel}
                 </Link>
                 <Link href="/chats" className="portal-mobile-link" onClick={() => setMenuOpen(false)}>
                   {t('nav.messages')}

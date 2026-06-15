@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SplashScreen } from '@/components/SplashScreen';
+import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { useT } from '@/lib/i18n';
 import { isUsLaunch } from '@/lib/launch-country';
 
@@ -12,6 +14,7 @@ const SPLASH_FLAG = 'buyseekk_splash_seen';
 
 export default function HomePage() {
   const t = useT();
+  const { loading: authLoading, ready: guestReady } = useGuestOnlyRoute();
   const [showSplash, setShowSplash] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -26,7 +29,9 @@ export default function HomePage() {
     setShowSplash(false);
   }
 
-  if (!ready) return null;
+  if (!ready || authLoading || !guestReady) {
+    return <PortalLoadingScreen />;
+  }
 
   if (showSplash) {
     return <SplashScreen onDone={finishSplash} duration={2000} />;

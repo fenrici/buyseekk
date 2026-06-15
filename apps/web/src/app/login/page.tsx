@@ -9,6 +9,7 @@ import { getPostLoginPath } from '@/lib/auth';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { PublicHeader } from '@/components/PublicHeader';
 import { setStoredLocale, useT } from '@/lib/i18n';
+import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { useAuth } from '@/providers/AuthProvider';
 
 const DEMOS = {
@@ -19,6 +20,7 @@ const DEMOS = {
 function LoginForm() {
   const router = useRouter();
   const { setSession } = useAuth();
+  const { ready: guestReady } = useGuestOnlyRoute();
   const searchParams = useSearchParams();
   const roleHint = searchParams.get('role');
   const t = useT();
@@ -62,6 +64,10 @@ function LoginForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!guestReady) {
+    return <PortalLoadingScreen />;
   }
 
   return (

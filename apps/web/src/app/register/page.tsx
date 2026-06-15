@@ -7,7 +7,9 @@ import { api, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
 import { getDashboardPathForMode, hasSellerProfile } from '@/lib/auth';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
+import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 import {
@@ -22,6 +24,7 @@ type Step = 'account' | 'role';
 export default function RegisterPage() {
   const router = useRouter();
   const { setSession } = useAuth();
+  const { ready: guestReady } = useGuestOnlyRoute();
   const t = useT();
   const [step, setStep] = useState<Step>('account');
   const [form, setForm] = useState({
@@ -95,6 +98,10 @@ export default function RegisterPage() {
     setSession(user);
     setSellerOnboarding(false);
     router.replace(getDashboardPathForMode(user.activeMode));
+  }
+
+  if (!guestReady) {
+    return <PortalLoadingScreen />;
   }
 
   return (

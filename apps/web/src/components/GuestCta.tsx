@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useT } from '@/lib/i18n';
+import { useAuth } from '@/providers/AuthProvider';
 
 type Props = {
   title?: string;
@@ -12,6 +13,10 @@ type Props = {
 /** Bloque de conversión para invitados: invita a crear cuenta o iniciar sesión. */
 export function GuestCta({ title, text, className = '' }: Props) {
   const t = useT();
+  const { user, loading } = useAuth();
+
+  if (loading || user) return null;
+
   return (
     <div className={`guest-cta ${className}`}>
       <p className="guest-cta__title">{title ?? t('guest.ctaTitle')}</p>

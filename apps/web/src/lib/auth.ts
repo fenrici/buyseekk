@@ -25,6 +25,12 @@ export function getPostLoginPath(user: Pick<User, 'role' | 'activeMode'>) {
   return getDashboardPathForMode(user.activeMode);
 }
 
+/** Home de la app: dashboard si hay sesión, landing pública si no. */
+export function getAppHomePath(user: Pick<User, 'role' | 'activeMode'> | null | undefined) {
+  if (!user) return '/';
+  return getPostLoginPath(user);
+}
+
 /** Una cuenta ya completó el onboarding de vendedor si tiene capacidad y datos de vendedor. */
 export function hasSellerProfile(user: Pick<User, 'role' | 'sellerType' | 'sellerCategory'>) {
   return hasCompletedSellerProfile(user);
