@@ -58,7 +58,6 @@ describe('P0 Phase 1 (e2e)', () => {
         budget: 200000,
         currency: 'USD',
         location: 'Miami, FL',
-        zone: 'Brickell',
         country: 'US',
         carBrand: 'Ferrari',
         carModel: '488 GTB',

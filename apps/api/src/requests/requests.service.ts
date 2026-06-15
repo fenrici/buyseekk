@@ -703,9 +703,15 @@ export class RequestsService {
 
     const location = dto.location ?? req.location;
     if (dto.location !== undefined) {
-      const allowedCities = citiesForCountry(user.country);
-      if (!allowedCities.includes(dto.location)) {
-        throw new BadRequestException('Ciudad no válida para tu país');
+      if (user.country === Country.US) {
+        if (!isValidUsAreaLocation(dto.location)) {
+          throw new BadRequestException('Área no válida');
+        }
+      } else {
+        const allowedCities = citiesForCountry(user.country);
+        if (!allowedCities.includes(dto.location)) {
+          throw new BadRequestException('Ciudad no válida para tu país');
+        }
       }
     }
 
@@ -716,6 +722,7 @@ export class RequestsService {
       const carYearMin = dto.carYearMin ?? req.carYearMin;
       const maxMileage = dto.maxMileage ?? req.maxMileage;
       const zone = dto.zone ?? req.zone;
+      const usAuto = user.country === Country.US;
 
       if (!hasPending) {
         if (dto.carBrand !== undefined && !isValidBrand(dto.carBrand)) {
@@ -733,7 +740,7 @@ export class RequestsService {
         if (dto.maxMileage !== undefined && (dto.maxMileage < 0 || dto.maxMileage > 500000)) {
           throw new BadRequestException('Millaje no válido');
         }
-        if (dto.zone !== undefined) {
+        if (!usAuto && dto.zone !== undefined) {
           const autoZones = zonesForCountryAndCity(user.country, location);
           if (!autoZones.includes(dto.zone)) {
             throw new BadRequestException('Zona no válida para tu país y ciudad');
@@ -741,7 +748,10 @@ export class RequestsService {
         }
       }
 
-      if (!carBrand || !carModel || !carColor || carYearMin == null || maxMileage == null || !zone) {
+      if (!carBrand || !carModel || !carColor || carYearMin == null || maxMileage == null) {
+        throw new BadRequestException('Datos de auto incompletos');
+      }
+      if (!usAuto && !zone) {
         throw new BadRequestException('Datos de auto incompletos');
       }
     } else if (req.category === RequestCategory.INMOBILIARIA) {
@@ -752,9 +762,18 @@ export class RequestsService {
 
       if (!hasPending) {
         if (dto.zone !== undefined) {
-          const allowedZones = zonesForCountryAndCity(user.country, location);
-          if (!allowedZones.includes(dto.zone)) {
-            throw new BadRequestException('Zona no válida para tu país y ciudad');
+          if (user.country === Country.US) {
+            const parsed = parseUsAreaLocation(location);
+            if (!parsed) throw new BadRequestException('Área no válida');
+            const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
+            if (hoods.length > 0 && !isValidUsNeighborhood(parsed.state, parsed.area, dto.zone)) {
+              throw new BadRequestException('Barrio no válido para el área seleccionada');
+            }
+          } else {
+            const allowedZones = zonesForCountryAndCity(user.country, location);
+            if (!allowedZones.includes(dto.zone)) {
+              throw new BadRequestException('Zona no válida para tu país y ciudad');
+            }
           }
         }
         if (dto.bedrooms !== undefined && (dto.bedrooms < 1 || dto.bedrooms > 10)) {
@@ -776,6 +795,15 @@ export class RequestsService {
 
       if (!zone || bedrooms == null) {
         throw new BadRequestException('Datos de inmueble incompletos');
+      }
+      if (user.country === Country.US) {
+        const parsed = parseUsAreaLocation(location);
+        if (parsed) {
+          const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
+          if (hoods.length > 0 && !zone) {
+            throw new BadRequestException('Datos de inmueble incompletos');
+          }
+        }
       }
     }
 

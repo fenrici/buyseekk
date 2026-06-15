@@ -51,6 +51,9 @@ En **Variables** del servicio API, agregá:
 | `NODE_ENV` | `production` | Obligatorio |
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
 | `STORAGE_PROVIDER` | `local` o `r2` | En prod usar `r2` (ver 2.4.1) |
+| `LAUNCH_COUNTRY` | `US` | Mercado único en lanzamiento |
+| `WEB_URL` | URL de Vercel | Links en emails de notificación |
+| `EMAIL_PROVIDER` | `console` o `resend` | Ver 2.4.2 — **no uses `resend` sin `EMAIL_API_KEY`** |
 
 **Generar JWT_SECRET** (en tu terminal):
 
@@ -109,7 +112,32 @@ Sin R2, las imágenes viven en disco efímero del container y **se pierden en ca
 
 Las migraciones corren en **pre-deploy** (`railway.toml`), no al arrancar el container — seguro con múltiples réplicas.
 
-#### 2.4.2 Redis para chat en tiempo real (requerido con 2+ réplicas)
+#### 2.4.2 Email (Resend)
+
+La API **no arranca** si tenés `EMAIL_PROVIDER=resend` sin `EMAIL_API_KEY`. Ese es el error típico en Railway.
+
+**Opción A — Todavía configurando (API levanta, emails en logs):**
+
+| Variable | Valor |
+|----------|-------|
+| `EMAIL_PROVIDER` | `console` |
+
+**Opción B — Emails reales con Resend:**
+
+| Variable | Valor |
+|----------|-------|
+| `EMAIL_PROVIDER` | `resend` |
+| `EMAIL_API_KEY` | `re_...` desde [resend.com](https://resend.com) |
+| `EMAIL_FROM` | `Buyseek <noreply@tudominio.com>` (dominio verificado) |
+
+**Sandbox Resend** (sin dominio propio, solo pruebas):
+
+| Variable | Valor |
+|----------|-------|
+| `EMAIL_FROM` | `Buyseek <onboarding@resend.dev>` |
+| `EMAIL_SANDBOX_TO` | Tu email de cuenta Resend |
+
+#### 2.4.3 Redis para chat en tiempo real (requerido con 2+ réplicas)
 
 Sin Redis, Socket.IO guarda rooms y conexiones **en memoria de cada instancia**. Con 2+ réplicas de Railway, un usuario en la instancia A no recibe mensajes emitidos desde la instancia B.
 

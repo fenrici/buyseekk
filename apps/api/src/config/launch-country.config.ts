@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   defaultCurrencyForCountry,
@@ -22,6 +22,14 @@ export function assertRegisterCountryAllowed(dtoCountry: Country, config?: Confi
   const launch = getLaunchCountry(config);
   if (launch && dtoCountry !== launch) {
     throw new BadRequestException('Registration is not available for this country in the current launch');
+  }
+}
+
+/** Blocks AR (or other) accounts when the API runs in single-country launch mode. */
+export function assertLaunchMarketAccess(userCountry: Country, config?: ConfigService): void {
+  const launch = getLaunchCountry(config);
+  if (launch && userCountry !== launch) {
+    throw new ForbiddenException('Buyseek is currently available in the United States only');
   }
 }
 

@@ -4,7 +4,7 @@ import {
   type Country,
 } from '@buyseekk/shared';
 
-/** Fixed launch market from NEXT_PUBLIC_LAUNCH_COUNTRY. Null = multi-country UI. */
+/** Fixed launch market. Default US. Null only when LAUNCH_COUNTRY=MULTI. */
 export const LAUNCH_COUNTRY: Country | null = parseLaunchCountry(
   process.env.NEXT_PUBLIC_LAUNCH_COUNTRY,
 );

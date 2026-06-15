@@ -10,6 +10,7 @@ import { GuestCta } from '@/components/GuestCta';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { timeAgo, useLocale, useT } from '@/lib/i18n';
 import { LAUNCH_COUNTRY, isSingleCountryLaunch } from '@/lib/launch-country';
+import type { User } from '@/lib/types';
 
 /** Límite de solicitudes visibles para invitados antes de pedir registro. */
 const GUEST_LIMIT = 20;
@@ -20,7 +21,7 @@ export default function ExplorePage() {
   const [items, setItems] = useState<PublicRequestItem[]>([]);
   const [total, setTotal] = useState(0);
   const [category, setCategory] = useState('');
-  const [country, setCountry] = useState(LAUNCH_COUNTRY ?? '');
+  const [country, setCountry] = useState<User['country'] | ''>(LAUNCH_COUNTRY ?? 'US');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -111,7 +112,7 @@ export default function ExplorePage() {
             <select
               className="explore-country-select"
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={(e) => setCountry(e.target.value as User['country'] | '')}
               aria-label={t('auth.country')}
             >
               {countryFilters.map((c) => (
@@ -148,7 +149,7 @@ export default function ExplorePage() {
               {countryFilters.map((c) => (
                 <button
                   key={c.id || 'all-countries-d'}
-                  onClick={() => setCountry(c.id)}
+                  onClick={() => setCountry(c.id as User['country'] | '')}
                   className={`explore-pill ${country === c.id ? 'active' : ''}`}
                   aria-pressed={country === c.id}
                 >

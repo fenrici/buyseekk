@@ -37,6 +37,7 @@ jobs:
         run: npm run build -w @buyseekk/web
         env:
           NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_LAUNCH_COUNTRY: US
 
   test-e2e:
     runs-on: ubuntu-latest
@@ -79,6 +80,8 @@ jobs:
           JWT_SECRET: ci-test-jwt-secret-key-32chars
           NODE_ENV: test
           STORAGE_PROVIDER: local
+          EMAIL_PROVIDER: console
+          LAUNCH_COUNTRY: US
 
   audit:
     runs-on: ubuntu-latest

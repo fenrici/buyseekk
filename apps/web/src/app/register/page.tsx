@@ -75,8 +75,8 @@ export default function RegisterPage() {
           password: form.password,
           name: form.name,
           role: form.role,
-          country: form.country,
-          currency: form.currency,
+          country: getDefaultRegisterCountry(),
+          currency: getDefaultRegisterCurrency(),
           acceptedTerms: form.acceptedTerms,
         }),
       });

@@ -25,6 +25,7 @@ import { SecurityContext, SecurityLogService } from './security-log.service';
 import { generateSecureToken, hashToken } from './token.util';
 import {
   assertRegisterCountryAllowed,
+  assertLaunchMarketAccess,
   resolveRegisterCountry,
   resolveRegisterCurrency,
 } from '../config/launch-country.config';
@@ -190,6 +191,8 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    assertLaunchMarketAccess(user.country, this.config);
+
     await this.securityLog.log(SecurityEvent.LOGIN_SUCCESS, {
       userId: user.id,
       ip: ctx.ip,
@@ -219,6 +222,8 @@ export class AuthService {
     if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Sesión expirada. Volvé a iniciar sesión');
     }
+
+    assertLaunchMarketAccess(stored.user.country, this.config);
 
     await this.prisma.refreshToken.update({
       where: { id: stored.id },

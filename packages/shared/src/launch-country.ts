@@ -3,11 +3,19 @@ import { defaultCurrencyForCountry } from './pricing';
 
 const VALID_COUNTRIES: Country[] = ['AR', 'US'];
 
-/** Parse LAUNCH_COUNTRY / NEXT_PUBLIC_LAUNCH_COUNTRY (e.g. US). Null = multi-country mode. */
+/** Explicit values that re-enable multi-country mode (dev / future AR launch). */
+const MULTI_COUNTRY_MODES = new Set(['MULTI', 'ALL', 'OFF', '*']);
+
+/**
+ * Parse LAUNCH_COUNTRY / NEXT_PUBLIC_LAUNCH_COUNTRY.
+ * Default: US (single-market launch). Set MULTI to allow AR + US.
+ */
 export function parseLaunchCountry(raw?: string | null): Country | null {
-  if (!raw?.trim()) return null;
-  const value = raw.trim().toUpperCase() as Country;
-  return VALID_COUNTRIES.includes(value) ? value : null;
+  if (!raw?.trim()) return 'US';
+  const value = raw.trim().toUpperCase();
+  if (MULTI_COUNTRY_MODES.has(value)) return null;
+  const country = value as Country;
+  return VALID_COUNTRIES.includes(country) ? country : 'US';
 }
 
 export function isSingleCountryLaunch(launchCountry: Country | null): boolean {
