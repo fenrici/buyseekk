@@ -43,6 +43,11 @@ assert.equal(
   canEnterMode('BUYER', { role: 'BOTH', sellerType: 'BUSINESS', sellerCategory: 'AUTOS' }),
   true,
 );
+// Vendedor legacy (role SELLER): puede cambiar a modo comprador en la UI.
+assert.equal(
+  canEnterMode('BUYER', { role: 'SELLER', sellerType: 'PERSONAL', sellerCategory: 'AUTOS' }),
+  true,
+);
 
 // --- Modo de navegación efectivo (acotado a capacidades, sin mezclar) ---
 assert.equal(resolveNavMode({ role: 'BUYER', activeMode: 'BUYER' }), 'BUYER');
@@ -51,7 +56,7 @@ assert.equal(resolveNavMode({ role: 'BOTH', activeMode: 'SELLER' }), 'SELLER');
 assert.equal(resolveNavMode({ role: 'BOTH', activeMode: 'BUYER' }), 'BUYER');
 // activeMode incoherente con la capacidad → cae a un modo válido (no expone UI sin permiso).
 assert.equal(resolveNavMode({ role: 'BUYER', activeMode: 'SELLER' }), 'BUYER');
-assert.equal(resolveNavMode({ role: 'SELLER', activeMode: 'BUYER' }), 'SELLER');
+assert.equal(resolveNavMode({ role: 'SELLER', activeMode: 'BUYER' }), 'BUYER');
 
 // --- Habilitar vendedor conserva capacidad de comprador ---
 assert.equal(roleAfterEnablingSeller('BUYER'), 'BOTH');

@@ -36,7 +36,8 @@ export function canEnterMode(
   input: { role: AppUserRole; sellerType?: string | null; sellerCategory?: string | null },
 ): boolean {
   if (mode === 'SELLER') return hasCompletedSellerProfile(input);
-  return isBuyerCapableRole(input.role);
+  // activeMode es solo UI: vendedores legacy (role SELLER) también pueden ver la interfaz de comprador.
+  return isBuyerCapableRole(input.role) || isSellerCapableRole(input.role);
 }
 
 /**
@@ -45,7 +46,9 @@ export function canEnterMode(
  */
 export function resolveNavMode(input: { role: AppUserRole; activeMode: AppUserMode }): AppUserMode {
   if (input.activeMode === 'SELLER' && isSellerCapableRole(input.role)) return 'SELLER';
-  if (input.activeMode === 'BUYER' && isBuyerCapableRole(input.role)) return 'BUYER';
+  if (input.activeMode === 'BUYER' && (isBuyerCapableRole(input.role) || isSellerCapableRole(input.role))) {
+    return 'BUYER';
+  }
   if (isBuyerCapableRole(input.role)) return 'BUYER';
   return 'SELLER';
 }

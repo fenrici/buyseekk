@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Locale, OfferStatus, RatingType, SellerType, UserMode } from '@prisma/client';
+import { Locale, OfferStatus, RatingType, SellerType, UserMode, UserRole } from '@prisma/client';
 import {
   canEnterMode,
   hasCompletedSellerProfile,
@@ -171,9 +171,15 @@ export class UsersService {
 
     if (user.activeMode === activeMode) return this.toSafeUser(user);
 
+    const data: { activeMode: UserMode; role?: UserRole } = { activeMode };
+    // Cuentas legacy con role SELLER pasan a BOTH al elegir modo comprador (pueden usar ambas interfaces).
+    if (activeMode === UserMode.BUYER && user.role === UserRole.SELLER) {
+      data.role = UserRole.BOTH;
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { activeMode },
+      data,
     });
     return this.toSafeUser(updated);
   }
