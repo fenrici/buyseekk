@@ -21,6 +21,7 @@ import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
 
@@ -30,6 +31,7 @@ export class OffersService {
     private prisma: PrismaService,
     private ratings: RatingsService,
     private notifications: NotificationsService,
+    private subscription: SubscriptionService,
   ) {}
 
   private withComparison<T extends { price: number; currency: string; requestBudget: number }>(offer: T) {
@@ -79,6 +81,7 @@ export class OffersService {
       request.budgetPeriod != null || request.operation === 'ALQUILER',
     );
     await assertOfferSpamLimits(this.prisma, sellerId, dto.message);
+    await this.subscription.assertDailyOfferLimit(seller);
 
     const offer = await this.prisma.offer.create({
       data: {

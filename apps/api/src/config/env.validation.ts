@@ -85,6 +85,11 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   REDIS_URL?: string;
+
+  /** Si true (default), no aplicar límites de plan FREE. */
+  @IsOptional()
+  @IsString()
+  PLUS_FEATURES_UNLOCKED?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

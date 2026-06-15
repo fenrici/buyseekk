@@ -21,6 +21,7 @@ import { SavedRequestsModule } from './saved-requests/saved-requests.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ReportsModule } from './reports/reports.module';
       skipIf: () => process.env.NODE_ENV === 'test',
       throttlers: buildThrottlerDefinitions(),
     }),
+    SubscriptionModule,
     StorageModule,
     CommonModule,
     PrismaModule,

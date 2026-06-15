@@ -2,11 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, RequestCategory } from '@prisma/client';
 import { parseSellerFiltersJson } from '@buyseekk/shared';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateSavedSearchDto, UpdateSavedSearchDto } from './saved-searches.dto';
 
 function sanitizeFilters(raw: Record<string, unknown>) {
@@ -17,7 +20,13 @@ function sanitizeFilters(raw: Record<string, unknown>) {
 
 @Injectable()
 export class SavedSearchesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(SavedSearchesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private subscription: SubscriptionService,
+  ) {}
 
   list(userId: string) {
     return this.prisma.savedSearch.findMany({
@@ -27,6 +36,14 @@ export class SavedSearchesService {
   }
 
   async create(userId: string, dto: CreateSavedSearchDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, subscriptionPlan: true },
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    await this.subscription.assertSavedSearchLimit(user);
+
     const filters = sanitizeFilters(dto.filters);
     const existing = await this.prisma.savedSearch.findFirst({
       where: { userId, filters: { equals: filters } },
@@ -41,7 +58,7 @@ export class SavedSearchesService {
     }
 
     try {
-      return await this.prisma.savedSearch.create({
+      const row = await this.prisma.savedSearch.create({
         data: {
           userId,
           name: dto.name.trim(),
@@ -50,6 +67,12 @@ export class SavedSearchesService {
           isDefault: dto.isDefault ?? false,
         },
       });
+      try {
+        await this.notifications.processMatchingAlertsForSavedSearch(row.id);
+      } catch (err) {
+        this.logger.error(`Alertas retroactivas fallaron para búsqueda ${row.id}`, err);
+      }
+      return row;
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw new ConflictException('Ya existe una búsqueda con ese nombre');
