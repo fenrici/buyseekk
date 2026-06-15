@@ -9,6 +9,7 @@ import {
   SellerProfileDto,
   UpdateActiveModeDto,
   UpdateLanguageDto,
+  UpdatePreferencesDto,
   UpdateProfileDto,
 } from './users.dto';
 import { UsersService } from './users.service';
@@ -33,6 +34,12 @@ export class UsersController {
   @Patch('me/language')
   updateLanguage(@CurrentUser() user: AuthUser, @Body() dto: UpdateLanguageDto) {
     return this.users.updateLanguage(user.id, dto.locale);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/preferences')
+  updatePreferences(@CurrentUser() user: AuthUser, @Body() dto: UpdatePreferencesDto) {
+    return this.users.updatePreferences(user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)

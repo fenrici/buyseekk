@@ -3,6 +3,8 @@ import { Locale, OfferStatus, RatingType, SellerType, UserMode } from '@prisma/c
 import {
   canEnterMode,
   hasCompletedSellerProfile,
+  mergeNotificationPreferences,
+  parseNotificationPreferences,
   parseSellerFiltersJson,
   roleAfterEnablingSeller,
 } from '@buyseekk/shared';
@@ -10,7 +12,7 @@ import { validateImageUrls } from '../common/utils/image-urls';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { LastSearchFiltersDto, SellerProfileDto, UpdateProfileDto } from './users.dto';
+import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto } from './users.dto';
 
 const PUBLIC_PROFILE_SELECT = {
   id: true,
@@ -120,6 +122,37 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { locale },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  async updatePreferences(userId: string, dto: UpdatePreferencesDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    assertAccountActive(user);
+
+    const data: {
+      preferredMode?: UserMode;
+      notificationPreferences?: ReturnType<typeof mergeNotificationPreferences>;
+    } = {};
+
+    if (dto.preferredMode !== undefined) {
+      if (!canEnterMode(dto.preferredMode, user)) {
+        throw new BadRequestException('Necesitás completar tu perfil de vendedor');
+      }
+      data.preferredMode = dto.preferredMode;
+    }
+
+    if (dto.notificationPreferences) {
+      const current = parseNotificationPreferences(user.notificationPreferences);
+      data.notificationPreferences = mergeNotificationPreferences(current, dto.notificationPreferences);
+    }
+
+    if (!Object.keys(data).length) return this.toSafeUser(user);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
     });
     return this.toSafeUser(updated);
   }

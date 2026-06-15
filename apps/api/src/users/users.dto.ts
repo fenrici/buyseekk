@@ -1,5 +1,7 @@
-import { IsEnum, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Locale, RequestCategory, SellerType, UserMode } from '@prisma/client';
+import { NotificationPreferenceKey } from '@buyseekk/shared';
 
 export class UpdateLanguageDto {
   @IsEnum(Locale)
@@ -65,4 +67,37 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(500)
   avatarUrl?: string;
+}
+
+class NotificationPreferencesPatchDto {
+  @IsOptional()
+  @IsBoolean()
+  matchingRequests?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  newOffers?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  newMessages?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requestExpiring?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requestInactive?: boolean;
+}
+
+export class UpdatePreferencesDto {
+  @IsOptional()
+  @IsEnum(UserMode)
+  preferredMode?: UserMode;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NotificationPreferencesPatchDto)
+  notificationPreferences?: Partial<Record<NotificationPreferenceKey, boolean>>;
 }

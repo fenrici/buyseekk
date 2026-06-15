@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Country, Currency, Locale, SecurityEvent, User, UserMode, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { defaultCurrencyForCountry, defaultLocaleForCountry } from '@buyseekk/shared';
+import { defaultCurrencyForCountry, defaultLocaleForCountry, canEnterMode } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ForgotPasswordDto,
@@ -190,8 +190,17 @@ export class AuthService {
       userAgent: ctx.userAgent,
     });
 
-    const tokens = await this.issueTokens(user);
-    return { user: this.toPublicUser(user), ...tokens };
+    let sessionUser = user;
+    const preferredMode = user.preferredMode ?? user.activeMode;
+    if (canEnterMode(preferredMode, user) && user.activeMode !== preferredMode) {
+      sessionUser = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { activeMode: preferredMode },
+      });
+    }
+
+    const tokens = await this.issueTokens(sessionUser);
+    return { user: this.toPublicUser(sessionUser), ...tokens };
   }
 
   async refresh(dto: RefreshTokenDto, ctx: SecurityContext = {}) {
