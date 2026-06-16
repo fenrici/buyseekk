@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { MAX_UPLOAD_BYTES } from '@buyseekk/shared';
-import fileType from 'file-type';
+import { fromBuffer } from 'file-type';
 import { extname } from 'path';
 
 const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -48,7 +48,7 @@ export async function assertValidImageUpload(
     );
   }
 
-  const detected = await fileType.fromBuffer(file.buffer);
+  const detected = await fromBuffer(file.buffer);
   if (!detected || !ALLOWED_MIME.has(detected.mime)) {
     throw new BadRequestException(
       'El contenido del archivo no es una imagen JPG, PNG o WebP válida',
