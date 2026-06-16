@@ -25,7 +25,7 @@ export class UploadsController {
   @UseFilters(MulterExceptionFilter)
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File) {
-    const { ext, mime } = await assertValidImageUpload(file);
+    const { ext, mime } = assertValidImageUpload(file);
     const url = await this.storage.upload(file.buffer, ext, mime);
     return { url };
   }
