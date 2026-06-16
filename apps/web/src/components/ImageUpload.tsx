@@ -4,10 +4,10 @@ import { useRef, useState } from 'react';
 import { getImageUrl, uploadImage } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 
-import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
+import { MAX_IMAGES_PER_ENTITY, MAX_UPLOAD_BYTES } from '@buyseekk/shared';
 
 const MAX_IMAGES = MAX_IMAGES_PER_ENTITY;
-const MAX_MB = 10;
+const MAX_MB = MAX_UPLOAD_BYTES / (1024 * 1024);
 
 type Props = {
   label: string;

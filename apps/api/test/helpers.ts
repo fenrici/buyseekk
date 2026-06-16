@@ -5,6 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
+import { registerMulterErrorHandler } from '../src/uploads/multer-exception.filter';
 import { hashToken } from '../src/auth/token.util';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -20,6 +21,7 @@ export async function createTestApp(): Promise<INestApplication<App>> {
   const app = moduleRef.createNestApplication();
   configureApp(app);
   await app.init();
+  registerMulterErrorHandler(app);
   return app;
 }
 

@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { configureApp } from './bootstrap';
 import { configureWebSocket } from './chats/configure-websocket';
+import { registerMulterErrorHandler } from './uploads/multer-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -16,6 +17,8 @@ async function bootstrap() {
     }),
   );
   configureApp(app);
+  await app.init();
+  registerMulterErrorHandler(app);
 
   const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
     .split(',')
@@ -25,7 +28,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port, '0.0.0.0');
-  console.log(`Buyseekk API running on port ${port} (/api)`);
+  console.log(`Buyseek API running on port ${port} (/api)`);
 }
 
 bootstrap();

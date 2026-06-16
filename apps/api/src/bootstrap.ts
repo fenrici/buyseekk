@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { ThrottleExceptionFilter } from './common/filters/throttle-exception.filter';
+import { MulterExceptionFilter } from './uploads/multer-exception.filter';
 import { STORAGE_PROVIDER } from './storage/storage.interface';
 
 export function configureApp(app: INestApplication) {
@@ -15,7 +16,11 @@ export function configureApp(app: INestApplication) {
     expressApp.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/api/uploads/' });
   }
 
-  app.useGlobalFilters(new PrismaExceptionFilter(), new ThrottleExceptionFilter());
+  app.useGlobalFilters(
+    new PrismaExceptionFilter(),
+    new ThrottleExceptionFilter(),
+    new MulterExceptionFilter(),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

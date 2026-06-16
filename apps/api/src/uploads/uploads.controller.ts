@@ -1,18 +1,19 @@
 import {
-  BadRequestException,
   Controller,
   Inject,
   Post,
   UploadedFile,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
-import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { STORAGE_SERVICE, StorageService } from '../storage/storage.interface';
+import { MulterExceptionFilter } from './multer-exception.filter';
+import { assertValidImageUpload } from './uploads.validation';
 
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
@@ -21,11 +22,11 @@ export class UploadsController {
 
   @Throttle({ default: THROTTLE_LIMITS.upload })
   @Post()
+  @UseFilters(MulterExceptionFilter)
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File) {
-    if (!file?.buffer?.length) throw new BadRequestException('No se recibió ninguna imagen');
-    const ext = extname(file.originalname).toLowerCase();
-    const url = await this.storage.upload(file.buffer, ext, file.mimetype);
+    const { ext, mime } = await assertValidImageUpload(file);
+    const url = await this.storage.upload(file.buffer, ext, mime);
     return { url };
   }
 }

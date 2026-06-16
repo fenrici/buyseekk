@@ -4,7 +4,7 @@ export const MAX_OFFERS_PER_HOUR = 8;
 /** Ventana (días) para detectar solicitudes u ofertas con texto duplicado. */
 export const SPAM_DUPLICATE_DAYS = 7;
 export const MAX_IMAGES_PER_ENTITY = 5;
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
 

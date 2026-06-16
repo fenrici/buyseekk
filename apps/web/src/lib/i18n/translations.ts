@@ -60,7 +60,7 @@ export const es = {
     ctaSeller: 'Quiero vender',
     exploreLink: 'Explorá las solicitudes sin registrarte →',
     chipLine: 'Autos · Inmuebles · Barcos',
-    chipLineUS: 'Compradores en Miami · Concesionarios en Florida · Inmobiliarias en Miami Beach',
+    chipLineUS: 'Autos · Inmuebles',
     flowStep1: 'Publicás',
     flowStep2: 'Recibís ofertas',
     flowStep3: 'Coordinás',
@@ -83,11 +83,13 @@ export const es = {
     previewLocation: 'Miami, FL',
     previewBuyer: 'Carlos M.',
     welcomeTitle: 'Publicá lo que buscás',
-    welcomeSubtitle: 'Recibí ofertas de vendedores interesados.',
-    welcomeSubtitleUS: 'Compradores en Miami. Concesionarios en Florida. Inmobiliarias en Miami Beach.',
+    welcomeSubtitle:
+      'Los compradores publican solicitudes. Los vendedores compiten por ofrecerte la mejor opción.',
+    welcomeSubtitleUS:
+      'Los compradores publican solicitudes. Los vendedores compiten por ofrecerte la mejor opción.',
     welcomeLogin: 'Iniciar sesión',
     welcomeRegister: 'Crear cuenta',
-    welcomeGuest: 'Explorar sin cuenta',
+    welcomeGuest: 'Explorar solicitudes',
   },
   guest: {
     ctaTitle: 'Creá tu cuenta gratis',
@@ -134,9 +136,9 @@ export const es = {
   },
   auth: {
     loginTitle: 'Iniciar sesión',
-    loginPageTitle: 'Entrá a Buyseekk',
+    loginPageTitle: 'Entrá a Buyseek',
     loginPageSubtitle: 'Accedé a tus búsquedas, propuestas y conversaciones.',
-    loginPageSideTitle: 'Entrá a BuySeek',
+    loginPageSideTitle: 'Entrá a Buyseek',
     loginPageSideSubtitle: 'Publicá búsquedas, recibí propuestas y coordiná por chat.',
     loginSellerHint: 'Accedé como vendedor para ver solicitudes y enviar ofertas',
     loginBuyerHint: 'Accedé como comprador para publicar y recibir ofertas',
@@ -459,7 +461,7 @@ export const es = {
     priceMax: 'El precio supera el máximo permitido ({max}).',
     titleRequired: 'Indicá qué estás buscando.',
     requirementsMin: 'Los requisitos deben tener al menos 10 caracteres.',
-    noPhone: 'No podés incluir teléfonos ni datos de contacto. Una vez aceptada una oferta, vas a poder intercambiar números por el chat de BuySeek.',
+    noPhone: 'No podés incluir teléfonos ni datos de contacto. Una vez aceptada una oferta, vas a poder intercambiar números por el chat de Buyseek.',
     noLinks: 'No podés incluir enlaces web en la publicación.',
     noEmail: 'No podés incluir direcciones de email en la publicación.',
     noSocial: 'No podés incluir redes sociales ni usuarios @ en la publicación.',
@@ -802,7 +804,7 @@ export const es = {
     },
   },
   cookies: {
-    banner: 'Usamos cookies esenciales y, con tu consentimiento, analítica para mejorar Buyseekk.',
+    banner: 'Usamos cookies esenciales y, con tu consentimiento, analítica para mejorar Buyseek.',
     learnMore: 'Más información',
     accept: 'Aceptar',
   },
@@ -817,7 +819,7 @@ export const es = {
   },
   help: {
     title: 'Ayuda',
-    intro: 'Respuestas rápidas y contacto con el equipo de Buyseekk.',
+    intro: 'Respuestas rápidas y contacto con el equipo de Buyseek.',
     supportEmailLabel: 'Email de soporte:',
     contact: 'Contactar soporte',
     report: 'Reportar un problema',
@@ -838,6 +840,10 @@ export const es = {
   },
   footer: {
     aria: 'Enlaces legales y ayuda',
+    termsShort: 'Términos',
+    privacyShort: 'Privacidad',
+    cookiesShort: 'Cookies',
+    helpShort: 'Ayuda',
   },
   onboarding: {
     buyerTitle: 'Bienvenido a Buyseek',
@@ -928,7 +934,7 @@ export const en: DeepString<typeof es> = {
     ctaSeller: 'I want to sell',
     exploreLink: 'Browse live requests without an account →',
     chipLine: 'Cars · Real estate · Boats',
-    chipLineUS: 'Buyers in Miami · Dealerships in Florida · Real estate in Miami Beach',
+    chipLineUS: 'Cars · Real estate',
     flowStep1: 'You post',
     flowStep2: 'Get offers',
     flowStep3: 'Coordinate',
@@ -951,11 +957,13 @@ export const en: DeepString<typeof es> = {
     previewLocation: 'Miami, FL',
     previewBuyer: 'Carlos M.',
     welcomeTitle: "Post what you're looking for",
-    welcomeSubtitle: 'Get offers from interested sellers.',
-    welcomeSubtitleUS: 'Buyers in Miami. Dealerships in Florida. Real estate agencies in Miami Beach.',
+    welcomeSubtitle:
+      'Buyers publish requests. Sellers compete to offer the best deal.',
+    welcomeSubtitleUS:
+      'Buyers publish requests. Sellers compete to offer the best deal.',
     welcomeLogin: 'Log in',
     welcomeRegister: 'Create account',
-    welcomeGuest: 'Explore without an account',
+    welcomeGuest: 'Browse requests',
   },
   guest: {
     ctaTitle: 'Create your free account',
@@ -1001,9 +1009,9 @@ export const en: DeepString<typeof es> = {
   },
   auth: {
     loginTitle: 'Log in',
-    loginPageTitle: 'Log in to Buyseekk',
+    loginPageTitle: 'Log in to Buyseek',
     loginPageSubtitle: 'Access your searches, proposals, and conversations.',
-    loginPageSideTitle: 'Log in to BuySeek',
+    loginPageSideTitle: 'Log in to Buyseek',
     loginPageSideSubtitle: 'Post searches, receive proposals, and coordinate by chat.',
     loginSellerHint: 'Log in as a seller to browse requests and send offers',
     loginBuyerHint: 'Log in as a buyer to post and receive offers',
@@ -1326,7 +1334,7 @@ export const en: DeepString<typeof es> = {
     priceMax: 'Price exceeds the maximum allowed ({max}).',
     titleRequired: 'Describe what you are looking for.',
     requirementsMin: 'Requirements must be at least 10 characters.',
-    noPhone: 'Phone numbers and contact details are not allowed here. Once an offer is accepted, you can exchange numbers through BuySeek chat.',
+    noPhone: 'Phone numbers and contact details are not allowed here. Once an offer is accepted, you can exchange numbers through Buyseek chat.',
     noLinks: 'Web links are not allowed in posts.',
     noEmail: 'Email addresses are not allowed in posts.',
     noSocial: 'Social media handles and @ usernames are not allowed in posts.',
@@ -1664,7 +1672,7 @@ export const en: DeepString<typeof es> = {
     },
   },
   cookies: {
-    banner: 'We use essential cookies and, with your consent, analytics to improve Buyseekk.',
+    banner: 'We use essential cookies and, with your consent, analytics to improve Buyseek.',
     learnMore: 'Learn more',
     accept: 'Accept',
   },
@@ -1679,7 +1687,7 @@ export const en: DeepString<typeof es> = {
   },
   help: {
     title: 'Help',
-    intro: 'Quick answers and contact with the Buyseekk team.',
+    intro: 'Quick answers and contact with the Buyseek team.',
     supportEmailLabel: 'Support email:',
     contact: 'Contact support',
     report: 'Report a problem',
@@ -1700,6 +1708,10 @@ export const en: DeepString<typeof es> = {
   },
   footer: {
     aria: 'Legal and help links',
+    termsShort: 'Terms',
+    privacyShort: 'Privacy',
+    cookiesShort: 'Cookies',
+    helpShort: 'Help',
   },
   onboarding: {
     buyerTitle: 'Welcome to Buyseek',

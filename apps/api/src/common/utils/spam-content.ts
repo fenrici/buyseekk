@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 const ISSUE_MESSAGES: Record<SpamIssue, (field: string) => string> = {
   phone: (field) =>
-    `No podés incluir teléfonos ni datos de contacto en ${field}. Una vez aceptada una oferta, vas a poder intercambiar números por el chat de BuySeek.`,
+    `No podés incluir teléfonos ni datos de contacto en ${field}. Una vez aceptada una oferta, vas a poder intercambiar números por el chat de Buyseek.`,
   link: (field) => `No podés incluir enlaces en ${field}.`,
   email: (field) => `No podés incluir emails en ${field}.`,
   social: (field) => `No podés incluir redes sociales ni usuarios @ en ${field}.`,

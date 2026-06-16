@@ -353,6 +353,7 @@ model Request {
 
   @@index([userId, active])
   @@index([country, active, lastBuyerActivityAt])
+  @@index([country, active, category, lastBuyerActivityAt])
   @@index([category, active])
   @@index([category, country, carBrand, carModel])
   @@index([category, country, location, zone])
@@ -385,6 +386,7 @@ model Offer {
 
   @@unique([requestId, sellerId])
   @@index([sellerId])
+  @@index([sellerId, dismissedBySeller, createdAt])
   @@index([requestId, status])
 }
 
@@ -404,7 +406,7 @@ model Message {
   text      String
   createdAt DateTime @default(now())
 
-  @@index([chatId])
+  @@index([chatId, createdAt])
 }
 
 model Rating {

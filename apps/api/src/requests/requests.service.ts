@@ -39,7 +39,9 @@ import { ListRequestsQueryDto } from './list-requests.query.dto';
 import { MineRequestsQueryDto } from './mine-requests.query.dto';
 import {
   archiveCutoff,
+  confirmationCutoff,
   effectiveRequestStatus,
+  inactiveAfterConfirmCutoff,
   isVisibleToSellers,
   sortRequestsForSeller,
   toLifecycleInput,
@@ -130,6 +132,58 @@ export class RequestsService {
           : null,
       };
     });
+  }
+
+  /**
+   * Pagina IDs del marketplace vendedor en DB respetando prioridad:
+   * activas/negociando (actividad reciente) antes que inactivas, luego por fecha.
+   */
+  private async paginateSellerMarketplaceIds(
+    where: Record<string, unknown>,
+    skip: number,
+    limit: number,
+    now = Date.now(),
+  ): Promise<string[]> {
+    const confirmation = confirmationCutoff(now);
+    const inactive = inactiveAfterConfirmCutoff(now);
+    const archive = archiveCutoff(now);
+
+    const tier0Where = { ...where, lastBuyerActivityAt: { gte: confirmation } };
+    const tier1Where = { ...where, lastBuyerActivityAt: { lt: inactive, gte: archive } };
+
+    const tier0Count = await this.prisma.request.count({ where: tier0Where });
+
+    if (skip < tier0Count) {
+      const take0 = Math.min(limit, tier0Count - skip);
+      const tier0 = await this.prisma.request.findMany({
+        where: tier0Where,
+        select: { id: true },
+        orderBy: { lastBuyerActivityAt: 'desc' },
+        skip,
+        take: take0,
+      });
+      const ids = tier0.map((r) => r.id);
+      const remaining = limit - ids.length;
+      if (remaining > 0) {
+        const tier1 = await this.prisma.request.findMany({
+          where: tier1Where,
+          select: { id: true },
+          orderBy: { lastBuyerActivityAt: 'desc' },
+          take: remaining,
+        });
+        ids.push(...tier1.map((r) => r.id));
+      }
+      return ids;
+    }
+
+    const tier1 = await this.prisma.request.findMany({
+      where: tier1Where,
+      select: { id: true },
+      orderBy: { lastBuyerActivityAt: 'desc' },
+      skip: skip - tier0Count,
+      take: limit,
+    });
+    return tier1.map((r) => r.id);
   }
 
   async formatManyForSeller(
@@ -394,21 +448,10 @@ export class RequestsService {
 
     const { page, limit, skip } = parsePagination(filters.page, filters.limit);
 
-    const [allMatching, total] = await Promise.all([
-      this.prisma.request.findMany({
-        where,
-        select: {
-          id: true,
-          status: true,
-          lastBuyerActivityAt: true,
-          pausedAt: true,
-        },
-      }),
+    const [total, pageIds] = await Promise.all([
       this.prisma.request.count({ where }),
+      this.paginateSellerMarketplaceIds(where, skip, limit),
     ]);
-
-    const sortedIds = sortRequestsForSeller(allMatching).map((r) => r.id);
-    const pageIds = sortedIds.slice(skip, skip + limit);
 
     const items =
       pageIds.length === 0

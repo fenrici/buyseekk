@@ -31,6 +31,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/prisma apps/api/prisma
+COPY scripts /app/scripts
+RUN chmod +x /app/scripts/migrate-deploy.sh
 
 WORKDIR /app
 RUN npm rebuild bcrypt

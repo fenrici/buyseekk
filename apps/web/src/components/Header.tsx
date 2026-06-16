@@ -115,7 +115,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
             href={appHome}
             className={`portal-logo ${user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''}`}
           >
-            <span className="portal-logo-text">BuySeek</span>
+            <span className="portal-logo-text">Buyseek</span>
           </Link>
         ) : (
           <Link
@@ -124,7 +124,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
               user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''
             }`}
           >
-            <span className="text-[var(--primary)]">⇄</span> BuySeek
+            <span className="text-[var(--primary)]">⇄</span> Buyseek
           </Link>
         )}
 

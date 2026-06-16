@@ -26,7 +26,7 @@ export class HealthController {
   @Get()
   root() {
     return {
-      name: 'Buyseekk API',
+      name: 'Buyseek API',
       status: 'ok',
       version: '0.1.0',
       docs: 'Usá /api/auth, /api/requests, /api/offers',

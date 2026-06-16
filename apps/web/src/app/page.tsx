@@ -33,51 +33,59 @@ export default function HomePage() {
     return <PortalLoadingScreen />;
   }
 
-  if (showSplash) {
-    return <SplashScreen onDone={finishSplash} duration={2000} />;
-  }
-
   return (
-    <main className="portal">
-      <section className="portal-screen" aria-label="Buyseek">
-        <div className="portal-bg" aria-hidden="true" />
-        <div className="portal-overlay" aria-hidden="true" />
-        <div className="portal-glow" aria-hidden="true" />
+    <>
+      <main className="portal">
+        <section className="portal-screen" aria-label="Buyseek">
+          <div className="portal-bg" aria-hidden="true" />
+          <div className="portal-overlay" aria-hidden="true" />
+          <div className="portal-glow" aria-hidden="true" />
 
-        <PublicHeader activeRoute="/" />
+          <PublicHeader activeRoute="/" />
 
-        <div className="portal-content">
-          <h1 className="portal-title portal-animate" style={{ animationDelay: '0.05s' }}>
-            {t('home.welcomeTitle')}
-          </h1>
+          <div className="portal-content">
+            <h1 className="portal-title portal-animate" style={{ animationDelay: '0.05s' }}>
+              {t('home.welcomeTitle')}
+            </h1>
 
-          <p className="portal-subtitle portal-animate" style={{ animationDelay: '0.14s' }}>
-            {isUsLaunch() ? t('home.welcomeSubtitleUS') : t('home.welcomeSubtitle')}
-          </p>
+            <p className="portal-subtitle portal-animate" style={{ animationDelay: '0.14s' }}>
+              {t('home.welcomeSubtitle')}
+            </p>
 
-          <div className="portal-ctas portal-animate" style={{ animationDelay: '0.22s' }}>
-            <Link href="/login" className="portal-cta portal-cta-primary">
-              {t('home.welcomeLogin')}
+            <div className="portal-ctas portal-animate" style={{ animationDelay: '0.22s' }}>
+              <Link href="/login" className="portal-cta portal-cta-primary">
+                {t('home.welcomeLogin')}
+              </Link>
+              <Link href="/register" className="portal-cta portal-cta-secondary">
+                {t('home.welcomeRegister')}
+              </Link>
+            </div>
+
+            <Link
+              href="/marketplace"
+              className="portal-explore-link portal-animate"
+              style={{ animationDelay: '0.3s' }}
+            >
+              <span>{t('home.welcomeGuest')}</span>
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden className="portal-explore-link__icon">
+                <path
+                  d="M4 10h12M12 6l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </Link>
-            <Link href="/register" className="portal-cta portal-cta-secondary">
-              {t('home.welcomeRegister')}
-            </Link>
+
+            <p className="portal-chips portal-animate" style={{ animationDelay: '0.36s' }}>
+              {isUsLaunch() ? t('home.chipLineUS') : t('home.chipLine')}
+            </p>
           </div>
-
-          <Link
-            href="/marketplace"
-            className="portal-explore-link portal-animate"
-            style={{ animationDelay: '0.3s' }}
-          >
-            {t('home.welcomeGuest')}
-          </Link>
-
-          <p className="portal-chips portal-animate" style={{ animationDelay: '0.36s' }}>
-            {isUsLaunch() ? t('home.chipLineUS') : t('home.chipLine')}
-          </p>
-        </div>
-        <SiteFooter />
-      </section>
-    </main>
+          <SiteFooter compact />
+        </section>
+      </main>
+      {showSplash && <SplashScreen onDone={finishSplash} duration={2000} />}
+    </>
   );
 }

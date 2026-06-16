@@ -24,7 +24,7 @@ export default function GlobalError({
           <div style={{ maxWidth: '28rem', textAlign: 'center' }}>
             <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Something went wrong</h1>
             <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-              Buyseekk hit an unexpected error. Please try again.
+              Buyseek hit an unexpected error. Please try again.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
