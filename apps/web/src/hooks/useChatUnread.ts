@@ -24,7 +24,7 @@ export function useChatUnread(user: User | null) {
     return api<ChatUnreadState>('/chats/unread-summary')
       .then(setUnread)
       .catch(() => setUnread(EMPTY));
-  }, [user]);
+  }, [user?.id, user?.activeMode]);
 
   useEffect(() => {
     if (!user || user.role === 'ADMIN') {
@@ -39,8 +39,8 @@ export function useChatUnread(user: User | null) {
     socket.auth = { token: getToken() };
     if (!socket.connected) socket.connect();
 
-    const onUnread = (payload: ChatUnreadState) => {
-      if (!cancelled) setUnread(payload);
+    const onUnread = () => {
+      if (!cancelled) void refresh();
     };
 
     socket.on('unread-update', onUnread);
@@ -49,7 +49,7 @@ export function useChatUnread(user: User | null) {
       cancelled = true;
       socket.off('unread-update', onUnread);
     };
-  }, [user?.id, refresh]);
+  }, [user?.id, user?.activeMode, refresh]);
 
   return { ...unread, refresh };
 }

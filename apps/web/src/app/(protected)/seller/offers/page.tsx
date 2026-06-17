@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, normalizePaginated } from '@/lib/api';
@@ -14,22 +14,55 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
 
 type Tab = 'sent' | 'saved';
+type SentStatusFilter = 'all' | 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+
+const SENT_STATUS_FILTERS = ['PENDIENTE', 'ACEPTADA', 'RECHAZADA'] as const;
+
+function parseSentStatusFilter(value: string | null): SentStatusFilter {
+  if (value && SENT_STATUS_FILTERS.includes(value as (typeof SENT_STATUS_FILTERS)[number])) {
+    return value as SentStatusFilter;
+  }
+  return 'all';
+}
 
 function SentOffersTab() {
   const { user } = useAuth();
   const t = useT();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const statusFilter = parseSentStatusFilter(searchParams.get('status'));
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  const scrollOffersToTop = () => {
+    listTopRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  };
+
+  const setStatusFilter = (next: SentStatusFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'all') params.delete('status');
+    else params.set('status', next);
+    const query = params.toString();
+    router.replace(query ? `/seller/offers?${query}` : '/seller/offers');
+    setPage(1);
+  };
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
     setError('');
     setLoading(true);
-    api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/sent?page=${page}`)
+    const statusQuery = statusFilter === 'all' ? '' : `&status=${statusFilter}`;
+    api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/sent?page=${page}${statusQuery}`)
       .then((raw) => {
         if (cancelled) return;
         const data = normalizePaginated(raw);
@@ -40,16 +73,51 @@ function SentOffersTab() {
         if (!cancelled) setError(e instanceof Error ? e.message : t('common.error'));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          scrollOffersToTop();
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [user?.id, page, t]);
+  }, [user?.id, page, statusFilter, t]);
+
+  const emptyCopy =
+    statusFilter === 'PENDIENTE'
+      ? { title: t('seller.noSentPending'), hint: t('seller.noSentPendingHint') }
+      : statusFilter === 'ACEPTADA'
+        ? { title: t('seller.noSentAccepted'), hint: t('seller.noSentAcceptedHint') }
+        : statusFilter === 'RECHAZADA'
+          ? { title: t('seller.noSentRejected'), hint: t('seller.noSentRejectedHint') }
+          : { title: t('seller.noSent'), hint: t('seller.noSentHint') };
+
+  const statusFilters: { id: SentStatusFilter; label: string }[] = [
+    { id: 'all', label: t('seller.sentFilterAll') },
+    { id: 'PENDIENTE', label: t('seller.sentFilterPending') },
+    { id: 'ACEPTADA', label: t('seller.sentFilterAccepted') },
+    { id: 'RECHAZADA', label: t('seller.sentFilterRejected') },
+  ];
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div ref={listTopRef} className="mx-auto max-w-4xl scroll-mt-24">
       <p className="text-sm text-slate-500">{t('seller.sentSubtitle')}</p>
+
+      <div className="panel-tabs mt-4" role="tablist" aria-label={t('seller.sentTitle')}>
+        {statusFilters.map((filter) => (
+          <button
+            key={filter.id}
+            type="button"
+            role="tab"
+            className={`panel-tab ${statusFilter === filter.id ? 'active' : ''}`}
+            onClick={() => setStatusFilter(filter.id)}
+            aria-selected={statusFilter === filter.id}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       {meta.total > 0 && (
         <p className="mt-3 text-sm text-slate-400">{t('seller.sentCount', { total: String(meta.total) })}</p>
       )}
@@ -61,11 +129,13 @@ function SentOffersTab() {
           <>
             {offers.length === 0 && !error && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
-                <h3 className="text-lg font-bold text-white">{t('seller.noSent')}</h3>
-                <p className="mt-2 text-sm text-slate-500">{t('seller.noSentHint')}</p>
-                <Link href="/seller" className="btn btn-accent mt-5 inline-flex">
-                  {t('seller.noSentCta')}
-                </Link>
+                <h3 className="text-lg font-bold text-white">{emptyCopy.title}</h3>
+                <p className="mt-2 text-sm text-slate-500">{emptyCopy.hint}</p>
+                {statusFilter === 'all' && (
+                  <Link href="/seller" className="btn btn-accent mt-5 inline-flex">
+                    {t('seller.noSentCta')}
+                  </Link>
+                )}
               </div>
             )}
             {offers.map((o) => (
@@ -83,7 +153,11 @@ function SentOffersTab() {
                 page={meta.page}
                 totalPages={meta.totalPages}
                 total={meta.total}
-                onPageChange={setPage}
+                onPageChange={(nextPage) => {
+                  setPage(nextPage);
+                  scrollOffersToTop();
+                }}
+                scrollToTopOnChange={false}
                 itemLabel={t('seller.sentTitle').toLowerCase()}
               />
             )}

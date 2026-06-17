@@ -18,12 +18,12 @@ export class ChatsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {
-    return this.chats.list(user.id, query.page, query.limit);
+    return this.chats.list(user.id, user.activeMode, query.page, query.limit);
   }
 
   @Get('unread-summary')
   unreadSummary(@CurrentUser() user: AuthUser) {
-    return this.chats.getUnreadSummary(user.id);
+    return this.chats.getUnreadSummary(user.id, user.activeMode);
   }
 
   @Get(':id')

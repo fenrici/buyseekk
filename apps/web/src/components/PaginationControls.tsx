@@ -8,11 +8,28 @@ type Props = {
   total: number;
   onPageChange: (page: number) => void;
   itemLabel?: string;
+  scrollToTopOnChange?: boolean;
 };
 
-export function PaginationControls({ page, totalPages, total, onPageChange, itemLabel }: Props) {
+function scrollListToTop() {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+}
+
+export function PaginationControls({
+  page,
+  totalPages,
+  total,
+  onPageChange,
+  itemLabel,
+  scrollToTopOnChange = true,
+}: Props) {
   const t = useT();
   if (totalPages <= 1) return null;
+
+  const changePage = (nextPage: number) => {
+    onPageChange(nextPage);
+    if (scrollToTopOnChange) scrollListToTop();
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
@@ -28,7 +45,7 @@ export function PaginationControls({ page, totalPages, total, onPageChange, item
         <button
           type="button"
           disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
+          onClick={() => changePage(page - 1)}
           className="btn btn-ghost border disabled:opacity-40"
         >
           {t('common.prevPage')}
@@ -36,7 +53,7 @@ export function PaginationControls({ page, totalPages, total, onPageChange, item
         <button
           type="button"
           disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
+          onClick={() => changePage(page + 1)}
           className="btn btn-ghost border disabled:opacity-40"
         >
           {t('common.nextPage')}

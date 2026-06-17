@@ -5,7 +5,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus } from '@prisma/client';
+import { OfferStatus, RequestStatus, UserMode } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
@@ -60,6 +60,15 @@ export class ChatsService {
     if (chat.offer.request.userId === userId) return chat.offer.sellerId;
     if (chat.offer.sellerId === userId) return chat.offer.request.userId;
     throw new ForbiddenException();
+  }
+
+  /** Chats visibles según el modo activo: comprador vs vendedor en cuentas BOTH. */
+  private chatsWhereForMode(userId: string, activeMode: UserMode) {
+    const accepted = { status: OfferStatus.ACEPTADA };
+    if (activeMode === UserMode.SELLER) {
+      return { offer: { ...accepted, sellerId: userId } };
+    }
+    return { offer: { ...accepted, request: { userId } } };
   }
 
   private assertParticipant(
@@ -126,14 +135,9 @@ export class ChatsService {
     return state?.lastReadAt ?? null;
   }
 
-  async getUnreadSummary(userId: string) {
+  async getUnreadSummary(userId: string, activeMode: UserMode) {
     const chats = await this.prisma.chat.findMany({
-      where: {
-        offer: {
-          status: OfferStatus.ACEPTADA,
-          OR: [{ sellerId: userId }, { request: { userId } }],
-        },
-      },
+      where: this.chatsWhereForMode(userId, activeMode),
       select: {
         id: true,
         offer: { select: { sellerId: true, request: { select: { userId: true } } } },
@@ -159,19 +163,19 @@ export class ChatsService {
   }
 
   async emitUnreadToUser(userId: string) {
-    const summary = await this.getUnreadSummary(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeMode: true },
+    });
+    if (!user) return;
+    const summary = await this.getUnreadSummary(userId, user.activeMode);
     this.chatGateway.emitUnreadToUser(userId, summary);
   }
 
-  async list(userId: string, page?: number, limit?: number) {
+  async list(userId: string, activeMode: UserMode, page?: number, limit?: number) {
     const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
 
-    const where = {
-      offer: {
-        status: OfferStatus.ACEPTADA,
-        OR: [{ sellerId: userId }, { request: { userId } }],
-      },
-    };
+    const where = this.chatsWhereForMode(userId, activeMode);
 
     const [chats, total] = await Promise.all([
       this.prisma.chat.findMany({

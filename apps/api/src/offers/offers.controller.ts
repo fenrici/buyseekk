@@ -8,6 +8,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthUser } from '../common/types/auth-user';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateOfferDto } from './offers.dto';
+import { SentOffersQueryDto } from './sent-offers.query.dto';
 import { OffersService } from './offers.service';
 
 @Controller('offers')
@@ -37,8 +38,8 @@ export class OffersController {
 
   @Get('sent')
   @Roles('seller')
-  sent(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {
-    return this.offers.sent(user.id, query.page, query.limit);
+  sent(@CurrentUser() user: AuthUser, @Query() query: SentOffersQueryDto) {
+    return this.offers.sent(user.id, query.page, query.limit, query.status);
   }
 
   @Get(':id/comparison')

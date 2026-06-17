@@ -208,10 +208,14 @@ export class OffersService {
     return { highlights: pickOfferHighlights(forHighlight) };
   }
 
-  async sent(sellerId: string, page?: number, limit?: number) {
+  async sent(sellerId: string, page?: number, limit?: number, status?: OfferStatus) {
     const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
 
-    const where = { sellerId, dismissedBySeller: false };
+    const where = {
+      sellerId,
+      dismissedBySeller: false,
+      ...(status ? { status } : {}),
+    };
 
     const [offers, total] = await Promise.all([
       this.prisma.offer.findMany({
