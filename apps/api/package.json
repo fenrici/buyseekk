@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:seed:miami": "ts-node --transpile-only prisma/seed-miami-autos.ts",
     "benchmark:marketplace": "ts-node --transpile-only scripts/benchmark-marketplace.ts",
     "postinstall": "prisma generate"
   },

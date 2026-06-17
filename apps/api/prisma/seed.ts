@@ -12,6 +12,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { MIAMI_AUTO_DEMO_REQUESTS } from './miami-auto-demo-data';
 
 if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
   console.error(
@@ -604,6 +605,10 @@ async function main() {
   for (const demo of DEMO_REQUESTS) {
     const userId = demo.country === Country.US ? buyerUS.id : buyerAR.id;
     await upsertDemoRequest(userId, demo);
+  }
+
+  for (const demo of MIAMI_AUTO_DEMO_REQUESTS) {
+    await upsertDemoRequest(buyerUS.id, demo);
   }
 
   for (const demo of PENDING_DEMO_REQUESTS) {

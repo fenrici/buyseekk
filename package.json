@@ -17,6 +17,7 @@
     "db:migrate": "npm run prisma:migrate -w @buyseekk/api",
     "db:migrate:deploy": "npm run prisma:migrate:deploy -w @buyseekk/api",
     "db:seed": "npm run prisma:seed -w @buyseekk/api",
+    "db:seed:miami": "npm run prisma:seed:miami -w @buyseekk/api",
     "build": "npm run build -w @buyseekk/shared && npm run build -w @buyseekk/api && npm run build -w @buyseekk/web",
     "test:e2e": "npm run test:e2e -w @buyseekk/api",
     "benchmark:marketplace": "npm run benchmark:marketplace -w @buyseekk/api",
