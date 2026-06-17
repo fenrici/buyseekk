@@ -101,3 +101,10 @@ export class UpdatePreferencesDto {
   @Type(() => NotificationPreferencesPatchDto)
   notificationPreferences?: Partial<Record<NotificationPreferenceKey, boolean>>;
 }
+
+export class UpdateSellerChatSettingsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  defaultAcceptMessage?: string | null;
+}

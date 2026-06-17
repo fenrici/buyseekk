@@ -6967,6 +6967,47 @@ html.chat-viewport-lock body {
   overflow-x: hidden;
 }
 
+.chat-list-item--unread {
+  border-color: rgba(129, 140, 248, 0.45);
+  background: rgba(79, 70, 229, 0.12);
+}
+
+.chat-list-item__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chat-list-item__time {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .chat-list-item__time {
+    display: none;
+  }
+
+  .chat-list-item--unread .chat-list-item__time {
+    display: inline;
+  }
+}
+
+.chat-bubble-mine .chat-bubble-read {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
 .chat-thread__messages {
   flex: 1;
   min-height: 0;

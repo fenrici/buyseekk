@@ -12,7 +12,7 @@ import { validateImageUrls } from '../common/utils/image-urls';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto } from './users.dto';
+import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto, UpdateSellerChatSettingsDto } from './users.dto';
 
 const PUBLIC_PROFILE_SELECT = {
   id: true,
@@ -240,6 +240,30 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { lastSellerFilters: parsed },
+    });
+    return this.toSafeUser(updated);
+  }
+
+  async updateSellerChatSettings(userId: string, dto: UpdateSellerChatSettingsDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    assertAccountActive(user);
+    if (!hasCompletedSellerProfile(user)) {
+      throw new BadRequestException('Todavía no tenés un perfil de vendedor');
+    }
+
+    let defaultAcceptMessage: string | null | undefined;
+    if (dto.defaultAcceptMessage !== undefined) {
+      const trimmed = dto.defaultAcceptMessage?.trim() ?? '';
+      if (trimmed.length > 0 && trimmed.length < 5) {
+        throw new BadRequestException('El mensaje debe tener al menos 5 caracteres');
+      }
+      defaultAcceptMessage = trimmed.length > 0 ? trimmed : null;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { defaultAcceptMessage },
     });
     return this.toSafeUser(updated);
   }

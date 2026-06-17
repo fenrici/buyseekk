@@ -18,6 +18,7 @@ import { ProfileHubMenu } from '@/components/profile/ProfileHubMenu';
 import { ProfileNotificationsSection } from '@/components/profile/ProfileNotificationsSection';
 import { ProfilePlanBillingScreen } from '@/components/profile/ProfilePlanBillingScreen';
 import { ProfilePreferencesSection } from '@/components/profile/ProfilePreferencesSection';
+import { ProfileSellerChatSection } from '@/components/profile/ProfileSellerChatSection';
 import { ProfileSecuritySection } from '@/components/profile/ProfileSecuritySection';
 import { ProfileSubLayout } from '@/components/profile/ProfileSubLayout';
 import { ProfileUsageModeCard } from '@/components/profile/ProfileUsageModeCard';
@@ -26,6 +27,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useModeSwitch } from '@/providers/ModeSwitchProvider';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { logoutSession } from '@/lib/session';
+import { hasSellerProfile } from '@/lib/auth';
 
 function profileFormFromUser(user: User): ProfileFormState {
   return {
@@ -188,6 +190,9 @@ export default function ProfilePage() {
             switching={switching}
             onSwitch={() => switchMode(isSeller ? 'BUYER' : 'SELLER')}
           />
+          {hasSellerProfile(account) && (
+            <ProfileSellerChatSection user={account} onUpdated={setSession} />
+          )}
         </ProfileSubLayout>
       );
       break;

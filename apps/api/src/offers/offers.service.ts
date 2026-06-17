@@ -5,9 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus } from '@prisma/client';
+import { OfferStatus, RequestStatus, Locale } from '@prisma/client';
 import {
   comparePrices,
+  defaultAcceptMessageForLocale,
   parsePagination,
   pickOfferHighlights,
   type OfferForHighlight,
@@ -305,10 +306,16 @@ export class OffersService {
       const updatedOffer = await tx.offer.findUniqueOrThrow({
         where: { id: offerId },
         include: {
-          seller: { select: { id: true, name: true, locale: true } },
+          seller: {
+            select: { id: true, name: true, locale: true, defaultAcceptMessage: true },
+          },
           request: { select: { id: true, title: true } },
         },
       });
+
+      const sellerGreeting =
+        updatedOffer.seller.defaultAcceptMessage?.trim() ||
+        defaultAcceptMessageForLocale(updatedOffer.seller.locale ?? Locale.ES);
 
       const newChat = await tx.chat.create({
         data: {
@@ -321,7 +328,7 @@ export class OffersService {
               },
               {
                 fromRole: 'seller',
-                text: '¡Hola! Gracias por aceptar mi oferta. ¿Cuándo podemos coordinar?',
+                text: sellerGreeting,
               },
             ],
           },

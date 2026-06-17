@@ -1,23 +1,29 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { OfferStatus, RequestStatus } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
-import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
 import { SendMessageDto } from './chats.dto';
+import { ChatGateway } from './chat.gateway';
+
+const EPOCH = new Date(0);
 
 @Injectable()
 export class ChatsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    @Inject(forwardRef(() => ChatGateway))
+    private chatGateway: ChatGateway,
   ) {}
 
   private formatPartner(
@@ -43,6 +49,19 @@ export class ChatsService {
     };
   }
 
+  private partnerRole(myRole: 'buyer' | 'seller') {
+    return myRole === 'buyer' ? 'seller' : 'buyer';
+  }
+
+  private partnerUserId(
+    chat: { offer: { sellerId: string; request: { userId: string } } },
+    userId: string,
+  ) {
+    if (chat.offer.request.userId === userId) return chat.offer.sellerId;
+    if (chat.offer.sellerId === userId) return chat.offer.request.userId;
+    throw new ForbiddenException();
+  }
+
   private assertParticipant(
     chat: {
       offer: {
@@ -59,6 +78,89 @@ export class ChatsService {
     if (chat.offer.request.userId === userId) return 'buyer' as const;
     if (chat.offer.sellerId === userId) return 'seller' as const;
     throw new ForbiddenException();
+  }
+
+  private async getLastReadAt(chatId: string, userId: string): Promise<Date> {
+    const state = await this.prisma.chatReadState.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+      select: { lastReadAt: true },
+    });
+    return state?.lastReadAt ?? EPOCH;
+  }
+
+  async countUnreadForChat(
+    chatId: string,
+    userId: string,
+    myRole: 'buyer' | 'seller',
+    lastReadAt?: Date,
+  ) {
+    const readAt = lastReadAt ?? (await this.getLastReadAt(chatId, userId));
+    return this.prisma.message.count({
+      where: {
+        chatId,
+        createdAt: { gt: readAt },
+        fromRole: this.partnerRole(myRole),
+      },
+    });
+  }
+
+  async markChatRead(chatId: string, userId: string) {
+    const now = new Date();
+    await this.prisma.chatReadState.upsert({
+      where: { chatId_userId: { chatId, userId } },
+      create: { chatId, userId, lastReadAt: now },
+      update: { lastReadAt: now },
+    });
+    return now;
+  }
+
+  async getPartnerLastReadAt(
+    chat: { id: string; offer: { sellerId: string; request: { userId: string } } },
+    userId: string,
+  ) {
+    const partnerId = this.partnerUserId(chat, userId);
+    const state = await this.prisma.chatReadState.findUnique({
+      where: { chatId_userId: { chatId: chat.id, userId: partnerId } },
+      select: { lastReadAt: true },
+    });
+    return state?.lastReadAt ?? null;
+  }
+
+  async getUnreadSummary(userId: string) {
+    const chats = await this.prisma.chat.findMany({
+      where: {
+        offer: {
+          status: OfferStatus.ACEPTADA,
+          OR: [{ sellerId: userId }, { request: { userId } }],
+        },
+      },
+      select: {
+        id: true,
+        offer: { select: { sellerId: true, request: { select: { userId: true } } } },
+      },
+    });
+
+    let totalUnread = 0;
+    const byChatId: Record<string, number> = {};
+
+    await Promise.all(
+      chats.map(async (chat) => {
+        const myRole =
+          chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
+        const unread = await this.countUnreadForChat(chat.id, userId, myRole);
+        if (unread > 0) {
+          byChatId[chat.id] = unread;
+          totalUnread += unread;
+        }
+      }),
+    );
+
+    return { totalUnread, byChatId };
+  }
+
+  async emitUnreadToUser(userId: string) {
+    const summary = await this.getUnreadSummary(userId);
+    this.chatGateway.emitUnreadToUser(userId, summary);
   }
 
   async list(userId: string, page?: number, limit?: number) {
@@ -90,21 +192,36 @@ export class ChatsService {
       this.prisma.chat.count({ where }),
     ]);
 
-    const items = chats.map((chat) => {
-      const myRole =
-        chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
-      const last = chat.messages[0];
-      return {
-        id: chat.id,
-        offerId: chat.offerId,
-        requestTitle: chat.offer.requestTitle,
-        partner: this.formatPartner(chat.offer, myRole),
-        lastMessage: last
-          ? { text: last.text, fromRole: last.fromRole, createdAt: last.createdAt }
-          : null,
-        updatedAt: last?.createdAt ?? chat.createdAt,
-      };
+    const readStates = await this.prisma.chatReadState.findMany({
+      where: { userId, chatId: { in: chats.map((c) => c.id) } },
+      select: { chatId: true, lastReadAt: true },
     });
+    const readMap = new Map(readStates.map((r) => [r.chatId, r.lastReadAt]));
+
+    const items = await Promise.all(
+      chats.map(async (chat) => {
+        const myRole =
+          chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
+        const last = chat.messages[0];
+        const unreadCount = await this.countUnreadForChat(
+          chat.id,
+          userId,
+          myRole,
+          readMap.get(chat.id),
+        );
+        return {
+          id: chat.id,
+          offerId: chat.offerId,
+          requestTitle: chat.offer.requestTitle,
+          partner: this.formatPartner(chat.offer, myRole),
+          lastMessage: last
+            ? { text: last.text, fromRole: last.fromRole, createdAt: last.createdAt }
+            : null,
+          updatedAt: last?.createdAt ?? chat.createdAt,
+          unreadCount,
+        };
+      }),
+    );
 
     return toPaginatedResult(items, total, safePage, safeLimit);
   }
@@ -124,6 +241,7 @@ export class ChatsService {
     if (!full) throw new NotFoundException('Chat no encontrado');
 
     const role = this.assertParticipant(full, userId);
+    const partnerLastReadAt = await this.getPartnerLastReadAt(full, userId);
 
     const totalMessages = await this.prisma.message.count({ where: { chatId } });
     const { page, limit, skip } = resolveMessagesPagination(
@@ -141,12 +259,17 @@ export class ChatsService {
 
     const totalPages = totalMessages === 0 ? 0 : Math.ceil(totalMessages / limit);
 
+    const readAt = await this.markChatRead(chatId, userId);
+    this.chatGateway.emitPartnerRead(chatId, userId, readAt);
+    await this.emitUnreadToUser(userId);
+
     return {
       id: full.id,
       offerId: full.offerId,
       requestTitle: full.offer.requestTitle,
       myRole: role,
       partner: this.formatPartner(full.offer, role),
+      partnerLastReadAt,
       messages: messages.map((m) => ({
         id: m.id,
         fromRole: m.fromRole,
@@ -183,9 +306,13 @@ export class ChatsService {
       data: { chatId, fromRole: role, text: dto.text.trim() },
     });
 
+    await this.markChatRead(chatId, userId);
+
     await this.notifyMessageRecipient(chatId, userId, role);
 
-    // Solo la actividad del comprador renueva el ciclo de vida
+    const recipientId = this.partnerUserId(chat, userId);
+    await this.emitUnreadToUser(recipientId);
+
     if (role === 'buyer') {
       const now = new Date();
       await this.prisma.request.update({

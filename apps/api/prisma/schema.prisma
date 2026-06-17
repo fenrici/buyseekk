@@ -164,6 +164,7 @@ model User {
   subscriptionPlan SubscriptionPlan @default(FREE)
   preferredMode        UserMode @default(BUYER)
   notificationPreferences Json?
+  defaultAcceptMessage   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -181,6 +182,7 @@ model User {
   reportsMade               Report[] @relation("ReportsMade")
   reportsAgainst            Report[] @relation("ReportsAgainst")
   reportsReviewed           Report[] @relation("ReportsReviewed")
+  chatReadStates            ChatReadState[]
 
   @@index([blocked])
   @@index([suspended])
@@ -395,7 +397,20 @@ model Chat {
   offerId   String    @unique
   offer     Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
   messages  Message[]
+  readStates ChatReadState[]
   createdAt DateTime  @default(now())
+}
+
+model ChatReadState {
+  id         String   @id @default(cuid())
+  chatId     String
+  chat       Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime @default(now())
+
+  @@unique([chatId, userId])
+  @@index([userId])
 }
 
 model Message {

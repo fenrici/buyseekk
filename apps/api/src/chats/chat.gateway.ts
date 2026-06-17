@@ -7,7 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
@@ -35,6 +35,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwt: JwtService,
     private config: ConfigService,
     private prisma: PrismaService,
+    @Inject(forwardRef(() => ChatsService))
     private chats: ChatsService,
   ) {}
 
@@ -50,6 +51,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!user) throw new Error('user not found');
 
       (client as AuthedSocket).data.userId = user.id;
+      client.join(this.userRoom(user.id));
       this.logger.log(`connected user=${user.id} socket=${client.id}`);
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'auth failed';
@@ -87,8 +89,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return message;
   }
 
+  emitPartnerRead(chatId: string, userId: string, readAt: Date) {
+    this.server.to(this.room(chatId)).emit('partner-read', {
+      userId,
+      readAt: readAt.toISOString(),
+    });
+  }
+
+  emitUnreadToUser(
+    userId: string,
+    payload: { totalUnread: number; byChatId: Record<string, number> },
+  ) {
+    this.server.to(this.userRoom(userId)).emit('unread-update', payload);
+  }
+
   private room(chatId: string) {
     return `chat:${chatId}`;
+  }
+
+  private userRoom(userId: string) {
+    return `user:${userId}`;
   }
 
   private assertMessageRate(userId: string) {

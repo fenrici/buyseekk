@@ -12,6 +12,7 @@ import { useT } from '@/lib/i18n';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNotifications } from '@/providers/NotificationsProvider';
+import { useChatUnread } from '@/hooks/useChatUnread';
 
 type HeaderProps = {
   variant?: 'light' | 'dark';
@@ -22,6 +23,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const { unreadCount } = useNotifications();
+  const { totalUnread: chatUnread } = useChatUnread(user);
   const t = useT();
   const [pendingRatings, setPendingRatings] = useState(0);
   const [pendingOffers, setPendingOffers] = useState(0);
@@ -87,6 +89,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
       )}
       <Link href="/chats" className={navLinkCls}>
         {t('nav.messages')}
+        {badge(chatUnread)}
       </Link>
       <Link href="/ratings" className={navLinkCls}>
         {t('nav.ratings')}

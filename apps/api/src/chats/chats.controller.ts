@@ -21,6 +21,11 @@ export class ChatsController {
     return this.chats.list(user.id, query.page, query.limit);
   }
 
+  @Get('unread-summary')
+  unreadSummary(@CurrentUser() user: AuthUser) {
+    return this.chats.getUnreadSummary(user.id);
+  }
+
   @Get(':id')
   getOne(
     @CurrentUser() user: AuthUser,

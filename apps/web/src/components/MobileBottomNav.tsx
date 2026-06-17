@@ -7,6 +7,7 @@ import { useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
 import { useNotifications } from '@/providers/NotificationsProvider';
 import { useMobileNavBadges } from '@/hooks/useMobileNavBadges';
+import { useChatUnread } from '@/hooks/useChatUnread';
 import { useMobileNavContext } from '@/hooks/useMobileNavContext';
 
 type TabDef = {
@@ -70,7 +71,7 @@ function IconUser({ active }: { active: boolean }) {
   );
 }
 
-function buyerTabs(badges: { offers: number; profile: number }, t: (k: string) => string): TabDef[] {
+function buyerTabs(badges: { offers: number; profile: number; messages: number }, t: (k: string) => string): TabDef[] {
   return [
     {
       id: 'requests',
@@ -93,6 +94,7 @@ function buyerTabs(badges: { offers: number; profile: number }, t: (k: string) =
       label: t('nav.messages'),
       icon: IconChat,
       isActive: (pathname) => pathname === '/chats' || pathname.startsWith('/chats/'),
+      badge: badges.messages,
     },
     {
       id: 'profile',
@@ -105,7 +107,7 @@ function buyerTabs(badges: { offers: number; profile: number }, t: (k: string) =
   ];
 }
 
-function sellerTabs(badges: { offers: number; profile: number }, t: (k: string) => string): TabDef[] {
+function sellerTabs(badges: { offers: number; profile: number; messages: number }, t: (k: string) => string): TabDef[] {
   return [
     {
       id: 'explore',
@@ -129,6 +131,7 @@ function sellerTabs(badges: { offers: number; profile: number }, t: (k: string) 
       label: t('nav.messages'),
       icon: IconChat,
       isActive: (pathname) => pathname === '/chats' || pathname.startsWith('/chats/'),
+      badge: badges.messages,
     },
     {
       id: 'profile',
@@ -148,7 +151,8 @@ export function MobileBottomNav() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
   const context = useMobileNavContext(user);
-  const badges = useMobileNavBadges(user, context);
+  const navBadges = useMobileNavBadges(user, context);
+  const { totalUnread } = useChatUnread(user);
   const { unreadCount } = useNotifications();
 
   if (!user || !context) return null;
@@ -156,6 +160,7 @@ export function MobileBottomNav() {
   // Hilo de chat activo: full-screen sin bottom nav (la lista /chats sí lo muestra).
   if (pathname.startsWith('/chats/')) return null;
 
+  const badges = { ...navBadges, messages: totalUnread };
   const profileBadge = badges.profile + unreadCount;
   const baseTabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
   const tabs = baseTabs.map((item) =>

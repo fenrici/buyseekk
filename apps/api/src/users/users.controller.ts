@@ -11,6 +11,7 @@ import {
   UpdateLanguageDto,
   UpdatePreferencesDto,
   UpdateProfileDto,
+  UpdateSellerChatSettingsDto,
 } from './users.dto';
 import { UsersService } from './users.service';
 
@@ -72,6 +73,16 @@ export class UsersController {
   @Patch('me/last-search-filters')
   updateLastFilters(@CurrentUser() user: AuthUser, @Body() dto: LastSearchFiltersDto) {
     return this.users.updateLastSearchFilters(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SkipThrottle()
+  @Patch('me/seller-chat-settings')
+  updateSellerChatSettings(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateSellerChatSettingsDto,
+  ) {
+    return this.users.updateSellerChatSettings(user.id, dto);
   }
 
   @Throttle({ default: THROTTLE_LIMITS.search })

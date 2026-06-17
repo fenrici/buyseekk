@@ -7,6 +7,7 @@ import { dateLocale, useLocale, useT } from '@/lib/i18n';
 import { getChatSocket } from '@/lib/socket';
 import { ChatDetail, ChatMessage } from '@/lib/types';
 import { Avatar } from './Avatar';
+import { useAuth } from '@/providers/AuthProvider';
 import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 
 function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
@@ -46,7 +47,9 @@ export function ChatThread({
 }) {
   const t = useT();
   const locale = useLocale();
+  const { user } = useAuth();
   const [chat, setChat] = useState<ChatDetail | null>(null);
+  const [partnerLastReadAt, setPartnerLastReadAt] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -75,6 +78,7 @@ export function ChatThread({
     api<ChatDetail>(`/chats/${chatId}`)
       .then((data) => {
         setChat(data);
+        setPartnerLastReadAt(data.partnerLastReadAt ?? null);
         onLoaded?.(data);
       })
       .catch((e) => setError(e.message));
@@ -89,21 +93,27 @@ export function ChatThread({
     const onMessage = (msg: ChatMessage) => {
       setChat((c) => appendMessage(c, msg));
     };
+    const onPartnerRead = (payload: { userId: string; readAt: string }) => {
+      if (payload.userId !== user?.id) {
+        setPartnerLastReadAt(payload.readAt);
+      }
+    };
     const onConnect = () => setLive(true);
     const onDisconnect = () => setLive(false);
 
     socket.on('message', onMessage);
+    socket.on('partner-read', onPartnerRead);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     if (socket.connected) setLive(true);
 
     return () => {
       socket.off('message', onMessage);
+      socket.off('partner-read', onPartnerRead);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
-      socket.disconnect();
     };
-  }, [chatId]);
+  }, [chatId, user?.id]);
 
   useEffect(() => {
     if (skipScrollRef.current) {
@@ -245,13 +255,20 @@ export function ChatThread({
             );
           }
           const isMine = m.fromRole === chat.myRole;
+          const isRead =
+            isMine &&
+            partnerLastReadAt != null &&
+            new Date(m.createdAt).getTime() <= new Date(partnerLastReadAt).getTime();
           return (
             <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] px-4 py-2 ${isMine ? 'chat-bubble-mine' : 'chat-bubble-theirs'}`}>
                 <p className="text-sm break-words">{m.text}</p>
-                <p className={`mt-1 text-[10px] ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}>
-                  {formatTime(m.createdAt, locale)}
-                </p>
+                <div
+                  className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${isMine ? 'text-indigo-200' : 'text-slate-400'}`}
+                >
+                  <span>{formatTime(m.createdAt, locale)}</span>
+                  {isRead && <span className="chat-bubble-read">{t('chat.read')}</span>}
+                </div>
               </div>
             </div>
           );

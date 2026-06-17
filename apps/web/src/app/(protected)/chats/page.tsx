@@ -10,6 +10,7 @@ import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { dateLocale, useLocale, useT } from '@/lib/i18n';
+import { useChatUnread } from '@/hooks/useChatUnread';
 
 function formatTime(iso: string, locale: ReturnType<typeof useLocale>) {
   const d = new Date(iso);
@@ -31,6 +32,7 @@ export default function ChatsPage() {
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const { byChatId } = useChatUnread(user);
 
   useEffect(() => {
     if (!user) return;
@@ -59,7 +61,7 @@ export default function ChatsPage() {
   return (
     <div className="panel-dark">
       <Header variant="dark" />
-      <main className="mx-auto max-w-2xl px-4 py-10">
+      <main className="mx-auto max-w-2xl px-4 py-6 pb-4 max-md:py-5">
         <h1 className="text-3xl font-bold text-white">{t('chat.title')}</h1>
         <p className="mt-1 text-slate-500">{t('chat.subtitle')}</p>
 
@@ -76,25 +78,39 @@ export default function ChatsPage() {
                   <p className="mt-1 text-sm">{t('chat.emptyHint')}</p>
                 </div>
               )}
-              {chats.map((c) => (
+              {chats.map((c) => {
+                const unread = c.unreadCount ?? byChatId[c.id] ?? 0;
+                return (
                 <Link
                   key={c.id}
                   href={`/chats/${c.id}`}
-                  className="card flex items-center gap-4 p-4 transition hover:border-indigo-200"
+                  className={`card chat-list-item flex items-center gap-3 p-4 transition sm:gap-4 ${unread > 0 ? 'chat-list-item--unread' : ''}`}
                 >
                   <Avatar name={c.partner.name} url={c.partner.avatarUrl} size={48} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="truncate font-semibold">{c.partner.name}</p>
-                      <span className="flex-shrink-0 text-xs text-slate-400">{formatTime(c.updatedAt, locale)}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`min-w-0 truncate ${unread > 0 ? 'font-bold' : 'font-semibold'}`}>
+                        {c.partner.name}
+                      </p>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {unread > 0 && (
+                          <span className="chat-list-item__badge" aria-label={t('chat.unread').replace('{count}', String(unread))}>
+                            +{unread > 99 ? '99' : unread}
+                          </span>
+                        )}
+                        <span className="chat-list-item__time">{formatTime(c.updatedAt, locale)}</span>
+                      </span>
                     </div>
-                    <p className="truncate text-xs text-indigo-600">{c.requestTitle}</p>
+                    <p className="truncate text-xs text-indigo-400">{c.requestTitle}</p>
                     {c.lastMessage && (
-                      <p className="mt-1 truncate text-sm text-slate-500">{c.lastMessage.text}</p>
+                      <p className={`mt-1 truncate text-sm ${unread > 0 ? 'font-medium text-slate-300' : 'text-slate-500'}`}>
+                        {c.lastMessage.text}
+                      </p>
                     )}
                   </div>
                 </Link>
-              ))}
+              );
+              })}
               <PaginationControls
                 page={meta.page}
                 totalPages={meta.totalPages}

@@ -36,6 +36,7 @@ export interface User {
   subscriptionPlan?: 'FREE' | 'PLUS' | 'ENTERPRISE';
   preferredMode?: 'BUYER' | 'SELLER';
   notificationPreferences?: import('@buyseekk/shared').NotificationPreferences;
+  defaultAcceptMessage?: string | null;
 }
 
 export interface PublicProfile {
@@ -160,6 +161,7 @@ export interface ChatPreview {
   partner: ChatPartner;
   lastMessage: { text: string; fromRole: string; createdAt: string } | null;
   updatedAt: string;
+  unreadCount?: number;
 }
 
 export interface ChatMessage {
@@ -181,6 +183,7 @@ export interface ChatDetail {
   requestTitle: string;
   myRole: 'buyer' | 'seller';
   partner: ChatPartner;
+  partnerLastReadAt?: string | null;
   messages: ChatMessage[];
   messagesMeta?: {
     total: number;
