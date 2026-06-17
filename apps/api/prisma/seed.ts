@@ -12,7 +12,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { MIAMI_AUTO_DEMO_REQUESTS } from './miami-auto-demo-data';
+import { MIAMI_AUTO_DEMO_REQUESTS } from '../src/demo/miami-auto-demo-data';
 
 if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
   console.error(

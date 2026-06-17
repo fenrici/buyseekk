@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { DemoModule } from './demo/demo.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     NotificationsModule,
     ReportsModule,
     AdminModule,
+    DemoModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
