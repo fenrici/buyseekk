@@ -8,7 +8,7 @@ import { User } from '@/lib/types';
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: (opts?: { silent?: boolean }) => Promise<void>;
   setSession: (user: User) => void;
   clearSession: () => void;
 };
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     const token = getToken();
     if (!token) {
       setUser(null);
@@ -38,21 +38,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     try {
       const me = await api<User>('/auth/me');
       setUser(me);
       setStoredLocale(me.locale);
     } catch {
-      clearToken();
-      setUser(null);
+      // Solo cerrar sesión si los tokens fueron invalidados (p. ej. refresh falló en api()).
+      if (!getToken()) {
+        setUser(null);
+      }
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && getToken()) {
+        void refresh({ silent: true });
+      }
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && getToken()) {
+        void refresh({ silent: true });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, [refresh]);
 
   const value = useMemo(

@@ -141,6 +141,46 @@ describe('Production readiness (e2e)', () => {
       expect(res.body.total).toBe(1);
       expect(res.body.items[0].carBrand).toBe('Ferrari');
     });
+
+    it('hides requests after the seller sends an offer', async () => {
+      const buyer = await createBuyer('offered');
+      const seller = await createSeller('offered');
+
+      const requestId = await createAutoRequest(buyer.token, 'Busco Ferrari para ocultar tras oferta.');
+
+      const before = await request(app.getHttpServer())
+        .get('/api/requests')
+        .set(authHeader(seller.token))
+        .expect(200);
+
+      expect(before.body.items.some((r: { id: string }) => r.id === requestId)).toBe(true);
+
+      await request(app.getHttpServer())
+        .post('/api/offers')
+        .set(authHeader(seller.token))
+        .send({
+          requestId,
+          price: 180000,
+          currency: 'USD',
+          message: 'Oferta para ocultar del marketplace.',
+          imageUrls: ['/api/uploads/e2e-test.jpg'],
+        })
+        .expect(201);
+
+      const after = await request(app.getHttpServer())
+        .get('/api/requests')
+        .set(authHeader(seller.token))
+        .expect(200);
+
+      expect(after.body.items.some((r: { id: string }) => r.id === requestId)).toBe(false);
+
+      const sent = await request(app.getHttpServer())
+        .get('/api/offers/sent')
+        .set(authHeader(seller.token))
+        .expect(200);
+
+      expect(sent.body.items.some((o: { requestId: string }) => o.requestId === requestId)).toBe(true);
+    });
   });
 
   describe('upload validation', () => {

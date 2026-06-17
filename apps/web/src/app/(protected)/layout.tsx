@@ -52,7 +52,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     return <PortalLoadingScreen />;
   }
 
-  if (!user) return null;
+  if (!user) {
+    if (getToken()) return <PortalLoadingScreen />;
+    return null;
+  }
 
   // Evita renderizar (y disparar fetches de) los paneles normales mientras se redirige al admin.
   if (user.role === 'ADMIN') return <PortalLoadingScreen />;

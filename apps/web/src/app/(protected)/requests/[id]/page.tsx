@@ -65,7 +65,7 @@ export default function RequestDetailPage() {
         method: 'POST',
         body: JSON.stringify({ requestId: id, price: parseInt(price), currency, message, imageUrls }),
       });
-      router.push('/seller');
+      router.push('/seller/offers');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     }

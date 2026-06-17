@@ -398,6 +398,7 @@ export class RequestsService {
       userId: { not: user.id },
       hiddenByModeration: false,
       ...visibleToSellersWhere(),
+      NOT: { offers: { some: { sellerId: user.id } } },
     };
 
     if (user.sellerCategory) {
