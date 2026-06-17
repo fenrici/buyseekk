@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { AuthService } from './auth.service';
@@ -29,7 +29,7 @@ export class AuthController {
     return this.auth.login(dto, SecurityLogService.fromRequest(req));
   }
 
-  @Throttle({ default: THROTTLE_LIMITS.login })
+  @SkipThrottle()
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto, @Req() req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
     return this.auth.refresh(dto, SecurityLogService.fromRequest(req));

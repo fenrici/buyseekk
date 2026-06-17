@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -27,25 +27,28 @@ import { RequestsService } from './requests.service';
 export class RequestsController {
   constructor(private requests: RequestsService) {}
 
-  @Throttle({ default: THROTTLE_LIMITS.search })
+  @SkipThrottle()
   @Get()
   @Roles('seller')
   list(@CurrentUser() user: AuthUser, @Query() query: ListRequestsQueryDto) {
     return this.requests.listForSeller(user, query);
   }
 
+  @SkipThrottle()
   @Get('mine')
   @Roles('buyer')
   mine(@CurrentUser() user: AuthUser, @Query() query: MineRequestsQueryDto) {
     return this.requests.mine(user.id, query);
   }
 
+  @SkipThrottle()
   @Get('locations')
   @Roles('seller')
   locations(@CurrentUser() user: AuthUser) {
     return this.requests.locationsForSeller(user);
   }
 
+  @SkipThrottle()
   @Get(':id')
   @Roles('seller')
   one(@CurrentUser() user: AuthUser, @Param('id') id: string) {

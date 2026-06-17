@@ -1,4 +1,5 @@
 import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -9,6 +10,7 @@ import { SavedRequestsService } from './saved-requests.service';
 @Controller('saved-requests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('seller')
+@SkipThrottle()
 export class SavedRequestsController {
   constructor(private saved: SavedRequestsService) {}
 

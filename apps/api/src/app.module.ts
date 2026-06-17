@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validateEnv } from './config/env.validation';
 import { buildThrottlerDefinitions } from './config/throttle.config';
+import { throttleTrackerFromRequest } from './config/throttle-tracker';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { ChatsModule } from './chats/chats.module';
@@ -29,6 +30,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       skipIf: () => process.env.NODE_ENV === 'test',
+      getTracker: (req) => throttleTrackerFromRequest(req),
       throttlers: buildThrottlerDefinitions(),
     }),
     SubscriptionModule,

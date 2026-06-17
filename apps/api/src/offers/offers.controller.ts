@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -12,6 +12,7 @@ import { OffersService } from './offers.service';
 
 @Controller('offers')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@SkipThrottle()
 export class OffersController {
   constructor(private offers: OffersService) {}
 

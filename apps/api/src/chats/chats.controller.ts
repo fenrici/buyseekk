@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
@@ -12,6 +12,7 @@ import { ChatsService } from './chats.service';
 
 @Controller('chats')
 @UseGuards(JwtAuthGuard, NonAdminGuard)
+@SkipThrottle()
 export class ChatsController {
   constructor(private chats: ChatsService) {}
 
