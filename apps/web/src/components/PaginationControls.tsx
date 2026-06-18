@@ -2,6 +2,8 @@
 
 import { useT } from '@/lib/i18n';
 
+import { scrollPanelToTop } from '@/lib/scroll';
+
 type Props = {
   page: number;
   totalPages: number;
@@ -12,7 +14,7 @@ type Props = {
 };
 
 function scrollListToTop() {
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  scrollPanelToTop();
 }
 
 export function PaginationControls({

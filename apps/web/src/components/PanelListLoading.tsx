@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useT } from '@/lib/i18n';
 
-const DEFAULT_DELAY_MS = 2000;
+const DEFAULT_DELAY_MS = 400;
 
 type Props = {
   loading: boolean;

@@ -12,6 +12,7 @@ import { SellerSentOfferCard } from '@/components/SellerSentOfferCard';
 import { SellerSavedRequestCard } from '@/components/SellerSavedRequestCard';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
+import { scrollPanelToTop } from '@/lib/scroll';
 
 type Tab = 'sent' | 'saved';
 type SentStatusFilter = 'all' | 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
@@ -39,16 +40,17 @@ function SentOffersTab() {
   const listTopRef = useRef<HTMLDivElement>(null);
 
   const scrollOffersToTop = () => {
+    scrollPanelToTop();
     listTopRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
   const setStatusFilter = (next: SentStatusFilter) => {
+    scrollOffersToTop();
     const params = new URLSearchParams(searchParams.toString());
     if (next === 'all') params.delete('status');
     else params.set('status', next);
     const query = params.toString();
-    router.replace(query ? `/seller/offers?${query}` : '/seller/offers');
+    router.replace(query ? `/seller/offers?${query}` : '/seller/offers', { scroll: false });
     setPage(1);
   };
 
@@ -124,10 +126,9 @@ function SentOffersTab() {
       {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
       <div className="mt-6 space-y-6">
-        <PanelListLoading loading={loading} />
-        {!loading && (
-          <>
-            {offers.length === 0 && !error && (
+        <PanelListLoading loading={loading && offers.length === 0} />
+        <div className={loading && offers.length > 0 ? 'space-y-6 opacity-60 transition-opacity' : 'space-y-6'}>
+            {offers.length === 0 && !loading && !error && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
                 <h3 className="text-lg font-bold text-white">{emptyCopy.title}</h3>
                 <p className="mt-2 text-sm text-slate-500">{emptyCopy.hint}</p>
@@ -154,15 +155,14 @@ function SentOffersTab() {
                 totalPages={meta.totalPages}
                 total={meta.total}
                 onPageChange={(nextPage) => {
-                  setPage(nextPage);
                   scrollOffersToTop();
+                  setPage(nextPage);
                 }}
                 scrollToTopOnChange={false}
                 itemLabel={t('seller.sentTitle').toLowerCase()}
               />
             )}
-          </>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -240,7 +240,8 @@ function SellerOffersContent() {
   if (!user) return null;
 
   const setTab = (next: Tab) => {
-    router.replace(next === 'saved' ? '/seller/offers?tab=saved' : '/seller/offers');
+    scrollPanelToTop();
+    router.replace(next === 'saved' ? '/seller/offers?tab=saved' : '/seller/offers', { scroll: false });
   };
 
   return (

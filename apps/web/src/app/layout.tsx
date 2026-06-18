@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
 import { LocaleHtml } from '@/components/LocaleHtml';
 import { CookieConsent } from '@/components/CookieConsent';
+import { ConditionalAnalytics } from '@/components/ConditionalAnalytics';
 import { AppProviders } from '@/providers/AppProviders';
 import './globals.css';
 
@@ -37,17 +37,18 @@ export const viewport = {
   initialScale: 1,
   viewportFit: 'cover' as const,
   interactiveWidget: 'resizes-content' as const,
+  themeColor: '#060c1d',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <AppProviders>
           <LocaleHtml>{children}</LocaleHtml>
           <CookieConsent />
         </AppProviders>
-        <Analytics />
+        <ConditionalAnalytics />
       </body>
     </html>
   );

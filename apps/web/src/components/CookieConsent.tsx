@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useT } from '@/lib/i18n';
-
-const CONSENT_KEY = 'buyseekk_cookie_consent';
+import { getCookieConsent, setCookieConsent } from '@/lib/cookie-consent';
 
 export function CookieConsent() {
   const t = useT();
@@ -12,20 +11,30 @@ export function CookieConsent() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(CONSENT_KEY)) {
+    if (!getCookieConsent()) {
       setVisible(true);
     }
   }, []);
 
-  function accept() {
-    localStorage.setItem(CONSENT_KEY, 'accepted');
+  function acceptAnalytics() {
+    setCookieConsent('accepted');
+    setVisible(false);
+  }
+
+  function acceptEssentialOnly() {
+    setCookieConsent('essential');
     setVisible(false);
   }
 
   if (!visible) return null;
 
   return (
-    <div className="cookie-consent" role="dialog" aria-labelledby="cookie-consent-title">
+    <div
+      className="cookie-consent"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cookie-consent-title"
+    >
       <div className="cookie-consent__inner">
         <p id="cookie-consent-title" className="cookie-consent__text">
           {t('cookies.banner')}{' '}
@@ -33,9 +42,14 @@ export function CookieConsent() {
             {t('cookies.learnMore')}
           </Link>
         </p>
-        <button type="button" className="cookie-consent__btn" onClick={accept}>
-          {t('cookies.accept')}
-        </button>
+        <div className="cookie-consent__actions">
+          <button type="button" className="cookie-consent__btn cookie-consent__btn--ghost" onClick={acceptEssentialOnly}>
+            {t('cookies.essentialOnly')}
+          </button>
+          <button type="button" className="cookie-consent__btn" onClick={acceptAnalytics}>
+            {t('cookies.accept')}
+          </button>
+        </div>
       </div>
     </div>
   );

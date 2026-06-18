@@ -10,16 +10,16 @@ import { isBuyerRole, isSellerRole } from '@/lib/auth';
 
 export type MobileNavBadges = {
   offers: number;
-  profile: number;
+  ratings: number;
 };
 
 export function useMobileNavBadges(user: User | null, context: MobileNavContext | null): MobileNavBadges {
   const pathname = usePathname();
-  const [badges, setBadges] = useState<MobileNavBadges>({ offers: 0, profile: 0 });
+  const [badges, setBadges] = useState<MobileNavBadges>({ offers: 0, ratings: 0 });
 
   useEffect(() => {
     if (!user || !context) {
-      setBadges({ offers: 0, profile: 0 });
+      setBadges({ offers: 0, ratings: 0 });
       return;
     }
 
@@ -57,7 +57,7 @@ export function useMobileNavBadges(user: User | null, context: MobileNavContext 
           api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>('/ratings/pending?limit=1')
             .then((raw) => {
               if (!cancelled) {
-                setBadges((b) => ({ ...b, profile: normalizePaginated(raw).total }));
+                setBadges((b) => ({ ...b, ratings: normalizePaginated(raw).total }));
               }
             })
             .catch(() => {}),

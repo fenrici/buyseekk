@@ -822,7 +822,8 @@ export const es = {
   cookies: {
     banner: 'Usamos cookies esenciales y, con tu consentimiento, analítica para mejorar Buyseek.',
     learnMore: 'Más información',
-    accept: 'Aceptar',
+    accept: 'Aceptar todo',
+    essentialOnly: 'Solo esenciales',
   },
   errors: {
     notFoundTitle: 'Página no encontrada',
@@ -1706,7 +1707,8 @@ export const en: DeepString<typeof es> = {
   cookies: {
     banner: 'We use essential cookies and, with your consent, analytics to improve Buyseek.',
     learnMore: 'Learn more',
-    accept: 'Accept',
+    accept: 'Accept all',
+    essentialOnly: 'Essential only',
   },
   errors: {
     notFoundTitle: 'Page not found',

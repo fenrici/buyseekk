@@ -7626,3 +7626,40 @@ html.chat-viewport-lock body {
 .cookie-consent__btn:hover {
   background: #2563eb;
 }
+
+.cookie-consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.cookie-consent__btn--ghost {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+}
+
+.cookie-consent__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.profile-email-verify-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.profile-email-verify-actions__toast {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.profile-email-verify-actions__toast--success {
+  color: #6ee7b7;
+}
+
+.profile-email-verify-actions__toast--info {
+  color: #93c5fd;
+}

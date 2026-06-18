@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { ProfileLinkRow } from './ProfileLinkRow';
 import { ProfileSection } from './ProfileSection';
+import { useEmailVerificationActions } from '@/hooks/useEmailVerificationActions';
 import { useT } from '@/lib/i18n';
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 
 export function ProfileSecuritySection({ emailVerified, embedded }: Props) {
   const t = useT();
+  const { checking, resending, toast, handleVerify, handleResend } = useEmailVerificationActions();
 
   const body = (
     <>
@@ -29,11 +30,32 @@ export function ProfileSecuritySection({ emailVerified, embedded }: Props) {
         <ProfileLinkRow label={t('profile.twoFactor')} comingSoon />
       </div>
       {!emailVerified && (
-        <p className="profile-section__note">
-          <Link href="/verify-email" className="profile-inline-link">
-            {t('profile.verifyEmailCta')}
-          </Link>
-        </p>
+        <div className="profile-section__note profile-email-verify-actions">
+          <p className="profile-section__note-text">{t('auth.verifyEmailBanner')}</p>
+          <div className="profile-email-verify-actions__buttons">
+            <button
+              type="button"
+              className="email-verify-card__btn email-verify-card__btn--primary"
+              onClick={handleResend}
+              disabled={resending || checking}
+            >
+              {resending ? t('auth.verifyEmailSending') : t('auth.verifyEmailResend')}
+            </button>
+            <button
+              type="button"
+              className="email-verify-card__btn email-verify-card__btn--ghost"
+              onClick={handleVerify}
+              disabled={resending || checking}
+            >
+              {checking ? t('auth.verifyEmailChecking') : t('auth.verifyEmailRefresh')}
+            </button>
+          </div>
+          {toast && (
+            <p className={`profile-email-verify-actions__toast profile-email-verify-actions__toast--${toast.type}`} role="status">
+              {toast.text}
+            </p>
+          )}
+        </div>
       )}
     </>
   );

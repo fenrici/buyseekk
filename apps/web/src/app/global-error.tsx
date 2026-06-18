@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getStoredLocale, guessLocale, translate, type Locale } from '@/lib/i18n';
 
 export default function GlobalError({
   error,
@@ -9,8 +11,17 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale, setLocale] = useState<Locale>('EN');
+
+  useEffect(() => {
+    setLocale(getStoredLocale() ?? guessLocale());
+    console.error(error);
+  }, [error]);
+
+  const t = (key: string) => translate(locale, key);
+
   return (
-    <html lang="en">
+    <html lang={locale === 'EN' ? 'en' : 'es'}>
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#060c1d', color: '#f8fafc' }}>
         <main
           style={{
@@ -22,10 +33,8 @@ export default function GlobalError({
           }}
         >
           <div style={{ maxWidth: '28rem', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>Something went wrong</h1>
-            <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
-              Buyseek hit an unexpected error. Please try again.
-            </p>
+            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>{t('errors.genericTitle')}</h1>
+            <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>{t('errors.genericBody')}</p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -40,7 +49,7 @@ export default function GlobalError({
                   cursor: 'pointer',
                 }}
               >
-                Try again
+                {t('errors.tryAgain')}
               </button>
               <Link
                 href="/"
@@ -53,7 +62,7 @@ export default function GlobalError({
                   fontWeight: 600,
                 }}
               >
-                Go home
+                {t('errors.goHome')}
               </Link>
             </div>
           </div>

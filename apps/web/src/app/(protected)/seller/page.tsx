@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { OnboardingGuide } from '@/components/OnboardingGuide';
 import { PanelListLoading } from '@/components/PanelListLoading';
@@ -9,11 +10,23 @@ import { useSellerExplore } from '@/hooks/useSellerExplore';
 import { countActiveSellerFilters } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 import { effectiveCountry } from '@/lib/launch-country';
+import { scrollPanelToTop } from '@/lib/scroll';
 
 export default function SellerPage() {
   const t = useT();
   const explore = useSellerExplore();
   const { user, lockedCategory, filters, requests, page, setPage, totalPages, total, loading, error, activeCount } = explore;
+  const resultsTopRef = useRef<HTMLDivElement>(null);
+
+  const changePage = (next: number) => {
+    scrollPanelToTop();
+    resultsTopRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    setPage(next);
+  };
+
+  useEffect(() => {
+    if (!loading) scrollPanelToTop();
+  }, [page, loading]);
 
   if (!user) return null;
 
@@ -55,7 +68,7 @@ export default function SellerPage() {
             <SellerExploreFilters explore={explore} />
 
             <div className="seller-results">
-            <div className="seller-results-header">
+            <div ref={resultsTopRef} className="seller-results-header scroll-mt-24">
               <h2 className="hidden text-xl font-bold text-white lg:block">{t('seller.requestsTitle')}</h2>
               {total > 0 && (
                 <p className="text-sm text-slate-500">
@@ -93,7 +106,7 @@ export default function SellerPage() {
                   <button
                     type="button"
                     disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => changePage(Math.max(1, page - 1))}
                     className="btn btn-ghost border disabled:opacity-40"
                   >
                     {t('seller.prevPage')}
@@ -101,7 +114,7 @@ export default function SellerPage() {
                   <button
                     type="button"
                     disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() => changePage(Math.min(totalPages, page + 1))}
                     className="btn btn-ghost border disabled:opacity-40"
                   >
                     {t('seller.nextPage')}

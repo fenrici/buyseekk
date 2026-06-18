@@ -14,6 +14,7 @@ import { OnboardingGuide } from '@/components/OnboardingGuide';
 import { RequestConfirmationModal } from '@/components/RequestConfirmationModal';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
+import { scrollPanelToTop } from '@/lib/scroll';
 
 type Tab = 'publish' | 'mine';
 type MineScope = 'open' | 'closed' | 'archived';
@@ -86,8 +87,14 @@ export function BuyerPanel() {
   }, [tab, user, minePage, mineScope]);
 
   function changeScope(scope: MineScope) {
+    scrollPanelToTop();
     setMineScope(scope);
     setMinePage(1);
+  }
+
+  function changeTab(next: Tab) {
+    scrollPanelToTop();
+    setTab(next);
   }
 
   async function removeRequest(id: string) {
@@ -180,7 +187,7 @@ export function BuyerPanel() {
         <h1 className="text-3xl font-bold text-white">{t('buyer.title')}</h1>
         <p className="mt-1 text-slate-500">{t('buyer.requestsSubtitle')}</p>
 
-        <BuyerPanelTabs activeTab={tab} onTabChange={setTab} />
+        <BuyerPanelTabs activeTab={tab} onTabChange={changeTab} />
 
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
@@ -212,11 +219,12 @@ export function BuyerPanel() {
                 </button>
               ))}
             </div>
-            <PanelListLoading loading={mineLoading} />
+            <PanelListLoading loading={mineLoading && myRequests.length === 0} />
+            <div className={mineLoading && myRequests.length > 0 ? 'opacity-60 transition-opacity' : undefined}>
             {!mineLoading && myRequests.length === 0 && (
               <p className="text-slate-500">{t('buyer.noRequests')}</p>
             )}
-            {!mineLoading && myRequests.map((r) => (
+            {myRequests.map((r) => (
               <RequestCard
                 key={r.id}
                 variant="buyer"
@@ -230,6 +238,7 @@ export function BuyerPanel() {
                 onUpdated={() => loadMine(minePage)}
               />
             ))}
+            </div>
             {!mineLoading && (
               <PaginationControls
                 page={mineMeta.page}

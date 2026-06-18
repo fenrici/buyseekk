@@ -71,7 +71,16 @@ function IconUser({ active }: { active: boolean }) {
   );
 }
 
-function buyerTabs(badges: { offers: number; profile: number; messages: number }, t: (k: string) => string): TabDef[] {
+function IconStar({ active }: { active: boolean }) {
+  const c = active ? 'text-indigo-400' : 'text-slate-500';
+  return (
+    <svg className={`h-6 w-6 ${c}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path d="M12 3.5l2.45 4.96 5.48.8-3.97 3.87.94 5.46L12 16.9l-4.9 2.69.94-5.46-3.97-3.87 5.48-.8L12 3.5z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function buyerTabs(badges: { offers: number; ratings: number }, t: (k: string) => string): TabDef[] {
   return [
     {
       id: 'requests',
@@ -94,7 +103,14 @@ function buyerTabs(badges: { offers: number; profile: number; messages: number }
       label: t('nav.messages'),
       icon: IconChat,
       isActive: (pathname) => pathname === '/chats' || pathname.startsWith('/chats/'),
-      badge: badges.messages,
+    },
+    {
+      id: 'ratings',
+      href: '/ratings',
+      label: t('nav.ratings'),
+      icon: IconStar,
+      isActive: (pathname) => pathname === '/ratings',
+      badge: badges.ratings,
     },
     {
       id: 'profile',
@@ -102,12 +118,11 @@ function buyerTabs(badges: { offers: number; profile: number; messages: number }
       label: t('nav.profile'),
       icon: IconUser,
       isActive: (pathname) => pathname === '/profile',
-      badge: badges.profile,
     },
   ];
 }
 
-function sellerTabs(badges: { offers: number; profile: number; messages: number }, t: (k: string) => string): TabDef[] {
+function sellerTabs(badges: { offers: number; ratings: number }, t: (k: string) => string): TabDef[] {
   return [
     {
       id: 'explore',
@@ -131,7 +146,14 @@ function sellerTabs(badges: { offers: number; profile: number; messages: number 
       label: t('nav.messages'),
       icon: IconChat,
       isActive: (pathname) => pathname === '/chats' || pathname.startsWith('/chats/'),
-      badge: badges.messages,
+    },
+    {
+      id: 'ratings',
+      href: '/ratings',
+      label: t('nav.ratings'),
+      icon: IconStar,
+      isActive: (pathname) => pathname === '/ratings',
+      badge: badges.ratings,
     },
     {
       id: 'profile',
@@ -139,7 +161,6 @@ function sellerTabs(badges: { offers: number; profile: number; messages: number 
       label: t('nav.profile'),
       icon: IconUser,
       isActive: (pathname) => pathname === '/profile',
-      badge: badges.profile,
     },
   ];
 }
@@ -160,12 +181,17 @@ export function MobileBottomNav() {
   // Hilo de chat activo: full-screen sin bottom nav (la lista /chats sí lo muestra).
   if (pathname.startsWith('/chats/')) return null;
 
-  const badges = { ...navBadges, messages: totalUnread };
-  const profileBadge = badges.profile + unreadCount;
+  const badges = { ...navBadges };
   const baseTabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
-  const tabs = baseTabs.map((item) =>
-    item.id === 'profile' ? { ...item, badge: profileBadge } : item,
-  );
+  const tabs = baseTabs.map((item) => {
+    if (item.id === 'profile' && unreadCount > 0) {
+      return { ...item, badge: unreadCount };
+    }
+    if (item.id === 'messages' && totalUnread > 0) {
+      return { ...item, badge: totalUnread };
+    }
+    return item;
+  });
 
   return (
     <nav className="mobile-bottom-nav" aria-label={t('mobileNav.aria')}>

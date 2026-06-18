@@ -7,7 +7,17 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin/', '/buyer/', '/seller/', '/chats/', '/profile', '/notifications'],
+      disallow: [
+        '/admin/',
+        '/buyer/',
+        '/seller/',
+        '/chats/',
+        '/profile',
+        '/notifications/',
+        '/requests/',
+        '/users/',
+        '/ratings',
+      ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
