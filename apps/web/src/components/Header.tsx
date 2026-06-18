@@ -11,7 +11,6 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
-import { useNotifications } from '@/providers/NotificationsProvider';
 import { useChatUnread } from '@/hooks/useChatUnread';
 
 type HeaderProps = {
@@ -22,7 +21,6 @@ export function Header({ variant = 'light' }: HeaderProps) {
   const dark = variant === 'dark';
   const pathname = usePathname();
   const { user, loading } = useAuth();
-  const { unreadCount } = useNotifications();
   const { totalUnread: chatUnread } = useChatUnread(user);
   const t = useT();
   const [pendingRatings, setPendingRatings] = useState(0);
@@ -143,20 +141,17 @@ export function Header({ variant = 'light' }: HeaderProps) {
           {!loading && user ? (
             <>
               <Link
-              href="/profile"
-              className={`flex items-center gap-2 rounded-full px-1 py-0.5 text-sm font-medium transition ${
-                dark ? 'text-slate-200 hover:text-indigo-300' : 'text-[var(--text)] hover:text-[var(--primary)]'
-              }`}
-              title={t('nav.profile')}
-            >
-              <span className="header-profile__avatar">
-                <Avatar name={user.name} url={user.avatarUrl} size={32} />
-                {unreadCount > 0 && (
-                  <span className="header-profile__badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
-                )}
-              </span>
-              <span>{user.name}</span>
-            </Link>
+                href="/profile"
+                className={`flex items-center gap-2 rounded-full px-1 py-0.5 text-sm font-medium transition ${
+                  dark ? 'text-slate-200 hover:text-indigo-300' : 'text-[var(--text)] hover:text-[var(--primary)]'
+                }`}
+                title={t('nav.profile')}
+              >
+                <span className="header-profile__avatar">
+                  <Avatar name={user.name} url={user.avatarUrl} size={32} />
+                </span>
+                <span>{user.name}</span>
+              </Link>
             </>
           ) : (
             <>

@@ -8,7 +8,7 @@ import { UploadsController } from './uploads.controller';
   imports: [
     MulterModule.register({
       storage: memoryStorage(),
-      limits: { fileSize: MAX_UPLOAD_BYTES },
+      limits: { fileSize: MAX_UPLOAD_BYTES, fields: 4 },
     }),
   ],
   controllers: [UploadsController],

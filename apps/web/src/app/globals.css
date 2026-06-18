@@ -1484,6 +1484,19 @@ button.portal-mobile-link {
   line-height: 1;
 }
 
+.mobile-notif-access {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 0.65rem);
+  right: 0.75rem;
+  z-index: 55;
+}
+
+@media (min-width: 768px) {
+  .mobile-notif-access {
+    display: none;
+  }
+}
+
 .mobile-app-shell {
   position: relative;
 }
@@ -3673,6 +3686,11 @@ button.portal-mobile-link {
   transition: background 0.15s ease;
 }
 
+a.profile-menu-row {
+  text-decoration: none;
+  color: inherit;
+}
+
 .profile-menu-row:last-child {
   border-bottom: none;
 }
@@ -3735,6 +3753,20 @@ button.portal-mobile-link {
   font-size: 0.78rem;
   color: #64748b;
   line-height: 1.35;
+}
+
+.profile-menu-row__badge {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
 }
 
 .profile-menu-row__chevron {

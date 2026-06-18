@@ -28,11 +28,13 @@ function IconSettings() {
   );
 }
 
-function IconBell() {
+function IconSliders() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M15 17H9l-1 2h8l-1-2z" strokeLinejoin="round" />
-      <path d="M18 8a6 6 0 1 0-12 0c0 7-2 7-2 7h16s-2 0-2-7z" strokeLinejoin="round" />
+      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" strokeLinecap="round" />
+      <circle cx="4" cy="14" r="2" />
+      <circle cx="12" cy="11" r="2" />
+      <circle cx="20" cy="16" r="2" />
     </svg>
   );
 }
@@ -83,7 +85,7 @@ export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile }: Props) {
         onClick={() => onNavigate('preferences')}
       />
       <ProfileMenuRow
-        icon={<IconBell />}
+        icon={<IconSliders />}
         title={t('profile.menuNotifications')}
         description={t('profile.menuNotificationsDesc')}
         onClick={() => onNavigate('notifications')}

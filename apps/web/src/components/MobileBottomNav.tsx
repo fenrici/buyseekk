@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
-import { useNotifications } from '@/providers/NotificationsProvider';
 import { useMobileNavBadges } from '@/hooks/useMobileNavBadges';
 import { useChatUnread } from '@/hooks/useChatUnread';
 import { useMobileNavContext } from '@/hooks/useMobileNavContext';
@@ -174,7 +173,6 @@ export function MobileBottomNav() {
   const context = useMobileNavContext(user);
   const navBadges = useMobileNavBadges(user, context);
   const { totalUnread } = useChatUnread(user);
-  const { unreadCount } = useNotifications();
 
   if (!user || !context) return null;
 
@@ -184,9 +182,6 @@ export function MobileBottomNav() {
   const badges = { ...navBadges };
   const baseTabs = context === 'seller' ? sellerTabs(badges, t) : buyerTabs(badges, t);
   const tabs = baseTabs.map((item) => {
-    if (item.id === 'profile' && unreadCount > 0) {
-      return { ...item, badge: unreadCount };
-    }
     if (item.id === 'messages' && totalUnread > 0) {
       return { ...item, badge: totalUnread };
     }
