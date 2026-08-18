@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { OfferStatus, RequestStatus, Locale, Prisma } from '@prisma/client';
@@ -28,12 +29,25 @@ import { CreateOfferDto } from './offers.dto';
 
 @Injectable()
 export class OffersService {
+  private readonly logger = new Logger(OffersService.name);
+
   constructor(
     private prisma: PrismaService,
     private ratings: RatingsService,
     private notifications: NotificationsService,
     private subscription: SubscriptionService,
   ) {}
+
+  private async afterCommitNotify(label: string, work: () => Promise<unknown>) {
+    try {
+      await work();
+    } catch (err) {
+      this.logger.error(
+        `Post-commit notification failed ${label}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
+  }
 
   private withComparison<T extends { price: number; currency: string; requestBudget: number }>(offer: T) {
     const comparison = comparePrices(
@@ -124,11 +138,13 @@ export class OffersService {
       throw err;
     }
 
-    await this.notifications.notifyNewOffer(
-      request.userId,
-      offer.request.user.locale,
-      offer.id,
-      offer.requestTitle,
+    await this.afterCommitNotify(`NEW_OFFER offerId=${offer.id}`, () =>
+      this.notifications.notifyNewOffer(
+        request.userId,
+        offer.request.user.locale,
+        offer.id,
+        offer.requestTitle,
+      ),
     );
 
     return this.withComparison(offer);
@@ -364,11 +380,13 @@ export class OffersService {
     });
 
     if (didTransition) {
-      await this.notifications.notifyOfferAccepted(
-        updated.sellerId,
-        updated.seller.locale,
-        updated.id,
-        updated.requestTitle,
+      await this.afterCommitNotify(`OFFER_ACCEPTED offerId=${updated.id}`, () =>
+        this.notifications.notifyOfferAccepted(
+          updated.sellerId,
+          updated.seller.locale,
+          updated.id,
+          updated.requestTitle,
+        ),
       );
     }
 
@@ -402,11 +420,13 @@ export class OffersService {
       include: { seller: { select: { locale: true } } },
     });
 
-    await this.notifications.notifyOfferRejected(
-      updated.sellerId,
-      updated.seller.locale,
-      updated.id,
-      updated.requestTitle,
+    await this.afterCommitNotify(`OFFER_REJECTED offerId=${updated.id}`, () =>
+      this.notifications.notifyOfferRejected(
+        updated.sellerId,
+        updated.seller.locale,
+        updated.id,
+        updated.requestTitle,
+      ),
     );
 
     return this.withComparison(updated);
@@ -431,6 +451,7 @@ export class OffersService {
     if (!offer.chat) {
       throw new BadRequestException('Se requiere un chat para concretar la operación');
     }
+    const chatId = offer.chat.id;
 
     if (offer.dealCompletedAt) {
       return {
@@ -513,18 +534,20 @@ export class OffersService {
     }
 
     if (didComplete) {
-      await this.notifications.notifyDealCompleted(
-        offer.sellerId,
-        offer.seller.locale,
-        offer.chat.id,
-        offer.id,
-        offer.requestTitle,
+      await this.afterCommitNotify(`DEAL_COMPLETED offerId=${offer.id}`, () =>
+        this.notifications.notifyDealCompleted(
+          offer.sellerId,
+          offer.seller.locale,
+          chatId,
+          offer.id,
+          offer.requestTitle,
+        ),
       );
     }
 
     return {
       ...this.withComparison(updated),
-      chatId: offer.chat.id,
+      chatId,
       requestId: offer.requestId,
       requestStatus: RequestStatus.CERRADA,
     };

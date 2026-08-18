@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
@@ -21,6 +22,8 @@ const EPOCH = new Date(0);
 
 @Injectable()
 export class ChatsService {
+  private readonly logger = new Logger(ChatsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
@@ -420,7 +423,14 @@ export class ChatsService {
     }
 
     await this.markChatRead(chatId, userId);
-    await this.notifyMessageRecipient(chatId, userId, role);
+    try {
+      await this.notifyMessageRecipient(chatId, userId, role);
+    } catch (err) {
+      this.logger.error(
+        `Post-commit NEW_MESSAGE notification failed chatId=${chatId} senderId=${userId}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
 
     const recipientId = this.partnerUserId(chat, userId);
     await this.emitUnreadToUser(recipientId);

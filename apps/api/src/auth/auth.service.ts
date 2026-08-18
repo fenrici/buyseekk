@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtSignOptions } from '@nestjs/jwt';
@@ -38,6 +39,8 @@ export type AuthTokens = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
@@ -107,6 +110,21 @@ export class AuthService {
     return origin.split(',')[0]?.trim().replace(/\/$/, '') || 'http://localhost:3000';
   }
 
+  /** Envía email de auth. Un fallo de Resend no revierte el token ni aborta el flujo. */
+  private async sendAuthEmail(
+    payload: { to: string; subject: string; html: string; text: string },
+    meta: { type: string; userId: string },
+  ) {
+    try {
+      await this.email.send(payload);
+    } catch (err) {
+      this.logger.error(
+        `Auth email failed type=${meta.type} userId=${meta.userId}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
+  }
+
   private async sendVerificationEmail(user: User) {
     await this.prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } });
     const plain = generateSecureToken();
@@ -116,7 +134,10 @@ export class AuthService {
     });
     const verifyUrl = `${this.getAppBaseUrl()}/verify-email?token=${plain}`;
     const content = this.email.buildVerificationEmail(verifyUrl, user.locale);
-    await this.email.send({ to: user.email, ...content });
+    await this.sendAuthEmail({ to: user.email, ...content }, {
+      type: 'EMAIL_VERIFICATION',
+      userId: user.id,
+    });
   }
 
   async register(dto: RegisterDto, ctx: SecurityContext = {}) {
@@ -284,7 +305,14 @@ export class AuthService {
       userAgent: ctx.userAgent,
     });
 
-    await this.notifications.notifyEmailVerified(user.id, user.locale);
+    try {
+      await this.notifications.notifyEmailVerified(user.id, user.locale);
+    } catch (err) {
+      this.logger.error(
+        `EMAIL_VERIFIED notification failed userId=${user.id}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
 
     return { user: this.toPublicUser(user), alreadyVerified: false };
   }
@@ -314,7 +342,10 @@ export class AuthService {
 
     const resetUrl = `${this.getAppBaseUrl()}/reset-password?token=${plain}`;
     const content = this.email.buildPasswordResetEmail(resetUrl, user.locale);
-    await this.email.send({ to: user.email, ...content });
+    await this.sendAuthEmail({ to: user.email, ...content }, {
+      type: 'PASSWORD_RESET',
+      userId: user.id,
+    });
 
     await this.securityLog.log(SecurityEvent.PASSWORD_RESET_REQUESTED, {
       userId: user.id,

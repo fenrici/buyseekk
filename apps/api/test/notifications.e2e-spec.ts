@@ -3,6 +3,7 @@ import { NotificationType } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { generateSecureToken, hashToken } from '../src/auth/token.util';
+import { notificationCopy } from '../src/notifications/notification-copy';
 import { notificationEmailPath } from '../src/notifications/notification-channels';
 import { PrismaService } from '../src/prisma/prisma.service';
 import {
@@ -153,5 +154,75 @@ describe('notification email paths', () => {
     expect(notificationEmailPath(NotificationType.REQUEST_INACTIVE, 'req-1')).toBe('/buyer?tab=mine');
     expect(notificationEmailPath(NotificationType.REQUEST_CLOSED, 'req-1')).toBe('/buyer?tab=mine');
     expect(notificationEmailPath(NotificationType.EMAIL_VERIFIED, 'user-1')).toBe('/profile');
+  });
+
+  it('never maps marketplace emails to /notifications', () => {
+    const types = Object.values(NotificationType);
+    for (const type of types) {
+      expect(notificationEmailPath(type, 'entity-1')).not.toBe('/notifications');
+    }
+  });
+});
+
+describe('notification copy locale', () => {
+  it('uses negotiation wording for OFFER_ACCEPTED and sale wording for DEAL_COMPLETED', () => {
+    const acceptedEs = notificationCopy(NotificationType.OFFER_ACCEPTED, 'ES', {
+      requestTitle: 'Ferrari 488',
+    });
+    const acceptedEn = notificationCopy(NotificationType.OFFER_ACCEPTED, 'EN', {
+      requestTitle: 'Ferrari 488',
+    });
+    expect(acceptedEs.title).toBe('El comprador quiere negociar');
+    expect(acceptedEs.message).toContain('avanzar');
+    expect(acceptedEs.message.toLowerCase()).not.toContain('concretada');
+    expect(acceptedEn.title).toBe('The buyer wants to negotiate');
+    expect(acceptedEn.message.toLowerCase()).not.toContain('completed');
+
+    const dealEs = notificationCopy(NotificationType.DEAL_COMPLETED, 'ES', {
+      requestTitle: 'Ferrari 488',
+    });
+    const dealEn = notificationCopy(NotificationType.DEAL_COMPLETED, 'EN', {
+      requestTitle: 'Ferrari 488',
+    });
+    expect(dealEs.title).toBe('Operación concretada');
+    expect(dealEn.title).toBe('Deal completed');
+  });
+
+  it('covers critical events in ES and EN', () => {
+    const cases: Array<{ type: NotificationType; es: string; en: string }> = [
+      { type: NotificationType.NEW_OFFER, es: 'Nueva oferta recibida', en: 'New offer received' },
+      { type: NotificationType.OFFER_REJECTED, es: 'Oferta rechazada', en: 'Offer rejected' },
+      { type: NotificationType.NEW_MESSAGE, es: 'Nuevo mensaje', en: 'New message' },
+      { type: NotificationType.REQUEST_EXPIRING, es: 'Solicitud por vencer', en: 'Request expiring soon' },
+      { type: NotificationType.REQUEST_INACTIVE, es: 'Solicitud inactiva', en: 'Request inactive' },
+      { type: NotificationType.REQUEST_CLOSED, es: 'Solicitud cerrada', en: 'Request closed' },
+      { type: NotificationType.EMAIL_VERIFIED, es: 'Email verificado', en: 'Email verified' },
+    ];
+
+    for (const row of cases) {
+      expect(notificationCopy(row.type, 'ES', { requestTitle: 'Test', senderName: 'Ana' }).title).toBe(
+        row.es,
+      );
+      expect(notificationCopy(row.type, 'EN', { requestTitle: 'Test', senderName: 'Ana' }).title).toBe(
+        row.en,
+      );
+    }
+
+    const matchingEs = notificationCopy(NotificationType.NEW_MATCHING_REQUEST, 'ES', {
+      requestTitle: 'Ferrari 488',
+      location: 'Miami, FL',
+      category: 'AUTOS',
+      carBrand: 'Ferrari',
+      carModel: '488 GTB',
+    });
+    const matchingEn = notificationCopy(NotificationType.NEW_MATCHING_REQUEST, 'EN', {
+      requestTitle: 'Ferrari 488',
+      location: 'Miami, FL',
+      category: 'AUTOS',
+      carBrand: 'Ferrari',
+      carModel: '488 GTB',
+    });
+    expect(matchingEs.title).toContain('Nueva alerta');
+    expect(matchingEn.title).toContain('New alert');
   });
 });

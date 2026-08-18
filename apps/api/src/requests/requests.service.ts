@@ -982,7 +982,14 @@ export class RequestsService {
 
     const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { locale: true } });
     if (buyer) {
-      await this.notifications.notifyRequestClosed(userId, buyer.locale, id, req.title);
+      try {
+        await this.notifications.notifyRequestClosed(userId, buyer.locale, id, req.title);
+      } catch (err) {
+        this.logger.error(
+          `Post-commit REQUEST_CLOSED notification failed requestId=${id} userId=${userId}`,
+          err instanceof Error ? err.stack : err,
+        );
+      }
     }
 
     return this.formatRequest(await this.findByIdRaw(id));

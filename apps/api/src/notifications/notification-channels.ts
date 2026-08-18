@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationType } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
+import { escapeHtml } from '../common/utils/escape-html';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationGateway } from './notification.gateway';
 import {
@@ -28,7 +29,12 @@ const EMAIL_TYPES = new Set<NotificationType>([
   NotificationType.NEW_MESSAGE,
   NotificationType.NEW_MATCHING_REQUEST,
   NotificationType.REQUEST_EXPIRING,
+  NotificationType.REQUEST_INACTIVE,
+  NotificationType.REQUEST_CLOSED,
 ]);
+
+/** Ventana para no reenviar email de NEW_MESSAGE en un chat activo. */
+export const NEW_MESSAGE_EMAIL_WINDOW_MS = 10 * 60 * 1000;
 
 /** Rutas web existentes por tipo. Buyers no usan `/requests/:id` (pantalla seller). */
 export function notificationEmailPath(type: NotificationType, entityId: string | null): string {
@@ -67,6 +73,17 @@ export class EmailNotificationChannel implements NotificationChannelHandler {
   ) {}
 
   async deliver(userId: string, notification: NotificationPayload, _unreadCount: number) {
+    try {
+      await this.deliverEmail(userId, notification);
+    } catch (err) {
+      this.logger.error(
+        `Email notification failed type=${notification.type} userId=${userId} notificationId=${notification.id}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
+  }
+
+  private async deliverEmail(userId: string, notification: NotificationPayload) {
     const enabled = (this.config.get<string>('NOTIFICATION_EMAILS_ENABLED') ?? 'true').toLowerCase() === 'true';
     if (!enabled || !EMAIL_TYPES.has(notification.type)) return;
 
@@ -75,6 +92,14 @@ export class EmailNotificationChannel implements NotificationChannelHandler {
       select: { email: true, locale: true, emailVerified: true },
     });
     if (!user?.emailVerified) return;
+
+    if (
+      notification.type === NotificationType.NEW_MESSAGE &&
+      notification.entityId &&
+      (await this.hasRecentNewMessageEmail(userId, notification.entityId, notification.id))
+    ) {
+      return;
+    }
 
     const webUrl = (this.config.get<string>('WEB_URL') ?? 'http://localhost:3000').replace(/\/$/, '');
     const path = notificationEmailPath(notification.type, notification.entityId);
@@ -85,15 +110,27 @@ export class EmailNotificationChannel implements NotificationChannelHandler {
     const text = en
       ? `${notification.message}\n\nOpen Buyseek: ${actionUrl}`
       : `${notification.message}\n\nAbrir Buyseek: ${actionUrl}`;
+    const safeMessage = escapeHtml(notification.message);
+    const safeActionUrl = escapeHtml(actionUrl);
     const html = en
-      ? `<p>${notification.message}</p><p><a href="${actionUrl}">Open in Buyseek</a></p>`
-      : `<p>${notification.message}</p><p><a href="${actionUrl}">Abrir en Buyseek</a></p>`;
+      ? `<p>${safeMessage}</p><p><a href="${safeActionUrl}">Open in Buyseek</a></p>`
+      : `<p>${safeMessage}</p><p><a href="${safeActionUrl}">Abrir en Buyseek</a></p>`;
 
-    try {
-      await this.email.send({ to: user.email, subject, text, html });
-    } catch (err) {
-      this.logger.error(`Email notification failed for user ${userId}`, err);
-    }
+    await this.email.send({ to: user.email, subject, text, html });
+  }
+
+  private async hasRecentNewMessageEmail(userId: string, chatId: string, currentId: string) {
+    const recent = await this.prisma.notification.findFirst({
+      where: {
+        userId,
+        type: NotificationType.NEW_MESSAGE,
+        entityId: chatId,
+        id: { not: currentId },
+        createdAt: { gt: new Date(Date.now() - NEW_MESSAGE_EMAIL_WINDOW_MS) },
+      },
+      select: { id: true },
+    });
+    return !!recent;
   }
 }
 

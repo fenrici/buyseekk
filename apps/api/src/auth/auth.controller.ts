@@ -47,20 +47,20 @@ export class AuthController {
     return this.auth.verifyEmail(dto, SecurityLogService.fromRequest(req));
   }
 
-  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Throttle({ default: THROTTLE_LIMITS.authEmail })
   @UseGuards(JwtAuthGuard)
   @Post('resend-verification')
   resendVerification(@Req() req: { user: { id: string } }) {
     return this.auth.resendVerification(req.user.id);
   }
 
-  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Throttle({ default: THROTTLE_LIMITS.authEmail })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
     return this.auth.forgotPassword(dto, SecurityLogService.fromRequest(req));
   }
 
-  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Throttle({ default: THROTTLE_LIMITS.authEmail })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto, @Req() req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
     return this.auth.resetPassword(dto, SecurityLogService.fromRequest(req));

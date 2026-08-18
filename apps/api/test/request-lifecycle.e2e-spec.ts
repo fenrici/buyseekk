@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { NotificationsService } from '../src/notifications/notifications.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import {
   authHeader,
@@ -366,6 +368,49 @@ describe('Request lifecycle (e2e)', () => {
         .set(authHeader(buyer.token))
         .send({ requirements: 'No debería editarse una solicitud eliminada.' })
         .expect(404);
+    });
+  });
+
+  describe('lifecycle notifications', () => {
+    it('skips paused, deleted and closed requests and does not repeat expiring emails', async () => {
+      const notifications = app.get(NotificationsService);
+      const buyer = await createBuyer();
+      const paused = await createRequest(buyer.token);
+      const deleted = await createRequest(buyer.token);
+      const closed = await createRequest(buyer.token);
+      const idle = await createRequest(buyer.token);
+
+      const idleAt = new Date(Date.now() - 7 * DAY_MS - 2 * HOUR_MS);
+      await prisma.request.update({
+        where: { id: paused.id },
+        data: { pausedAt: new Date(), lastBuyerActivityAt: idleAt },
+      });
+      await request(app.getHttpServer())
+        .delete(`/api/requests/${deleted.id}`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/api/requests/${closed.id}/close`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+      await prisma.request.update({
+        where: { id: idle.id },
+        data: { lastBuyerActivityAt: idleAt },
+      });
+
+      await notifications.scanRequestLifecycle();
+      await notifications.scanRequestLifecycle();
+
+      const expiring = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_EXPIRING },
+      });
+      expect(expiring).toHaveLength(1);
+      expect(expiring[0].entityId).toBe(idle.id);
+
+      const inactive = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_INACTIVE },
+      });
+      expect(inactive).toHaveLength(0);
     });
   });
 });

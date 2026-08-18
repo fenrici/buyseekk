@@ -15,6 +15,8 @@ export const THROTTLE_LIMITS = {
   chat: { ttl: 60_000, limit: envInt('THROTTLE_CHAT_LIMIT', 120) },
   search: { ttl: 60_000, limit: envInt('THROTTLE_SEARCH_LIMIT', 200) },
   write: { ttl: 60_000, limit: envInt('THROTTLE_WRITE_LIMIT', 60) },
+  /** Forgot / resend / reset: endpoints que disparan email. */
+  authEmail: { ttl: 60_000, limit: envInt('THROTTLE_AUTH_EMAIL_LIMIT', 10) },
 } as const;
 
 export type ThrottleProfile = keyof typeof THROTTLE_LIMITS;

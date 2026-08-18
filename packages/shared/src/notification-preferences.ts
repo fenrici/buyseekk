@@ -1,4 +1,13 @@
-/** Claves de preferencias de notificación en perfil (UI). */
+/**
+ * Preferencias de perfil (marketplace).
+ *
+ * No se pueden desactivar:
+ * - emails de auth (verify / reset) — no pasan por este modelo
+ * - OFFER_ACCEPTED, OFFER_REJECTED
+ * - DEAL_COMPLETED (siempre se envía al seller de la operación, MVP)
+ * - REQUEST_CLOSED
+ * - EMAIL_VERIFIED (in-app)
+ */
 export const NOTIFICATION_PREFERENCE_KEYS = [
   'matchingRequests',
   'newOffers',
