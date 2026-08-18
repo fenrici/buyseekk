@@ -6775,6 +6775,8 @@ html.chat-viewport-lock body {
     top: var(--app-vt, 0);
     left: 0;
     right: 0;
+    width: 100%;
+    max-width: 100%;
     z-index: 30;
     height: var(--app-vh, 100dvh);
     min-height: var(--app-vh, 100dvh);

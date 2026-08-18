@@ -11,6 +11,7 @@ import { Inject, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
+import { UserRole } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { ChatsService } from './chats.service';
@@ -49,6 +50,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) throw new Error('user not found');
+      if (user.role === UserRole.ADMIN) throw new Error('admin');
 
       (client as AuthedSocket).data.userId = user.id;
       client.join(this.userRoom(user.id));
@@ -67,26 +69,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('join')
   async join(@ConnectedSocket() client: AuthedSocket, @MessageBody() chatId: string) {
-    await this.chats.getOne(chatId, client.data.userId);
+    await this.chats.join(chatId, client.data.userId);
     const room = this.room(chatId);
+    for (const existing of client.rooms) {
+      if (typeof existing === 'string' && existing.startsWith('chat:') && existing !== room) {
+        client.leave(existing);
+      }
+    }
     client.join(room);
     this.logger.debug(`join user=${client.data.userId} room=${room}`);
+    return { ok: true };
+  }
+
+  @SubscribeMessage('leave')
+  leave(@ConnectedSocket() client: AuthedSocket, @MessageBody() chatId: string) {
+    const room = this.room(chatId);
+    client.leave(room);
+    this.logger.debug(`leave user=${client.data.userId} room=${room}`);
     return { ok: true };
   }
 
   @SubscribeMessage('send')
   async send(
     @ConnectedSocket() client: AuthedSocket,
-    @MessageBody() body: { chatId: string; text: string },
+    @MessageBody() body: { chatId: string; text: string; clientMessageId?: string },
   ) {
     this.assertMessageRate(client.data.userId);
-    const message = await this.chats.send(body.chatId, client.data.userId, { text: body.text });
-    const room = this.room(body.chatId);
-    this.server.to(room).emit('message', message);
-    this.logger.debug(
-      `message chat=${body.chatId} user=${client.data.userId} msg=${message.id}`,
-    );
-    return message;
+    return this.chats.send(body.chatId, client.data.userId, {
+      text: body.text,
+      clientMessageId: body.clientMessageId,
+    });
+  }
+
+  emitMessage(
+    chatId: string,
+    message: { id: string; chatId: string; fromRole: string; text: string; createdAt: Date },
+  ) {
+    this.server.to(this.room(chatId)).emit('message', message);
   }
 
   emitPartnerRead(chatId: string, userId: string, readAt: Date) {

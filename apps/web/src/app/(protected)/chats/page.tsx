@@ -32,7 +32,7 @@ export default function ChatsPage() {
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const { byChatId } = useChatUnread(user);
+  const { byChatId, inboxVersion } = useChatUnread(user);
 
   useEffect(() => {
     setPage(1);
@@ -58,7 +58,7 @@ export default function ChatsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, user?.activeMode, page]);
+  }, [user?.id, user?.activeMode, page, inboxVersion]);
 
   if (!user) return null;
 

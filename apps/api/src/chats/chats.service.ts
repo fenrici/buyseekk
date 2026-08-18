@@ -1,18 +1,20 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus, UserMode } from '@prisma/client';
+import { OfferStatus, Prisma, RequestStatus, UserMode } from '@prisma/client';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
+import { assertNotAdminForMarketplaceActions } from '../common/utils/assert-not-admin';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatDetailQueryDto, resolveMessagesPagination } from './chat-detail.query.dto';
-import { SendMessageDto } from './chats.dto';
+import { MAX_CHAT_MESSAGE_LENGTH, SendMessageDto } from './chats.dto';
 import { ChatGateway } from './chat.gateway';
 
 const EPOCH = new Date(0);
@@ -113,6 +115,52 @@ export class ChatsService {
     });
   }
 
+  private async unreadCountsForChats(
+    chats: { id: string; myRole: 'buyer' | 'seller' }[],
+    readMap: Map<string, Date>,
+  ) {
+    const counts = new Map<string, number>();
+    if (chats.length === 0) return counts;
+
+    const grouped = await this.prisma.message.groupBy({
+      by: ['chatId'],
+      where: {
+        OR: chats.map((chat) => ({
+          chatId: chat.id,
+          fromRole: this.partnerRole(chat.myRole),
+          createdAt: { gt: readMap.get(chat.id) ?? EPOCH },
+        })),
+      },
+      _count: { _all: true },
+    });
+
+    for (const row of grouped) {
+      counts.set(row.chatId, row._count._all);
+    }
+    return counts;
+  }
+
+  private formatOutgoingMessage(message: {
+    id: string;
+    chatId: string;
+    fromRole: string;
+    text: string;
+    createdAt: Date;
+  }) {
+    return {
+      id: message.id,
+      chatId: message.chatId,
+      fromRole: message.fromRole,
+      text: message.text,
+      createdAt: message.createdAt,
+    };
+  }
+
+  private normalizeClientMessageId(raw?: string) {
+    const value = raw?.trim();
+    return value || undefined;
+  }
+
   async markChatRead(chatId: string, userId: string) {
     const now = new Date();
     await this.prisma.chatReadState.upsert({
@@ -144,20 +192,27 @@ export class ChatsService {
       },
     });
 
+    const withRoles = chats.map((chat) => ({
+      id: chat.id,
+      myRole:
+        chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const),
+    }));
+
+    const readStates = await this.prisma.chatReadState.findMany({
+      where: { userId, chatId: { in: withRoles.map((c) => c.id) } },
+      select: { chatId: true, lastReadAt: true },
+    });
+    const readMap = new Map(readStates.map((r) => [r.chatId, r.lastReadAt]));
+    const unreadMap = await this.unreadCountsForChats(withRoles, readMap);
+
     let totalUnread = 0;
     const byChatId: Record<string, number> = {};
-
-    await Promise.all(
-      chats.map(async (chat) => {
-        const myRole =
-          chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
-        const unread = await this.countUnreadForChat(chat.id, userId, myRole);
-        if (unread > 0) {
-          byChatId[chat.id] = unread;
-          totalUnread += unread;
-        }
-      }),
-    );
+    for (const [chatId, unread] of unreadMap) {
+      if (unread > 0) {
+        byChatId[chatId] = unread;
+        totalUnread += unread;
+      }
+    }
 
     return { totalUnread, byChatId };
   }
@@ -182,7 +237,7 @@ export class ChatsService {
         where,
         skip,
         take: safeLimit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { lastMessageAt: 'desc' },
         include: {
           offer: {
             include: {
@@ -202,30 +257,31 @@ export class ChatsService {
     });
     const readMap = new Map(readStates.map((r) => [r.chatId, r.lastReadAt]));
 
-    const items = await Promise.all(
-      chats.map(async (chat) => {
-        const myRole =
-          chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
-        const last = chat.messages[0];
-        const unreadCount = await this.countUnreadForChat(
-          chat.id,
-          userId,
-          myRole,
-          readMap.get(chat.id),
-        );
-        return {
-          id: chat.id,
-          offerId: chat.offerId,
-          requestTitle: chat.offer.requestTitle,
-          partner: this.formatPartner(chat.offer, myRole),
-          lastMessage: last
-            ? { text: last.text, fromRole: last.fromRole, createdAt: last.createdAt }
-            : null,
-          updatedAt: last?.createdAt ?? chat.createdAt,
-          unreadCount,
-        };
-      }),
+    const unreadMap = await this.unreadCountsForChats(
+      chats.map((chat) => ({
+        id: chat.id,
+        myRole:
+          chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const),
+      })),
+      readMap,
     );
+
+    const items = chats.map((chat) => {
+      const myRole =
+        chat.offer.request.userId === userId ? ('buyer' as const) : ('seller' as const);
+      const last = chat.messages[0];
+      return {
+        id: chat.id,
+        offerId: chat.offerId,
+        requestTitle: chat.offer.requestTitle,
+        partner: this.formatPartner(chat.offer, myRole),
+        lastMessage: last
+          ? { text: last.text, fromRole: last.fromRole, createdAt: last.createdAt }
+          : null,
+        updatedAt: chat.lastMessageAt,
+        unreadCount: unreadMap.get(chat.id) ?? 0,
+      };
+    });
 
     return toPaginatedResult(items, total, safePage, safeLimit);
   }
@@ -274,12 +330,7 @@ export class ChatsService {
       myRole: role,
       partner: this.formatPartner(full.offer, role),
       partnerLastReadAt,
-      messages: messages.map((m) => ({
-        id: m.id,
-        fromRole: m.fromRole,
-        text: m.text,
-        createdAt: m.createdAt,
-      })),
+      messages: messages.map((m) => this.formatOutgoingMessage(m)),
       messagesMeta: {
         total: totalMessages,
         page,
@@ -291,7 +342,28 @@ export class ChatsService {
     };
   }
 
+  /** Join/reconnect: autoriza, marca leído y no recarga el historial. */
+  async join(chatId: string, userId: string) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { offer: { include: { request: { select: { userId: true } } } } },
+    });
+    if (!chat) throw new NotFoundException('Chat no encontrado');
+    this.assertParticipant(chat, userId);
+    const readAt = await this.markChatRead(chatId, userId);
+    this.chatGateway.emitPartnerRead(chatId, userId, readAt);
+    await this.emitUnreadToUser(userId);
+    return { ok: true };
+  }
+
   async send(chatId: string, userId: string, dto: SendMessageDto) {
+    const text = dto.text?.trim() ?? '';
+    if (!text) throw new BadRequestException('El mensaje no puede estar vacío');
+    if (text.length > MAX_CHAT_MESSAGE_LENGTH) {
+      throw new BadRequestException(`El mensaje no puede superar ${MAX_CHAT_MESSAGE_LENGTH} caracteres`);
+    }
+    const clientMessageId = this.normalizeClientMessageId(dto.clientMessageId);
+
     const chat = await this.prisma.chat.findUnique({
       where: { id: chatId },
       include: {
@@ -302,16 +374,52 @@ export class ChatsService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new ForbiddenException();
+    assertNotAdminForMarketplaceActions(user);
     assertAccountActive(user);
     assertEmailVerified(user);
 
     const role = this.assertParticipant(chat, userId);
-    const message = await this.prisma.message.create({
-      data: { chatId, fromRole: role, text: dto.text.trim() },
-    });
+
+    if (clientMessageId) {
+      const existing = await this.prisma.message.findUnique({
+        where: {
+          chatId_fromRole_clientMessageId: { chatId, fromRole: role, clientMessageId },
+        },
+      });
+      if (existing) {
+        return this.formatOutgoingMessage(existing);
+      }
+    }
+
+    let message;
+    try {
+      message = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.message.create({
+          data: { chatId, fromRole: role, text, clientMessageId },
+        });
+        await tx.chat.update({
+          where: { id: chatId },
+          data: { lastMessageAt: created.createdAt },
+        });
+        return created;
+      });
+    } catch (err) {
+      if (
+        clientMessageId &&
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        const existing = await this.prisma.message.findUnique({
+          where: {
+            chatId_fromRole_clientMessageId: { chatId, fromRole: role, clientMessageId },
+          },
+        });
+        if (existing) return this.formatOutgoingMessage(existing);
+      }
+      throw err;
+    }
 
     await this.markChatRead(chatId, userId);
-
     await this.notifyMessageRecipient(chatId, userId, role);
 
     const recipientId = this.partnerUserId(chat, userId);
@@ -329,12 +437,9 @@ export class ChatsService {
       });
     }
 
-    return {
-      id: message.id,
-      fromRole: message.fromRole,
-      text: message.text,
-      createdAt: message.createdAt,
-    };
+    const payload = this.formatOutgoingMessage(message);
+    this.chatGateway.emitMessage(chatId, payload);
+    return payload;
   }
 
   async notifyMessageRecipient(chatId: string, senderId: string, senderRole: 'buyer' | 'seller') {

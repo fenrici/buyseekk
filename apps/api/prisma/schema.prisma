@@ -393,12 +393,15 @@ model Offer {
 }
 
 model Chat {
-  id        String    @id @default(cuid())
-  offerId   String    @unique
-  offer     Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  messages  Message[]
-  readStates ChatReadState[]
-  createdAt DateTime  @default(now())
+  id            String    @id @default(cuid())
+  offerId       String    @unique
+  offer         Offer     @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  messages      Message[]
+  readStates    ChatReadState[]
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([lastMessageAt])
 }
 
 model ChatReadState {
@@ -414,13 +417,15 @@ model ChatReadState {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  fromRole  String
-  text      String
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  chatId          String
+  chat            Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  fromRole        String
+  text            String
+  clientMessageId String?
+  createdAt       DateTime @default(now())
 
+  @@unique([chatId, fromRole, clientMessageId], map: "Message_chat_role_client_key")
   @@index([chatId, createdAt])
 }
 

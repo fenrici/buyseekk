@@ -37,6 +37,7 @@ export function setAuthTokens(token: string, refreshToken: string) {
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  void import('./socket').then((mod) => mod.disconnectChatSocket()).catch(() => {});
 }
 
 let refreshPromise: Promise<boolean> | null = null;

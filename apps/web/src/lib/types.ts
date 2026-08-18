@@ -167,6 +167,7 @@ export interface ChatPreview {
 
 export interface ChatMessage {
   id: string;
+  chatId?: string;
   fromRole: string;
   text: string;
   createdAt: string;

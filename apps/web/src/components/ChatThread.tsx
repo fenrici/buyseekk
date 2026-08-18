@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { api, getToken } from '@/lib/api';
+import { api } from '@/lib/api';
 import { dateLocale, useLocale, useT } from '@/lib/i18n';
 import { getChatSocket } from '@/lib/socket';
 import { ChatDetail, ChatMessage } from '@/lib/types';
@@ -34,6 +34,13 @@ function prependMessages(prev: ChatDetail, older: ChatMessage[]): ChatDetail {
 
 const SEND_ACK_TIMEOUT_MS = 8000;
 
+function newClientMessageId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function isChatMessage(res: unknown): res is ChatMessage {
   return !!res && typeof res === 'object' && 'id' in res && typeof (res as ChatMessage).id === 'string';
 }
@@ -64,6 +71,14 @@ export function ChatThread({
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const skipScrollRef = useRef(false);
+  const lastAttemptRef = useRef<{ text: string; id: string } | null>(null);
+
+  function clientMessageIdFor(payload: string) {
+    if (lastAttemptRef.current?.text === payload) return lastAttemptRef.current.id;
+    const id = newClientMessageId();
+    lastAttemptRef.current = { text: payload, id };
+    return id;
+  }
 
   function scrollMessagesToBottom(behavior: ScrollBehavior = 'smooth') {
     const el = messagesRef.current;
@@ -92,9 +107,9 @@ export function ChatThread({
 
   useEffect(() => {
     const socket = getChatSocket();
-    socket.auth = { token: getToken() };
 
     const onMessage = (msg: ChatMessage) => {
+      if (msg.chatId && msg.chatId !== chatId) return;
       setChat((c) => appendMessage(c, msg));
     };
     const onPartnerRead = (payload: { userId: string; readAt: string }) => {
@@ -122,6 +137,7 @@ export function ChatThread({
     }
 
     return () => {
+      socket.emit('leave', chatId);
       socket.off('message', onMessage);
       socket.off('partner-read', onPartnerRead);
       socket.off('connect', onConnect);
@@ -185,11 +201,12 @@ export function ChatThread({
     }
   }
 
-  async function sendViaRest(payload: string) {
+  async function sendViaRest(payload: string, clientMessageId: string) {
     const msg = await api<ChatMessage>(`/chats/${chatId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ text: payload }),
+      body: JSON.stringify({ text: payload, clientMessageId }),
     });
+    lastAttemptRef.current = null;
     setChat((c) => appendMessage(c, msg));
   }
 
@@ -199,7 +216,13 @@ export function ChatThread({
     setSending(true);
     setError('');
     const payload = text.trim();
+    if (payload.length > 2000) {
+      setSending(false);
+      setError(t('chat.sendFailed'));
+      return;
+    }
     setText('');
+    const clientMessageId = clientMessageIdFor(payload);
 
     const failSend = (message: string) => {
       setError(message);
@@ -214,7 +237,7 @@ export function ChatThread({
         settled = true;
         const stillConnected = getChatSocket().connected;
         if (!stillConnected) {
-          sendViaRest(payload)
+          sendViaRest(payload, clientMessageId)
             .catch((err) => {
               failSend(err instanceof Error ? err.message : t('chat.sendFailed'));
             })
@@ -225,25 +248,33 @@ export function ChatThread({
         setSending(false);
       }, SEND_ACK_TIMEOUT_MS);
 
-      socket.emit('send', { chatId, text: payload }, (res: ChatMessage | { message?: string }) => {
-        if (settled) {
-          if (isChatMessage(res)) setChat((c) => appendMessage(c, res));
-          return;
-        }
-        settled = true;
-        window.clearTimeout(timer);
-        setSending(false);
-        if (isChatMessage(res)) {
-          setChat((c) => appendMessage(c, res));
-          return;
-        }
-        failSend(res && 'message' in res && res.message ? String(res.message) : t('chat.sendFailed'));
-      });
+      socket.emit(
+        'send',
+        { chatId, text: payload, clientMessageId },
+        (res: ChatMessage | { message?: string }) => {
+          if (settled) {
+            if (isChatMessage(res)) {
+              lastAttemptRef.current = null;
+              setChat((c) => appendMessage(c, res));
+            }
+            return;
+          }
+          settled = true;
+          window.clearTimeout(timer);
+          setSending(false);
+          if (isChatMessage(res)) {
+            lastAttemptRef.current = null;
+            setChat((c) => appendMessage(c, res));
+            return;
+          }
+          failSend(res && 'message' in res && res.message ? String(res.message) : t('chat.sendFailed'));
+        },
+      );
       return;
     }
 
     try {
-      await sendViaRest(payload);
+      await sendViaRest(payload, clientMessageId);
     } catch (err) {
       failSend(err instanceof Error ? err.message : t('chat.sendFailed'));
     } finally {

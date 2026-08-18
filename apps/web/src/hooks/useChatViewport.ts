@@ -23,6 +23,10 @@ export function useChatViewport(enabled = true) {
       root.style.setProperty('--app-vh', `${height}px`);
       root.style.setProperty('--app-vt', `${top}px`);
 
+      if (window.scrollX !== 0) {
+        window.scrollTo(0, window.scrollY);
+      }
+
       const open = baselineHeight - height > KEYBOARD_THRESHOLD_PX;
       setKeyboardOpen(open);
       root.classList.toggle(KEYBOARD_CLASS, open);
