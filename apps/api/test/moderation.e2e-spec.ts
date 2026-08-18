@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { authHeader, createTestApp, registerUser, resetDatabase } from './helpers';
+import { authHeader, createTestApp, ownedTestImageUrl, registerUser, resetDatabase } from './helpers';
 
 describe('Community auto-moderation (e2e)', () => {
   let app: INestApplication<App>;
@@ -113,7 +113,7 @@ describe('Community auto-moderation (e2e)', () => {
         price: 18000,
         currency: 'USD',
         message: 'Tengo el auto ideal para tu familia disponible ya mismo.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
     return { buyer, seller, requestId: reqRes.body.id, offerId: offerRes.body.id };
@@ -247,7 +247,7 @@ describe('Community auto-moderation (e2e)', () => {
         price: 17000,
         currency: 'USD',
         message: 'Intento ofertar estando suspendido, no debería poder hacerlo.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(403);
 

@@ -8,10 +8,11 @@ import {
   parseSellerFiltersJson,
   roleAfterEnablingSeller,
 } from '@buyseekk/shared';
-import { validateImageUrls } from '../common/utils/image-urls';
+import { validateImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageObjectsService } from '../storage/storage-objects.service';
 import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto, UpdateSellerChatSettingsDto } from './users.dto';
 
 const PUBLIC_PROFILE_SELECT = {
@@ -34,6 +35,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private ratings: RatingsService,
+    private storageObjects: StorageObjectsService,
   ) {}
 
   async getRatingSummary(userId: string) {
@@ -82,7 +84,10 @@ export class UsersService {
     if (!current) throw new NotFoundException('Usuario no encontrado');
     assertAccountActive(current);
 
-    if (dto.avatarUrl?.trim()) validateImageUrls([dto.avatarUrl.trim()]);
+    if (dto.avatarUrl?.trim()) {
+      validateImageUrls([dto.avatarUrl.trim()]);
+      assertOwnedImageUrls([dto.avatarUrl.trim()], userId, current.avatarUrl ? [current.avatarUrl] : []);
+    }
 
     const clean = (value?: string) => {
       if (value === undefined) return undefined;
@@ -104,6 +109,11 @@ export class UsersService {
     });
 
     const { passwordHash: _, ...safe } = updated;
+    await this.storageObjects.deleteRemovedBestEffort(
+      [current.avatarUrl],
+      [updated.avatarUrl],
+      userId,
+    );
     return safe;
   }
 

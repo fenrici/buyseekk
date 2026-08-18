@@ -5,6 +5,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import {
   authHeader,
   createTestApp,
+  ownedTestImageUrl,
   registerUser,
   resetDatabase,
 } from './helpers';
@@ -90,27 +91,32 @@ describe('Offers flow (e2e)', () => {
     return res.body as { id: string; title: string; status: string; budget: number };
   }
 
-  function sendOffer(token: string, requestId: string, message: string, price = 195000) {
+  function sendOffer(
+    seller: Awaited<ReturnType<typeof createSeller>>,
+    requestId: string,
+    message: string,
+    price = 195000,
+  ) {
     return request(app.getHttpServer())
       .post('/api/offers')
-      .set(authHeader(token))
+      .set(authHeader(seller.token))
       .send({
         requestId,
         price,
         currency: 'USD',
         message,
-        imageUrls: ['/api/uploads/offers-flow.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       });
   }
 
   async function createPendingOffer(
     buyerToken: string,
-    sellerToken: string,
+    seller: Awaited<ReturnType<typeof createSeller>>,
     message: string,
     extra: Record<string, unknown> = {},
   ) {
     const created = await createRequest(buyerToken, extra);
-    const offerRes = await sendOffer(sellerToken, created.id, message).expect(201);
+    const offerRes = await sendOffer(seller, created.id, message).expect(201);
     return { request: created, offer: offerRes.body as { id: string; status: string } };
   }
 
@@ -121,7 +127,7 @@ describe('Offers flow (e2e)', () => {
       const created = await createRequest(buyer.token);
 
       const offerRes = await sendOffer(
-        seller.token,
+        seller,
         created.id,
         'Tengo el 488 listo para entrega inmediata en Miami.',
       ).expect(201);
@@ -139,11 +145,11 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('dup');
       const created = await createRequest(buyer.token);
 
-      await sendOffer(seller.token, created.id, 'Primera oferta duplicada del mismo vendedor.').expect(
+      await sendOffer(seller, created.id, 'Primera oferta duplicada del mismo vendedor.').expect(
         201,
       );
       const second = await sendOffer(
-        seller.token,
+        seller,
         created.id,
         'Segunda oferta que no debería crearse nunca.',
       );
@@ -162,8 +168,8 @@ describe('Offers flow (e2e)', () => {
       const created = await createRequest(buyer.token);
 
       const [first, second] = await Promise.all([
-        sendOffer(seller.token, created.id, 'Oferta concurrente A del mismo vendedor.'),
-        sendOffer(seller.token, created.id, 'Oferta concurrente A del mismo vendedor.'),
+        sendOffer(seller, created.id, 'Oferta concurrente A del mismo vendedor.'),
+        sendOffer(seller, created.id, 'Oferta concurrente A del mismo vendedor.'),
       ]);
 
       const statuses = [first.status, second.status].sort();
@@ -177,7 +183,7 @@ describe('Offers flow (e2e)', () => {
     it('blocks offering on your own request', async () => {
       const both = await createBoth('own');
       const created = await createRequest(both.token);
-      const res = await sendOffer(both.token, created.id, 'Intento ofertar en mi propia solicitud.');
+      const res = await sendOffer(both, created.id, 'Intento ofertar en mi propia solicitud.');
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(/propia solicitud/i);
     });
@@ -192,7 +198,7 @@ describe('Offers flow (e2e)', () => {
         .set(authHeader(buyer.token))
         .expect(200);
 
-      await sendOffer(seller.token, created.id, 'Oferta sobre solicitud pausada.').expect(404);
+      await sendOffer(seller, created.id, 'Oferta sobre solicitud pausada.').expect(404);
     });
 
     it('blocks offers pending confirmation', async () => {
@@ -205,7 +211,7 @@ describe('Offers flow (e2e)', () => {
         data: { lastBuyerActivityAt: new Date(Date.now() - 7 * DAY_MS - HOUR_MS) },
       });
 
-      await sendOffer(seller.token, created.id, 'Oferta en pendiente de confirmación.').expect(404);
+      await sendOffer(seller, created.id, 'Oferta en pendiente de confirmación.').expect(404);
     });
 
     it('blocks offers on inactive requests', async () => {
@@ -218,7 +224,7 @@ describe('Offers flow (e2e)', () => {
         data: { lastBuyerActivityAt: new Date(Date.now() - 7 * DAY_MS - 25 * HOUR_MS) },
       });
 
-      const res = await sendOffer(seller.token, created.id, 'Oferta en solicitud inactiva.');
+      const res = await sendOffer(seller, created.id, 'Oferta en solicitud inactiva.');
       expect(res.status).toBe(400);
     });
 
@@ -232,7 +238,7 @@ describe('Offers flow (e2e)', () => {
         data: { lastBuyerActivityAt: new Date(Date.now() - 10 * DAY_MS - HOUR_MS) },
       });
 
-      await sendOffer(seller.token, created.id, 'Oferta en solicitud archivada.').expect(404);
+      await sendOffer(seller, created.id, 'Oferta en solicitud archivada.').expect(404);
     });
 
     it('blocks offers on closed requests', async () => {
@@ -245,7 +251,7 @@ describe('Offers flow (e2e)', () => {
         .set(authHeader(buyer.token))
         .expect(200);
 
-      const res = await sendOffer(seller.token, created.id, 'Oferta en solicitud cerrada.');
+      const res = await sendOffer(seller, created.id, 'Oferta en solicitud cerrada.');
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(/cerrada/i);
     });
@@ -260,7 +266,7 @@ describe('Offers flow (e2e)', () => {
         .set(authHeader(buyer.token))
         .expect(200);
 
-      await sendOffer(seller.token, created.id, 'Oferta en solicitud eliminada.').expect(404);
+      await sendOffer(seller, created.id, 'Oferta en solicitud eliminada.').expect(404);
     });
   });
 
@@ -270,7 +276,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('reject-ok');
       const { request: created, offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta que el comprador va a rechazar de forma válida.',
       );
 
@@ -291,7 +297,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('reject-owner');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para probar IDOR de rechazo.',
       );
 
@@ -306,7 +312,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('reject-twice');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para rechazo repetido.',
       );
 
@@ -327,10 +333,10 @@ describe('Offers flow (e2e)', () => {
       const sellerA = await createSeller('reject-a');
       const sellerB = await createSeller('reject-b');
       const created = await createRequest(buyer.token);
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A que permanece pendiente.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A que permanece pendiente.').expect(
         201,
       );
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B que se rechaza sola.').expect(
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B que se rechaza sola.').expect(
         201,
       );
 
@@ -350,7 +356,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('no-reoffer');
       const { request: created, offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta rechazada sin posibilidad de reofertar.',
       );
 
@@ -360,7 +366,7 @@ describe('Offers flow (e2e)', () => {
         .expect(200);
 
       const retry = await sendOffer(
-        seller.token,
+        seller,
         created.id,
         'Intento de reofertar después del rechazo.',
       );
@@ -374,7 +380,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('accept-ok');
       const { request: created, offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta válida para aceptar y negociar.',
       );
 
@@ -407,7 +413,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('accept-owner');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para IDOR de accept.',
       );
 
@@ -422,7 +428,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('accept-after-reject');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta rechazada que no se puede aceptar después.',
       );
 
@@ -442,7 +448,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('reject-after-accept');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta aceptada que no se puede rechazar después.',
       );
 
@@ -462,10 +468,10 @@ describe('Offers flow (e2e)', () => {
       const sellerA = await createSeller('intact-a');
       const sellerB = await createSeller('intact-b');
       const created = await createRequest(buyer.token);
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A aceptada, las otras siguen.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A aceptada, las otras siguen.').expect(
         201,
       );
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B que debe seguir pendiente.').expect(
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B que debe seguir pendiente.').expect(
         201,
       );
 
@@ -490,13 +496,13 @@ describe('Offers flow (e2e)', () => {
       const sellerD = await createSeller('multi-d');
       const created = await createRequest(buyer.token);
 
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A para negociación múltiple.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A para negociación múltiple.').expect(
         201,
       );
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B para negociación múltiple.').expect(
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B para negociación múltiple.').expect(
         201,
       );
-      const offerC = await sendOffer(sellerC.token, created.id, 'Oferta C que sigue pendiente.').expect(201);
+      const offerC = await sendOffer(sellerC, created.id, 'Oferta C que sigue pendiente.').expect(201);
 
       await request(app.getHttpServer())
         .patch(`/api/offers/${offerA.body.id}/accept`)
@@ -540,7 +546,7 @@ describe('Offers flow (e2e)', () => {
         .expect(200);
       expect(detail.body.status).toBe('NEGOCIANDO');
 
-      await sendOffer(sellerD.token, created.id, 'Oferta D de un seller nuevo en NEGOCIANDO.').expect(201);
+      await sendOffer(sellerD, created.id, 'Oferta D de un seller nuevo en NEGOCIANDO.').expect(201);
 
       const accepted = await request(app.getHttpServer())
         .get('/api/offers/received?status=ACEPTADA')
@@ -581,7 +587,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('same-accept');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para accept concurrente de la misma oferta.',
       );
 
@@ -610,10 +616,10 @@ describe('Offers flow (e2e)', () => {
       const sellerA = await createSeller('diff-a');
       const sellerB = await createSeller('diff-b');
       const created = await createRequest(buyer.token);
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A concurrente distinta.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A concurrente distinta.').expect(
         201,
       );
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B concurrente distinta.').expect(
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B concurrente distinta.').expect(
         201,
       );
 
@@ -647,7 +653,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('accept-reject-race');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para carrera accept contra reject.',
       );
 
@@ -681,7 +687,7 @@ describe('Offers flow (e2e)', () => {
       const sellerB = await createSeller('idor-b');
       const { offer } = await createPendingOffer(
         buyer.token,
-        sellerA.token,
+        sellerA,
         'Oferta de seller A para IDOR de permisos.',
       );
 
@@ -714,8 +720,8 @@ describe('Offers flow (e2e)', () => {
       const sellerA = await createSeller('notify-a');
       const sellerB = await createSeller('notify-b');
       const created = await createRequest(buyer.token);
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A notifica solo a A.').expect(201);
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B no se notifica al aceptar A.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A notifica solo a A.').expect(201);
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B no se notifica al aceptar A.').expect(
         201,
       );
 
@@ -766,7 +772,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('complete-ok');
       const { request: created, offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta aceptada para concretar operación.',
       );
 
@@ -795,7 +801,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('complete-status');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta pendiente que no se puede concretar.',
       );
 
@@ -821,7 +827,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('complete-owner');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para permisos de complete.',
       );
       await acceptOffer(buyer.token, offer.id);
@@ -843,13 +849,13 @@ describe('Offers flow (e2e)', () => {
       const sellerC = await createSeller('complete-c');
       const created = await createRequest(buyer.token);
 
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A aceptada para multi complete.').expect(
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A aceptada para multi complete.').expect(
         201,
       );
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B aceptada para multi complete.').expect(
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B aceptada para multi complete.').expect(
         201,
       );
-      const offerC = await sendOffer(sellerC.token, created.id, 'Oferta C aceptada para multi complete.').expect(
+      const offerC = await sendOffer(sellerC, created.id, 'Oferta C aceptada para multi complete.').expect(
         201,
       );
 
@@ -935,7 +941,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('complete-idem');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para complete idempotente.',
       );
       await acceptOffer(buyer.token, offer.id);
@@ -964,8 +970,8 @@ describe('Offers flow (e2e)', () => {
       const sellerA = await createSeller('complete-race-a');
       const sellerB = await createSeller('complete-race-b');
       const created = await createRequest(buyer.token);
-      const offerA = await sendOffer(sellerA.token, created.id, 'Oferta A carrera complete.').expect(201);
-      const offerB = await sendOffer(sellerB.token, created.id, 'Oferta B carrera complete.').expect(201);
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A carrera complete.').expect(201);
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B carrera complete.').expect(201);
       await acceptOffer(buyer.token, offerA.body.id);
       await acceptOffer(buyer.token, offerB.body.id);
 
@@ -996,7 +1002,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('complete-noresp');
       const { offer } = await createPendingOffer(
         buyer.token,
-        seller.token,
+        seller,
         'Oferta para NO_RESPONSE sin deal.',
       );
       await acceptOffer(buyer.token, offer.id);
@@ -1019,7 +1025,7 @@ describe('Offers flow (e2e)', () => {
       const seller = await createSeller('close-nodeal');
       const created = await createRequest(buyer.token);
       const offerRes = await sendOffer(
-        seller.token,
+        seller,
         created.id,
         'Oferta aceptada pero request cerrada sin deal.',
       ).expect(201);
@@ -1068,7 +1074,7 @@ describe('Offers flow (e2e)', () => {
         title: 'Ferrari original snapshot title',
       });
       const offerRes = await sendOffer(
-        seller.token,
+        seller,
         created.id,
         'Oferta con snapshot de título y presupuesto.',
       ).expect(201);
@@ -1099,7 +1105,7 @@ describe('Offers flow (e2e)', () => {
         .expect(200);
       expect(market.body.items.some((item: { id: string }) => item.id === created.id)).toBe(true);
 
-      await sendOffer(sellerNew.token, created.id, 'Nueva oferta mientras NEGOCIANDO sigue abierta.').expect(
+      await sendOffer(sellerNew, created.id, 'Nueva oferta mientras NEGOCIANDO sigue abierta.').expect(
         201,
       );
 
@@ -1109,7 +1115,7 @@ describe('Offers flow (e2e)', () => {
         .expect(200);
       expect(closed.body.status).toBe('CERRADA');
 
-      await sendOffer(sellerNew.token, created.id, 'No debería ofertar en una request cerrada.').expect(400);
+      await sendOffer(sellerNew, created.id, 'No debería ofertar en una request cerrada.').expect(400);
       expect(await prisma.offer.count({ where: { requestId: created.id } })).toBe(2);
       expect(await prisma.chat.count({ where: { offer: { requestId: created.id } } })).toBe(1);
     });

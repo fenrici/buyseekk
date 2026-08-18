@@ -50,7 +50,8 @@ En **Variables** del servicio API, agregá:
 | `JWT_EXPIRES_IN` | `7d` | Opcional |
 | `NODE_ENV` | `production` | Obligatorio |
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
-| `STORAGE_PROVIDER` | `local` o `r2` | En prod usar `r2` (ver 2.4.1) |
+| `STORAGE_PROVIDER` | `r2` | Obligatorio en production. `local` solo en desarrollo |
+| `STORAGE_PUBLIC_URL` | `https://pub-xxxx.r2.dev` o tu dominio | HTTPS público del bucket. Custom: `https://media.buyseek.us` |
 | `LAUNCH_COUNTRY` | `US` | Mercado único en lanzamiento |
 | `WEB_URL` | URL de Vercel | Links en emails (auth + notificaciones) |
 | `PLUS_FEATURES_UNLOCKED` | `true` o `false` | Obligatorio en producción. `true` = lanzamiento gratis |
@@ -115,6 +116,8 @@ Sin R2, las imágenes viven en disco efímero del container y **se pierden en ca
 | `R2_BUCKET_NAME` | nombre del bucket |
 
 4. En Vercel, si usás dominio custom de R2, agregá `NEXT_PUBLIC_STORAGE_HOST` (opcional, para `next/image`).
+
+Custom domain futuro (`media.buyseek.us`): en el bucket R2 → **Settings → Custom Domains**, y setear `STORAGE_PUBLIC_URL=https://media.buyseek.us`. Las keys son UUID inmutables con `Cache-Control: public, max-age=31536000, immutable`. El bucket es public-read; subir/borrar requiere JWT.
 
 Las migraciones corren en **pre-deploy** (`railway.toml`), no al arrancar el container — seguro con múltiples réplicas.
 

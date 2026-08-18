@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
+  MAX_UPLOAD_BYTES,
   parseNotificationPreferences,
   type NotificationPreferences,
 } from '@buyseekk/shared';
@@ -119,6 +120,10 @@ export default function ProfilePage() {
     const file = fileList?.[0];
     if (!file) return;
     setError('');
+    if (file.size > MAX_UPLOAD_BYTES || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError(t('images.maxHint', { max: '1', mb: String(MAX_UPLOAD_BYTES / (1024 * 1024)) }));
+      return;
+    }
     setUploading(true);
     try {
       const { url } = await uploadImage(file);

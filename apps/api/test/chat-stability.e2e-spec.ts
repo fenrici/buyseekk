@@ -7,6 +7,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('Chat stability (e2e)', () => {
@@ -69,17 +70,21 @@ describe('Chat stability (e2e)', () => {
     return res.body.id as string;
   }
 
-  async function openChat(buyerToken: string, sellerToken: string, unique: string) {
+  async function openChat(
+    buyerToken: string,
+    seller: Awaited<ReturnType<typeof createSeller>>,
+    unique: string,
+  ) {
     const requestId = await createRequest(buyerToken, unique);
     const offerRes = await request(app.getHttpServer())
       .post('/api/offers')
-      .set(authHeader(sellerToken))
+      .set(authHeader(seller.token))
       .send({
         requestId,
         price: 155000,
         currency: 'USD',
         message: `Oferta para abrir chat ${unique} con fotos.`,
-        imageUrls: ['/api/uploads/chat-e2e.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 
@@ -95,7 +100,7 @@ describe('Chat stability (e2e)', () => {
     it('reuses the same message for the same clientMessageId', async () => {
       const buyer = await createBuyer('idemp');
       const seller = await createSeller('idemp');
-      const { chatId } = await openChat(buyer.token, seller.token, 'idemp');
+      const { chatId } = await openChat(buyer.token, seller, 'idemp');
       const clientMessageId = 'client-msg-same-0001';
 
       const first = await request(app.getHttpServer())
@@ -121,7 +126,7 @@ describe('Chat stability (e2e)', () => {
     it('creates two messages when clientMessageId differs', async () => {
       const buyer = await createBuyer('idemp2');
       const seller = await createSeller('idemp2');
-      const { chatId } = await openChat(buyer.token, seller.token, 'idemp2');
+      const { chatId } = await openChat(buyer.token, seller, 'idemp2');
 
       const first = await request(app.getHttpServer())
         .post(`/api/chats/${chatId}/messages`)
@@ -145,7 +150,7 @@ describe('Chat stability (e2e)', () => {
       const buyer = await createBuyer('perm');
       const seller = await createSeller('perm');
       const outsider = await createBuyer('out');
-      const { chatId } = await openChat(buyer.token, seller.token, 'perm');
+      const { chatId } = await openChat(buyer.token, seller, 'perm');
 
       await request(app.getHttpServer())
         .get(`/api/chats/${chatId}`)
@@ -164,7 +169,7 @@ describe('Chat stability (e2e)', () => {
     it('keeps an existing chat usable after pause, close and soft-delete', async () => {
       const buyer = await createBuyer('life');
       const seller = await createSeller('life');
-      const { chatId, requestId } = await openChat(buyer.token, seller.token, 'life');
+      const { chatId, requestId } = await openChat(buyer.token, seller, 'life');
 
       await request(app.getHttpServer())
         .patch(`/api/requests/${requestId}/pause`)
@@ -217,7 +222,7 @@ describe('Chat stability (e2e)', () => {
     it('counts partner messages only and clears after opening the chat', async () => {
       const buyer = await createBuyer('unread');
       const seller = await createSeller('unread');
-      const { chatId } = await openChat(buyer.token, seller.token, 'unread');
+      const { chatId } = await openChat(buyer.token, seller, 'unread');
 
       await request(app.getHttpServer())
         .get(`/api/chats/${chatId}`)
@@ -266,8 +271,8 @@ describe('Chat stability (e2e)', () => {
     it('moves a chat with a new message to the top', async () => {
       const buyer = await createBuyer('inbox');
       const seller = await createSeller('inbox');
-      const first = await openChat(buyer.token, seller.token, 'inbox-a');
-      const second = await openChat(buyer.token, seller.token, 'inbox-b');
+      const first = await openChat(buyer.token, seller, 'inbox-a');
+      const second = await openChat(buyer.token, seller, 'inbox-b');
 
       const before = await request(app.getHttpServer())
         .get('/api/chats')

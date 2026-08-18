@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { authHeader, createTestApp, registerUser, resetDatabase } from './helpers';
+import { authHeader, createTestApp, ownedTestImageUrl, registerUser, resetDatabase } from './helpers';
 
 describe('Admin panel (e2e)', () => {
   let app: INestApplication<App>;
@@ -141,7 +141,7 @@ describe('Admin panel (e2e)', () => {
         price: 18000,
         currency: 'USD',
         message: 'Tengo el auto ideal para tu familia disponible.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(403);
 
@@ -178,7 +178,7 @@ describe('Admin panel (e2e)', () => {
         price: 15000,
         currency: 'USD',
         message: 'Un admin no debería poder ofertar en el marketplace nunca.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(admin.user.id)],
       })
       .expect(403);
 

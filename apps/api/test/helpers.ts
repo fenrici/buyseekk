@@ -1,6 +1,7 @@
 import { CanActivate, INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -9,17 +10,25 @@ import { registerMulterErrorHandler } from '../src/uploads/multer-exception.filt
 import { REFRESH_COOKIE_NAME } from '../src/auth/refresh-cookie';
 import { hashToken } from '../src/auth/token.util';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { STORAGE_SERVICE, StorageService } from '../src/storage/storage.interface';
 
 export { REFRESH_COOKIE_NAME };
 
-export async function createTestApp(): Promise<INestApplication<App>> {
+export async function createTestApp(options?: {
+  storage?: StorageService;
+}): Promise<INestApplication<App>> {
   const allowAll: CanActivate = { canActivate: () => true };
-  const moduleRef = await Test.createTestingModule({
+  let builder = Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(APP_GUARD)
-    .useValue(allowAll)
-    .compile();
+    .useValue(allowAll);
+
+  if (options?.storage) {
+    builder = builder.overrideProvider(STORAGE_SERVICE).useValue(options.storage);
+  }
+
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
@@ -66,6 +75,10 @@ type AuthResponse = {
 
 export function authHeader(token: string) {
   return { Authorization: `Bearer ${token}` };
+}
+
+export function ownedTestImageUrl(userId: string, ext = 'jpg'): string {
+  return `/api/uploads/${userId}/${randomUUID()}.${ext}`;
 }
 
 export function getSetCookieHeaders(res: { headers: Record<string, unknown> }): string[] {

@@ -10,6 +10,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 type SentEmail = { to: string; subject: string; text: string; html: string };
@@ -105,16 +106,16 @@ describe('Transactional emails (e2e)', () => {
     return res.body as { id: string };
   }
 
-  async function createOffer(token: string, requestId: string) {
+  async function createOffer(seller: Awaited<ReturnType<typeof createSeller>>, requestId: string) {
     const res = await request(app.getHttpServer())
       .post('/api/offers')
-      .set(authHeader(token))
+      .set(authHeader(seller.token))
       .send({
         requestId,
         price: 190000,
         currency: 'USD',
         message: 'Oferta con fotos del auto y disponibilidad inmediata.',
-        imageUrls: ['/api/uploads/email.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
     return res.body as { id: string };
@@ -169,7 +170,7 @@ describe('Transactional emails (e2e)', () => {
     const buyer = await createBuyer();
     const seller = await createSeller();
     const created = await createRequest(buyer.token);
-    const offer = await createOffer(seller.token, created.id);
+    const offer = await createOffer(seller, created.id);
 
     const storedOffer = await prisma.offer.findUniqueOrThrow({ where: { id: offer.id } });
     expect(storedOffer.requestId).toBe(created.id);
@@ -193,7 +194,7 @@ describe('Transactional emails (e2e)', () => {
     const buyer2 = await createBuyer('buyer2');
     const seller2 = await createSeller('seller2');
     const req2 = await createRequest(buyer2.token);
-    const offer2 = await createOffer(seller2.token, req2.id);
+    const offer2 = await createOffer(seller2, req2.id);
     const accept2 = await request(app.getHttpServer())
       .patch(`/api/offers/${offer2.id}/accept`)
       .set(authHeader(buyer2.token))
@@ -219,7 +220,7 @@ describe('Transactional emails (e2e)', () => {
     const buyer = await createBuyer();
     const seller = await createSeller();
     const created = await createRequest(buyer.token);
-    const offer = await createOffer(seller.token, created.id);
+    const offer = await createOffer(seller, created.id);
     const acceptRes = await request(app.getHttpServer())
       .patch(`/api/offers/${offer.id}/accept`)
       .set(authHeader(buyer.token))
@@ -260,7 +261,7 @@ describe('Transactional emails (e2e)', () => {
     const buyer = await createBuyer();
     const seller = await createSeller();
     const created = await createRequest(buyer.token);
-    const offer = await createOffer(seller.token, created.id);
+    const offer = await createOffer(seller, created.id);
 
     const acceptRes = await request(app.getHttpServer())
       .patch(`/api/offers/${offer.id}/accept`)
@@ -331,7 +332,7 @@ describe('Transactional emails (e2e)', () => {
         price: 190000,
         currency: 'USD',
         message: 'Oferta persistida aunque falle la notificación posterior.',
-        imageUrls: ['/api/uploads/email.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 
@@ -358,7 +359,7 @@ describe('Transactional emails (e2e)', () => {
     });
     const seller = await createSeller('xss-seller');
     const created = await createRequest(buyer.token);
-    const offer = await createOffer(seller.token, created.id);
+    const offer = await createOffer(seller, created.id);
     const acceptRes = await request(app.getHttpServer())
       .patch(`/api/offers/${offer.id}/accept`)
       .set(authHeader(buyer.token))

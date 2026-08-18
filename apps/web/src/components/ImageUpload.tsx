@@ -41,6 +41,7 @@ export function ImageUpload({
       return;
     }
 
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
     const files = Array.from(fileList).slice(0, remaining);
     setError('');
     setUploading(true);
@@ -48,6 +49,10 @@ export function ImageUpload({
     try {
       const uploaded: string[] = [];
       for (const file of files) {
+        if (file.size > MAX_UPLOAD_BYTES || !allowedTypes.has(file.type)) {
+          setError(t('images.maxHint', { max: String(maxImages), mb: String(MAX_MB) }));
+          continue;
+        }
         const { url } = await uploadImage(file);
         uploaded.push(url);
       }

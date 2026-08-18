@@ -1,18 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
-
-function getAllowedPrefixes(): string[] {
-  const prefixes = ['/api/uploads/'];
-  const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim().replace(/\/$/, '');
-  if (publicUrl) prefixes.push(`${publicUrl}/`);
-  return prefixes;
-}
+import { assertUrlAttachable, getStorageUrlPrefixes } from '../../storage/storage-keys';
 
 function validateEachUrl(urls: string[]) {
   if (urls.length > MAX_IMAGES_PER_ENTITY) {
     throw new BadRequestException(`Máximo ${MAX_IMAGES_PER_ENTITY} imágenes`);
   }
-  const prefixes = getAllowedPrefixes();
+  const prefixes = getStorageUrlPrefixes();
   for (const url of urls) {
     if (!url || typeof url !== 'string') {
       throw new BadRequestException('URL de imagen inválida');
@@ -20,7 +14,7 @@ function validateEachUrl(urls: string[]) {
     if (!prefixes.some((prefix) => url.startsWith(prefix))) {
       throw new BadRequestException('Solo se permiten imágenes subidas a la plataforma');
     }
-    if (url.includes('..')) {
+    if (url.includes('..') || url.includes('\\') || /%2e/i.test(url)) {
       throw new BadRequestException('URL de imagen inválida');
     }
   }
@@ -36,4 +30,17 @@ export function assertValidImageUrls(urls: string[] | undefined, label = 'imáge
     throw new BadRequestException(`Subí al menos una foto (${label})`);
   }
   validateEachUrl(urls);
+}
+
+export function assertOwnedImageUrls(
+  urls: string[] | undefined,
+  userId: string,
+  existingUrls: string[] = [],
+) {
+  if (!urls?.length) return;
+  validateEachUrl(urls);
+  const allowed = new Set(existingUrls);
+  for (const url of urls) {
+    assertUrlAttachable(url, userId, allowed);
+  }
 }

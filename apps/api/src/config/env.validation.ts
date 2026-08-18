@@ -169,6 +169,15 @@ export function validateEnv(config: Record<string, unknown>) {
     }
   }
 
+  if (validated.NODE_ENV === 'production') {
+    if (validated.STORAGE_PROVIDER !== STORAGE_PROVIDER.R2) {
+      throw new Error('STORAGE_PROVIDER=r2 es obligatorio en producción (no se usa filesystem local)');
+    }
+    if (!validated.STORAGE_PUBLIC_URL?.trim().startsWith('https://')) {
+      throw new Error('STORAGE_PUBLIC_URL debe ser HTTPS en producción');
+    }
+  }
+
   if (validated.EMAIL_PROVIDER === 'resend') {
     if (!validated.EMAIL_API_KEY?.trim()) {
       throw new Error('EMAIL_PROVIDER=resend requiere EMAIL_API_KEY');

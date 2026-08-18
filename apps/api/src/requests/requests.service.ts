@@ -27,10 +27,11 @@ import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
-import { validateImageUrls } from '../common/utils/image-urls';
+import { validateImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageObjectsService } from '../storage/storage-objects.service';
 import { toPaginatedResponse } from '../common/utils/paginated-response';
 import { getLaunchCountry } from '../config/launch-country.config';
 import { CreateRequestDto } from './requests.dto';
@@ -81,6 +82,7 @@ export class RequestsService {
     private prisma: PrismaService,
     private ratings: RatingsService,
     private notifications: NotificationsService,
+    private storageObjects: StorageObjectsService,
   ) {}
 
   private formatRequest(req: Awaited<ReturnType<typeof this.findByIdRaw>>) {
@@ -226,6 +228,7 @@ export class RequestsService {
     assertAccountActive(user);
     assertEmailVerified(user);
     validateImageUrls(dto.imageUrls);
+    assertOwnedImageUrls(dto.imageUrls, userId);
     assertCleanPublicText(dto.requirements, 'los requisitos');
     assertCleanPublicText(dto.title, 'el título');
     await assertNoDuplicateRequest(this.prisma, userId, dto.requirements, dto.title);
@@ -328,35 +331,37 @@ export class RequestsService {
         ? trimmedTitle
         : `Busco ${trimmedTitle}`);
 
-    const req = await this.prisma.request.create({
-      data: {
-        userId,
-        category: dto.category,
-        operation: dto.category === RequestCategory.AUTOS ? 'COMPRA' : dto.operation ?? 'COMPRA',
-        title,
-        requirements: dto.requirements,
-        budget: dto.budget,
-        budgetPeriod: dto.budgetPeriod,
-        negotiable: dto.negotiable ?? true,
-        currency: dto.currency,
-        location: dto.location,
-        zone: dto.zone ?? null,
-        bedrooms: dto.category === RequestCategory.INMOBILIARIA ? dto.bedrooms! : null,
-        minSqm: dto.category === RequestCategory.INMOBILIARIA ? dto.minSqm ?? null : null,
-        maxSqm: dto.category === RequestCategory.INMOBILIARIA ? dto.maxSqm ?? null : null,
-        country: dto.country,
-        imageUrls: dto.imageUrls ?? [],
-        carBrand: dto.category === RequestCategory.AUTOS ? dto.carBrand : null,
-        carModel: dto.category === RequestCategory.AUTOS ? dto.carModel : null,
-        carColor: dto.category === RequestCategory.AUTOS ? dto.carColor! : null,
-        carYearMin: dto.category === RequestCategory.AUTOS ? dto.carYearMin! : null,
-        maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage! : null,
-      },
-      include: {
-        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
-      },
-    });
+    const req = await this.storageObjects.withCreateCompensation(dto.imageUrls, userId, () =>
+      this.prisma.request.create({
+        data: {
+          userId,
+          category: dto.category,
+          operation: dto.category === RequestCategory.AUTOS ? 'COMPRA' : dto.operation ?? 'COMPRA',
+          title,
+          requirements: dto.requirements,
+          budget: dto.budget,
+          budgetPeriod: dto.budgetPeriod,
+          negotiable: dto.negotiable ?? true,
+          currency: dto.currency,
+          location: dto.location,
+          zone: dto.zone ?? null,
+          bedrooms: dto.category === RequestCategory.INMOBILIARIA ? dto.bedrooms! : null,
+          minSqm: dto.category === RequestCategory.INMOBILIARIA ? dto.minSqm ?? null : null,
+          maxSqm: dto.category === RequestCategory.INMOBILIARIA ? dto.maxSqm ?? null : null,
+          country: dto.country,
+          imageUrls: dto.imageUrls ?? [],
+          carBrand: dto.category === RequestCategory.AUTOS ? dto.carBrand : null,
+          carModel: dto.category === RequestCategory.AUTOS ? dto.carModel : null,
+          carColor: dto.category === RequestCategory.AUTOS ? dto.carColor! : null,
+          carYearMin: dto.category === RequestCategory.AUTOS ? dto.carYearMin! : null,
+          maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage! : null,
+        },
+        include: {
+          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+          offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+        },
+      }),
+    );
 
     try {
       await this.notifications.processMatchingRequestAlerts(req.id);
@@ -732,7 +737,10 @@ export class RequestsService {
       }
     }
 
-    if (dto.imageUrls !== undefined) validateImageUrls(dto.imageUrls);
+    if (dto.imageUrls !== undefined) {
+      validateImageUrls(dto.imageUrls);
+      assertOwnedImageUrls(dto.imageUrls, userId, req.imageUrls);
+    }
     if (dto.requirements !== undefined) assertCleanPublicText(dto.requirements, 'los requisitos');
     if (dto.title !== undefined) assertCleanPublicText(dto.title, 'el título');
     if (dto.requirements !== undefined || dto.title !== undefined) {
@@ -899,6 +907,10 @@ export class RequestsService {
         },
       },
     });
+
+    if (dto.imageUrls !== undefined) {
+      await this.storageObjects.deleteRemovedBestEffort(req.imageUrls, dto.imageUrls, userId);
+    }
 
     return this.formatRequest(updated);
   }

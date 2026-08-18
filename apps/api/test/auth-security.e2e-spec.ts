@@ -15,6 +15,7 @@ import {
   registerUser,
   resetDatabase,
   verifyUserEmail,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('Auth security (e2e)', () => {
@@ -102,7 +103,7 @@ describe('Auth security (e2e)', () => {
         price: 48000,
         currency: 'USD',
         message: 'Great offer with photos included.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(403);
 
@@ -115,7 +116,7 @@ describe('Auth security (e2e)', () => {
         price: 48000,
         currency: 'USD',
         message: 'Great offer with photos included.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 

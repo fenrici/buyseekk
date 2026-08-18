@@ -1,7 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { STORAGE_PROVIDER, StorageService } from './storage.interface';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { buildOwnedObjectKey, isSafeObjectKey } from './storage-keys';
+import { STORAGE_CACHE_CONTROL, STORAGE_PROVIDER, StorageService } from './storage.interface';
 
 @Injectable()
 export class R2StorageService implements StorageService, OnModuleInit {
@@ -32,16 +33,28 @@ export class R2StorageService implements StorageService, OnModuleInit {
     return [`${this.publicBaseUrl}/`];
   }
 
-  async upload(buffer: Buffer, ext: string, contentType: string): Promise<string> {
-    const key = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+  async upload(buffer: Buffer, ext: string, contentType: string, ownerUserId: string): Promise<string> {
+    const key = buildOwnedObjectKey(ownerUserId, ext);
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: buffer,
         ContentType: contentType,
+        CacheControl: STORAGE_CACHE_CONTROL,
+        ContentDisposition: 'inline',
       }),
     );
     return `${this.publicBaseUrl}/${key}`;
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    if (!isSafeObjectKey(key) || !this.client) return;
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
   }
 }

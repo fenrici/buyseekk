@@ -8,6 +8,7 @@ import {
   loginUser,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('Critical business flow (e2e)', () => {
@@ -91,7 +92,7 @@ describe('Critical business flow (e2e)', () => {
         price: 245000,
         currency: 'USD',
         message: 'Tengo un Ferrari 488 GTB en excelente estado, listo para entregar.',
-        imageUrls: ['/api/uploads/e2e-test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 
@@ -193,7 +194,7 @@ describe('Critical business flow (e2e)', () => {
         price: 99000,
         currency: 'USD',
         message: 'Oferta de prueba para rechazo en flujo e2e.',
-        imageUrls: ['/api/uploads/e2e-reject.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 
@@ -265,7 +266,7 @@ describe('Critical business flow (e2e)', () => {
         price: 115000,
         currency: 'USD',
         message: 'Oferta para validar que terceros no acceden al chat.',
-        imageUrls: ['/api/uploads/e2e-access.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 

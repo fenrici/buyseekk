@@ -12,6 +12,22 @@ function baseEnv(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function prodEnv(overrides: Record<string, unknown> = {}) {
+  return baseEnv({
+    NODE_ENV: 'production',
+    CORS_ORIGIN: 'https://buyseek.us',
+    WEB_URL: 'https://buyseek.us',
+    PLUS_FEATURES_UNLOCKED: 'true',
+    STORAGE_PROVIDER: 'r2',
+    STORAGE_PUBLIC_URL: 'https://media.example.com',
+    R2_ACCOUNT_ID: 'account',
+    R2_ACCESS_KEY_ID: 'key',
+    R2_SECRET_ACCESS_KEY: 'secret',
+    R2_BUCKET_NAME: 'bucket',
+    ...overrides,
+  });
+}
+
 describe('Security config', () => {
   const previousNodeEnv = process.env.NODE_ENV;
 
@@ -55,49 +71,23 @@ describe('Security config', () => {
   });
 
   it('requires production secrets, CORS, WEB_URL and explicit PLUS_FEATURES_UNLOCKED', () => {
-    expect(() =>
-      validateEnv(
-        baseEnv({
-          NODE_ENV: 'production',
-          CORS_ORIGIN: 'https://buyseek.us',
-          WEB_URL: 'https://buyseek.us',
-          PLUS_FEATURES_UNLOCKED: 'true',
-        }),
-      ),
-    ).not.toThrow();
+    expect(() => validateEnv(prodEnv())).not.toThrow();
 
-    expect(() =>
-      validateEnv(
-        baseEnv({
-          NODE_ENV: 'production',
-          JWT_SECRET: 'short-secret-16xx',
-          CORS_ORIGIN: 'https://buyseek.us',
-          WEB_URL: 'https://buyseek.us',
-          PLUS_FEATURES_UNLOCKED: 'true',
-        }),
-      ),
-    ).toThrow(/32/);
+    expect(() => validateEnv(prodEnv({ JWT_SECRET: 'short-secret-16xx' }))).toThrow(/32/);
 
-    expect(() =>
-      validateEnv(
-        baseEnv({
-          NODE_ENV: 'production',
-          CORS_ORIGIN: 'https://buyseek.us',
-          WEB_URL: 'https://buyseek.us',
-        }),
-      ),
-    ).toThrow(/PLUS_FEATURES_UNLOCKED/);
+    expect(() => validateEnv(prodEnv({ PLUS_FEATURES_UNLOCKED: undefined }))).toThrow(
+      /PLUS_FEATURES_UNLOCKED/,
+    );
 
-    expect(() =>
-      validateEnv(
-        baseEnv({
-          NODE_ENV: 'production',
-          CORS_ORIGIN: 'https://buyseek.us',
-          WEB_URL: 'https://buyseek.us',
-          PLUS_FEATURES_UNLOCKED: 'true',
-          REDIS_URL: 'http://localhost:6379',
-        }),
-      ),
-    ).toThrow(/REDIS_URL/);
+    expect(() => validateEnv(prodEnv({ REDIS_URL: 'http://localhost:6379' }))).toThrow(/REDIS_URL/);
+  });
+
+  it('requires R2 in production and HTTPS public URL', () => {
+    expect(() => validateEnv(prodEnv({ STORAGE_PROVIDER: 'local' }))).toThrow(/STORAGE_PROVIDER/);
+    expect(() => validateEnv(prodEnv({ STORAGE_PROVIDER: undefined }))).toThrow(/STORAGE_PROVIDER/);
+    expect(() => validateEnv(prodEnv({ R2_BUCKET_NAME: undefined }))).toThrow(/R2_BUCKET_NAME/);
+    expect(() => validateEnv(prodEnv({ STORAGE_PUBLIC_URL: 'http://media.example.com' }))).toThrow(
+      /HTTPS/,
+    );
   });
 });

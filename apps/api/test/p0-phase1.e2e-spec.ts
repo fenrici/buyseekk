@@ -7,6 +7,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('P0 Phase 1 (e2e)', () => {
@@ -130,7 +131,7 @@ describe('P0 Phase 1 (e2e)', () => {
           price: 195000,
           currency: 'USD',
           message: 'Oferta para bloquear edición tras aceptar.',
-          imageUrls: ['/api/uploads/test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 
@@ -159,7 +160,7 @@ describe('P0 Phase 1 (e2e)', () => {
           price: 190000,
           currency: 'USD',
           message: 'Oferta pendiente para validar edición limitada.',
-          imageUrls: ['/api/uploads/test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 
@@ -226,7 +227,7 @@ describe('P0 Phase 1 (e2e)', () => {
           price: 195000,
           currency: 'USD',
           message: 'Oferta para chat paginado.',
-          imageUrls: ['/api/uploads/test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 
@@ -269,7 +270,7 @@ describe('P0 Phase 1 (e2e)', () => {
           price: 195000,
           currency: 'USD',
           message: 'Oferta para acceso chat.',
-          imageUrls: ['/api/uploads/test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 
@@ -299,7 +300,7 @@ describe('P0 Phase 1 (e2e)', () => {
           price: 195000,
           currency: 'USD',
           message: 'Oferta para rating pendiente.',
-          imageUrls: ['/api/uploads/test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 

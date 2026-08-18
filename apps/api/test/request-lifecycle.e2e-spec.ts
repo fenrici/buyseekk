@@ -9,6 +9,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -74,16 +75,20 @@ describe('Request lifecycle (e2e)', () => {
     return res.body as { id: string; status: string; lastBuyerActivityAt: string };
   }
 
-  function sendOffer(token: string, requestId: string, unique = 'oferta') {
+  function sendOffer(
+    seller: Awaited<ReturnType<typeof createSeller>>,
+    requestId: string,
+    unique = 'oferta',
+  ) {
     return request(app.getHttpServer())
       .post('/api/offers')
-      .set(authHeader(token))
+      .set(authHeader(seller.token))
       .send({
         requestId,
         price: 175000,
         currency: 'USD',
         message: `Propuesta lifecycle ${unique} con fotos del auto.`,
-        imageUrls: ['/api/uploads/lifecycle.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       });
   }
 
@@ -120,7 +125,7 @@ describe('Request lifecycle (e2e)', () => {
 
       await request(app.getHttpServer()).get(`/api/public/requests/${created.id}`).expect(404);
 
-      const offerRes = await sendOffer(seller.token, created.id, 'paused');
+      const offerRes = await sendOffer(seller, created.id, 'paused');
       expect(offerRes.status).toBe(404);
     });
   });
@@ -158,7 +163,7 @@ describe('Request lifecycle (e2e)', () => {
         .expect(200);
       expect(market.body.items.some((r: { id: string }) => r.id === created.id)).toBe(true);
 
-      await sendOffer(seller.token, created.id, 'renewed').expect(201);
+      await sendOffer(seller, created.id, 'renewed').expect(201);
     });
   });
 
@@ -168,7 +173,7 @@ describe('Request lifecycle (e2e)', () => {
       const seller = await createSeller();
       const created = await createRequest(buyer.token);
 
-      const offerRes = await sendOffer(seller.token, created.id, 'nego').expect(201);
+      const offerRes = await sendOffer(seller, created.id, 'nego').expect(201);
       const acceptRes = await request(app.getHttpServer())
         .patch(`/api/offers/${offerRes.body.id}/accept`)
         .set(authHeader(buyer.token))
@@ -312,7 +317,7 @@ describe('Request lifecycle (e2e)', () => {
         .expect(200);
       expect(archivedList.body.items.some((r: { id: string }) => r.id === created.id)).toBe(false);
 
-      await sendOffer(seller.token, created.id, 'aged-pause').expect(404);
+      await sendOffer(seller, created.id, 'aged-pause').expect(404);
     });
 
     it('rejects new offers on inactive requests even if they remain listed', async () => {
@@ -331,7 +336,7 @@ describe('Request lifecycle (e2e)', () => {
         .expect(200);
       expect(market.body.items.some((r: { id: string }) => r.id === created.id)).toBe(true);
 
-      const offerRes = await sendOffer(seller.token, created.id, 'inactive');
+      const offerRes = await sendOffer(seller, created.id, 'inactive');
       expect(offerRes.status).toBe(400);
     });
   });
@@ -356,7 +361,7 @@ describe('Request lifecycle (e2e)', () => {
         .expect(200);
       expect(market.body.items.some((r: { id: string }) => r.id === created.id)).toBe(false);
 
-      await sendOffer(seller.token, created.id, 'deleted').expect(404);
+      await sendOffer(seller, created.id, 'deleted').expect(404);
 
       await request(app.getHttpServer())
         .patch(`/api/requests/${created.id}/renew`)

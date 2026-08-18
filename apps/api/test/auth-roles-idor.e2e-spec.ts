@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { authHeader, createTestApp, registerUser, resetDatabase } from './helpers';
+import { authHeader, createTestApp, ownedTestImageUrl, registerUser, resetDatabase } from './helpers';
 
 describe('Roles, activeMode and IDOR (e2e)', () => {
   let app: INestApplication<App>;
@@ -70,7 +70,7 @@ describe('Roles, activeMode and IDOR (e2e)', () => {
         price: 1,
         currency: 'USD',
         message: 'Buyer cannot offer.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(buyerA.user.id)],
       })
       .expect(403);
 
@@ -106,7 +106,7 @@ describe('Roles, activeMode and IDOR (e2e)', () => {
         price: 140000,
         currency: 'USD',
         message: 'BOTH en modo buyer sigue pudiendo ofertar por capacidad.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(both.user.id)],
       })
       .expect(201);
     expect(offer.body.requestId).toBe(reqA.body.id);

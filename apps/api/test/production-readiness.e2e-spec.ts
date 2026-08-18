@@ -8,6 +8,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('Production readiness (e2e)', () => {
@@ -163,7 +164,7 @@ describe('Production readiness (e2e)', () => {
           price: 180000,
           currency: 'USD',
           message: 'Oferta para ocultar del marketplace.',
-          imageUrls: ['/api/uploads/e2e-test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 
@@ -281,7 +282,7 @@ describe('Production readiness (e2e)', () => {
           price: 190000,
           currency: 'USD',
           message: 'Oferta inicial para chat paginado.',
-          imageUrls: ['/api/uploads/e2e-test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
         })
         .expect(201);
 

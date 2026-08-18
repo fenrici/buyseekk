@@ -3,7 +3,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { FREE_DAILY_OFFER_LIMIT, FREE_MAX_SMART_ALERTS, SUBSCRIPTION_LIMIT_MESSAGES } from '@buyseekk/shared';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { authHeader, createTestApp, registerUser, resetDatabase } from './helpers';
+import { authHeader, createTestApp, ownedTestImageUrl, registerUser, resetDatabase } from './helpers';
 
 describe('Subscription plan limits (e2e)', () => {
   let app: INestApplication<App>;
@@ -114,7 +114,7 @@ describe('Subscription plan limits (e2e)', () => {
           price: 28000 + i,
           currency: 'USD',
           message: `Oferta número ${i + 1} en excelente estado.`,
-          imageUrls: ['/api/uploads/e2e-test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
           requestTitle: `Auto test ${i}`,
           requestBudget: 30000 + i,
           requestRequirements: `Busco auto variante ${i}`,
@@ -132,7 +132,7 @@ describe('Subscription plan limits (e2e)', () => {
         price: 29000,
         currency: 'USD',
         message: 'Oferta que debería superar el límite diario.',
-        imageUrls: ['/api/uploads/e2e-test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(400);
 
@@ -235,7 +235,7 @@ describe('Subscription plan limits (e2e)', () => {
           price: 35000 + i,
           currency: 'USD',
           message: `Oferta Plus número ${i + 1}.`,
-          imageUrls: ['/api/uploads/e2e-test.jpg'],
+          imageUrls: [ownedTestImageUrl(seller.user.id)],
           requestTitle: `Plus auto ${i}`,
           requestBudget: 40000 + i,
           requestRequirements: `Plus busca auto ${i}`,
@@ -253,7 +253,7 @@ describe('Subscription plan limits (e2e)', () => {
         price: 36000,
         currency: 'USD',
         message: 'Oferta Plus 21 sin límite.',
-        imageUrls: ['/api/uploads/e2e-test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
   });

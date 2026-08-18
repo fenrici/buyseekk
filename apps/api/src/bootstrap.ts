@@ -4,7 +4,7 @@ import { join } from 'path';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { ThrottleExceptionFilter } from './common/filters/throttle-exception.filter';
 import { MulterExceptionFilter } from './uploads/multer-exception.filter';
-import { STORAGE_PROVIDER } from './storage/storage.interface';
+import { STORAGE_CACHE_CONTROL, STORAGE_PROVIDER } from './storage/storage.interface';
 import { parseCorsOrigins } from './config/cors-origins';
 
 export function configureApp(app: INestApplication) {
@@ -14,7 +14,13 @@ export function configureApp(app: INestApplication) {
 
   const storageProvider = process.env.STORAGE_PROVIDER ?? STORAGE_PROVIDER.LOCAL;
   if (storageProvider === STORAGE_PROVIDER.LOCAL) {
-    expressApp.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/api/uploads/' });
+    expressApp.useStaticAssets(join(process.cwd(), 'uploads'), {
+      prefix: '/api/uploads/',
+      setHeaders: (res) => {
+        res.setHeader('Cache-Control', STORAGE_CACHE_CONTROL);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+      },
+    });
   }
 
   app.useGlobalFilters(

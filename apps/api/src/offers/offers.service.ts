@@ -17,12 +17,13 @@ import {
 } from '@buyseekk/shared';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/spam-content';
-import { assertValidImageUrls } from '../common/utils/image-urls';
+import { assertValidImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageObjectsService } from '../storage/storage-objects.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { isOfferable, isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
@@ -36,6 +37,7 @@ export class OffersService {
     private ratings: RatingsService,
     private notifications: NotificationsService,
     private subscription: SubscriptionService,
+    private storageObjects: StorageObjectsService,
   ) {}
 
   private async afterCommitNotify(label: string, work: () => Promise<unknown>) {
@@ -92,6 +94,7 @@ export class OffersService {
       throw new ConflictException('Ya enviaste una oferta para esta solicitud');
     }
     assertValidImageUrls(dto.imageUrls, 'producto');
+    assertOwnedImageUrls(dto.imageUrls, sellerId);
     assertCleanPublicText(dto.message, 'la propuesta');
     assertValidMoneyAmount(
       dto.price,
@@ -104,33 +107,35 @@ export class OffersService {
 
     let offer;
     try {
-      offer = await this.prisma.offer.create({
-        data: {
-          requestId: dto.requestId,
-          sellerId,
-          price: dto.price,
-          currency: dto.currency,
-          message: dto.message,
-          imageUrls: dto.imageUrls!,
-          requestTitle: request.title,
-          requestBudget: request.budget,
-          requestBudgetPeriod: request.budgetPeriod,
-          requestRequirements: request.requirements,
-          requestLocation: request.location,
-        },
-        include: {
-          seller: { select: { id: true, name: true, country: true } },
-          request: {
-            select: {
-              id: true,
-              title: true,
-              imageUrls: true,
-              userId: true,
-              user: { select: { locale: true } },
+      offer = await this.storageObjects.withCreateCompensation(dto.imageUrls, sellerId, () =>
+        this.prisma.offer.create({
+          data: {
+            requestId: dto.requestId,
+            sellerId,
+            price: dto.price,
+            currency: dto.currency,
+            message: dto.message,
+            imageUrls: dto.imageUrls!,
+            requestTitle: request.title,
+            requestBudget: request.budget,
+            requestBudgetPeriod: request.budgetPeriod,
+            requestRequirements: request.requirements,
+            requestLocation: request.location,
+          },
+          include: {
+            seller: { select: { id: true, name: true, country: true } },
+            request: {
+              select: {
+                id: true,
+                title: true,
+                imageUrls: true,
+                userId: true,
+                user: { select: { locale: true } },
+              },
             },
           },
-        },
-      });
+        }),
+      );
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException('Ya enviaste una oferta para esta solicitud');

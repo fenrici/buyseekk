@@ -11,6 +11,7 @@ import {
   createTestApp,
   registerUser,
   resetDatabase,
+  ownedTestImageUrl,
 } from './helpers';
 
 describe('Notifications (e2e)', () => {
@@ -76,7 +77,7 @@ describe('Notifications (e2e)', () => {
         price: 48000,
         currency: 'USD',
         message: 'Oferta con notificación automática incluida.',
-        imageUrls: ['/api/uploads/test.jpg'],
+        imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
 
