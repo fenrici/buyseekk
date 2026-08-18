@@ -47,7 +47,8 @@ En **Variables** del servicio API, agregá:
 |----------|-------|-------|
 | `DATABASE_URL` | *(referencia a Postgres)* | Obligatorio |
 | `JWT_SECRET` | string aleatorio ≥32 chars | Ver comando abajo |
-| `JWT_EXPIRES_IN` | `7d` | Opcional |
+| `JWT_ACCESS_EXPIRES` | `15m` | Access token (~15 min). Alias legacy: `JWT_EXPIRES_IN` |
+| `JWT_REFRESH_EXPIRES` | `30d` | Refresh cookie HttpOnly |
 | `NODE_ENV` | `production` | Obligatorio |
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
 | `STORAGE_PROVIDER` | `r2` | Obligatorio en production. `local` solo en desarrollo |
@@ -202,6 +203,8 @@ railway run npm run db:seed
 O desde el dashboard: servicio API → **Shell** → `ALLOW_PRODUCTION_SEED=true npm run db:seed`.
 
 > El seed está **bloqueado en producción** por defecto (evita borrar datos reales). Solo usá `ALLOW_PRODUCTION_SEED=true` en entornos controlados.
+
+> **No** setear `ENABLE_MIAMI_DEMO_BOOTSTRAP` en producción real. El boot normal de la API no crea contenido demo; solo el seed manual (`db:seed` / `db:seed:miami`) con flags explícitos.
 
 ---
 

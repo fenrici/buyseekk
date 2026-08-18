@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { isMiamiDemoBootstrapEnabled } from './miami-demo-bootstrap.config';
 import { MIAMI_AUTO_DEMO_REQUESTS } from './miami-auto-demo-data';
 import { countMiamiAutoDemoRequests, seedMiamiAutos } from './miami-auto-seed';
 
@@ -10,7 +11,7 @@ export class MiamiAutoBootstrapService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
-    if (process.env.NODE_ENV !== 'production') return;
+    if (!isMiamiDemoBootstrapEnabled()) return;
 
     const existing = await countMiamiAutoDemoRequests(this.prisma);
     if (existing >= MIAMI_AUTO_DEMO_REQUESTS.length) return;

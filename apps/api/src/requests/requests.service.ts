@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -28,6 +29,10 @@ import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { assertCleanPublicText, assertNoDuplicateRequest } from '../common/utils/spam-content';
 import { validateImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
+import {
+  REQUEST_HAS_ACTIVE_NEGOTIATIONS_CODE,
+  REQUEST_HAS_ACTIVE_NEGOTIATIONS_MESSAGE,
+} from './request-delete.constants';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1046,6 +1051,12 @@ export class RequestsService {
     const req = await this.prisma.request.findUnique({ where: { id } });
     if (!req) throw new NotFoundException('Solicitud no encontrada');
     if (req.userId !== userId) throw new ForbiddenException();
+    if (req.status === RequestStatus.NEGOCIANDO) {
+      throw new ConflictException({
+        message: REQUEST_HAS_ACTIVE_NEGOTIATIONS_MESSAGE,
+        code: REQUEST_HAS_ACTIVE_NEGOTIATIONS_CODE,
+      });
+    }
 
     await this.prisma.request.update({
       where: { id },

@@ -376,6 +376,116 @@ describe('Request lifecycle (e2e)', () => {
     });
   });
 
+  describe('delete during negotiation', () => {
+    it('rejects delete while NEGOCIANDO with stable error code', async () => {
+      const buyer = await createBuyer();
+      const seller = await createSeller();
+      const created = await createRequest(buyer.token);
+      const offerRes = await sendOffer(seller, created.id, 'Oferta para bloquear delete en negociación.');
+      expect(offerRes.status).toBe(201);
+
+      await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const stored = await prisma.request.findUniqueOrThrow({ where: { id: created.id } });
+      expect(stored.status).toBe('NEGOCIANDO');
+      expect(stored.active).toBe(true);
+
+      const del = await request(app.getHttpServer())
+        .delete(`/api/requests/${created.id}`)
+        .set(authHeader(buyer.token))
+        .expect(409);
+
+      expect(del.body.code).toBe('REQUEST_HAS_ACTIVE_NEGOTIATIONS');
+
+      const after = await prisma.request.findUniqueOrThrow({ where: { id: created.id } });
+      expect(after.active).toBe(true);
+      expect(after.status).toBe('NEGOCIANDO');
+    });
+
+    it('rejects delete when two offers are accepted', async () => {
+      const buyer = await createBuyer();
+      const sellerA = await createSeller();
+      const sellerB = await createSeller();
+      const created = await createRequest(buyer.token);
+      const offerA = await sendOffer(sellerA, created.id, 'Oferta A en negociación paralela.');
+      const offerB = await sendOffer(sellerB, created.id, 'Oferta B en negociación paralela.');
+      expect(offerA.status).toBe(201);
+      expect(offerB.status).toBe(201);
+
+      await request(app.getHttpServer())
+        .patch(`/api/offers/${offerA.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/api/offers/${offerB.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .delete(`/api/requests/${created.id}`)
+        .set(authHeader(buyer.token))
+        .expect(409);
+    });
+
+    it('keeps chats and complete deal working after a failed delete', async () => {
+      const buyer = await createBuyer();
+      const seller = await createSeller();
+      const created = await createRequest(buyer.token);
+      const offerRes = await sendOffer(seller, created.id, 'Oferta para complete tras delete fallido.');
+      expect(offerRes.status).toBe(201);
+
+      const acceptRes = await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .delete(`/api/requests/${created.id}`)
+        .set(authHeader(buyer.token))
+        .expect(409);
+
+      const chatId = acceptRes.body.chatId as string;
+      await request(app.getHttpServer())
+        .get(`/api/chats/${chatId}`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const complete = await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/complete`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      expect(complete.body.dealCompletedAt).toBeTruthy();
+
+      const stored = await prisma.request.findUniqueOrThrow({ where: { id: created.id } });
+      expect(stored.status).toBe('CERRADA');
+      expect(stored.active).toBe(true);
+    });
+
+    it('still allows close without deal during negotiation', async () => {
+      const buyer = await createBuyer();
+      const seller = await createSeller();
+      const created = await createRequest(buyer.token);
+      const offerRes = await sendOffer(seller, created.id, 'Oferta para close sin deal en negociación.');
+      expect(offerRes.status).toBe(201);
+
+      await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const closed = await request(app.getHttpServer())
+        .patch(`/api/requests/${created.id}/close`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      expect(closed.body.status).toBe('CERRADA');
+    });
+  });
+
   describe('lifecycle notifications', () => {
     it('skips paused, deleted and closed requests and does not repeat expiring emails', async () => {
       const notifications = app.get(NotificationsService);

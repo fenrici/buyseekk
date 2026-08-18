@@ -191,17 +191,19 @@ export function RequestCard(props: Props) {
                   {t('buyer.closeAction')}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm(t('buyer.deleteConfirm'))) {
-                    void props.onDelete(request.id);
-                  }
-                }}
-                className={`${actionBtn} border-red-200 text-red-600`}
-              >
-                {t('buyer.delete')}
-              </button>
+              {!isNegotiating && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t('buyer.deleteConfirm'))) {
+                      void props.onDelete(request.id);
+                    }
+                  }}
+                  className={`${actionBtn} border-red-200 text-red-600`}
+                >
+                  {t('buyer.delete')}
+                </button>
+              )}
             </div>
 
             {isPending && (
