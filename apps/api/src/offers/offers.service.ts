@@ -383,10 +383,6 @@ export class OffersService {
       where: { id: offer.requestId },
       data: { lastBuyerActivityAt: now, lastActivityAt: now },
     });
-    await this.prisma.request.updateMany({
-      where: { id: offer.requestId, status: RequestStatus.ACTIVA },
-      data: { status: RequestStatus.NEGOCIANDO },
-    });
 
     const updated = await this.prisma.offer.findUniqueOrThrow({
       where: { id: offerId },

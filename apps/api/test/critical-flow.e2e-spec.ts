@@ -199,6 +199,9 @@ describe('Critical business flow (e2e)', () => {
 
     expect(rejectRes.body.status).toBe('RECHAZADA');
 
+    const stored = await prisma.request.findUnique({ where: { id: requestRes.body.id } });
+    expect(stored?.status).toBe('ACTIVA');
+
     const offers = await request(app.getHttpServer())
       .get('/api/offers/received')
       .set(authHeader(buyer.token))

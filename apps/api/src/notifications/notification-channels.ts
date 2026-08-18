@@ -29,13 +29,14 @@ const EMAIL_TYPES = new Set<NotificationType>([
   NotificationType.REQUEST_EXPIRING,
 ]);
 
-function notificationPath(type: NotificationType, entityId: string | null): string {
+/** Rutas web existentes por tipo. Buyers no usan `/requests/:id` (pantalla seller). */
+export function notificationEmailPath(type: NotificationType, entityId: string | null): string {
   switch (type) {
     case NotificationType.NEW_OFFER:
       return '/buyer/offers';
     case NotificationType.OFFER_ACCEPTED:
     case NotificationType.OFFER_REJECTED:
-      return '/seller/offers?tab=sent';
+      return '/seller/offers';
     case NotificationType.NEW_MESSAGE:
       return entityId ? `/chats/${entityId}` : '/chats';
     case NotificationType.NEW_MATCHING_REQUEST:
@@ -43,9 +44,11 @@ function notificationPath(type: NotificationType, entityId: string | null): stri
     case NotificationType.REQUEST_EXPIRING:
     case NotificationType.REQUEST_INACTIVE:
     case NotificationType.REQUEST_CLOSED:
-      return entityId ? `/requests/${entityId}` : '/buyer?tab=mine';
+      return '/buyer?tab=mine';
+    case NotificationType.EMAIL_VERIFIED:
+      return '/profile';
     default:
-      return '/notifications';
+      return '/profile';
   }
 }
 
@@ -71,7 +74,7 @@ export class EmailNotificationChannel implements NotificationChannelHandler {
     if (!user?.emailVerified) return;
 
     const webUrl = (this.config.get<string>('WEB_URL') ?? 'http://localhost:3000').replace(/\/$/, '');
-    const path = notificationPath(notification.type, notification.entityId);
+    const path = notificationEmailPath(notification.type, notification.entityId);
     const actionUrl = `${webUrl}${path}`;
     const en = user.locale === 'EN';
 

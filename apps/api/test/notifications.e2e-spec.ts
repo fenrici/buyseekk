@@ -1,7 +1,9 @@
 import { INestApplication } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { generateSecureToken, hashToken } from '../src/auth/token.util';
+import { notificationEmailPath } from '../src/notifications/notification-channels';
 import { PrismaService } from '../src/prisma/prisma.service';
 import {
   authHeader,
@@ -133,5 +135,22 @@ describe('Notifications (e2e)', () => {
       .set(authHeader(user.token))
       .expect(200);
     expect(res.body.items.some((n: { type: string }) => n.type === 'EMAIL_VERIFIED')).toBe(true);
+  });
+});
+
+describe('notification email paths', () => {
+  it('maps each type to an existing role-appropriate screen', () => {
+    expect(notificationEmailPath(NotificationType.NEW_OFFER, 'offer-1')).toBe('/buyer/offers');
+    expect(notificationEmailPath(NotificationType.OFFER_ACCEPTED, 'offer-1')).toBe('/seller/offers');
+    expect(notificationEmailPath(NotificationType.OFFER_REJECTED, 'offer-1')).toBe('/seller/offers');
+    expect(notificationEmailPath(NotificationType.NEW_MESSAGE, 'chat-1')).toBe('/chats/chat-1');
+    expect(notificationEmailPath(NotificationType.NEW_MESSAGE, null)).toBe('/chats');
+    expect(notificationEmailPath(NotificationType.NEW_MATCHING_REQUEST, 'req-1')).toBe(
+      '/requests/req-1',
+    );
+    expect(notificationEmailPath(NotificationType.REQUEST_EXPIRING, 'req-1')).toBe('/buyer?tab=mine');
+    expect(notificationEmailPath(NotificationType.REQUEST_INACTIVE, 'req-1')).toBe('/buyer?tab=mine');
+    expect(notificationEmailPath(NotificationType.REQUEST_CLOSED, 'req-1')).toBe('/buyer?tab=mine');
+    expect(notificationEmailPath(NotificationType.EMAIL_VERIFIED, 'user-1')).toBe('/profile');
   });
 });

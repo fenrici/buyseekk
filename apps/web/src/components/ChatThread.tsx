@@ -32,6 +32,12 @@ function prependMessages(prev: ChatDetail, older: ChatMessage[]): ChatDetail {
   return { ...prev, messages: [...unique, ...prev.messages] };
 }
 
+const SEND_ACK_TIMEOUT_MS = 8000;
+
+function isChatMessage(res: unknown): res is ChatMessage {
+  return !!res && typeof res === 'object' && 'id' in res && typeof (res as ChatMessage).id === 'string';
+}
+
 export function ChatThread({
   chatId,
   onLoaded,
@@ -87,8 +93,6 @@ export function ChatThread({
   useEffect(() => {
     const socket = getChatSocket();
     socket.auth = { token: getToken() };
-    socket.connect();
-    socket.emit('join', chatId);
 
     const onMessage = (msg: ChatMessage) => {
       setChat((c) => appendMessage(c, msg));
@@ -98,14 +102,24 @@ export function ChatThread({
         setPartnerLastReadAt(payload.readAt);
       }
     };
-    const onConnect = () => setLive(true);
+    const joinCurrent = () => {
+      socket.emit('join', chatId);
+    };
+    const onConnect = () => {
+      setLive(true);
+      joinCurrent();
+    };
     const onDisconnect = () => setLive(false);
 
     socket.on('message', onMessage);
     socket.on('partner-read', onPartnerRead);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
-    if (socket.connected) setLive(true);
+    socket.connect();
+    if (socket.connected) {
+      setLive(true);
+      joinCurrent();
+    }
 
     return () => {
       socket.off('message', onMessage);
@@ -171,6 +185,14 @@ export function ChatThread({
     }
   }
 
+  async function sendViaRest(payload: string) {
+    const msg = await api<ChatMessage>(`/chats/${chatId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text: payload }),
+    });
+    setChat((c) => appendMessage(c, msg));
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim() || sending) return;
@@ -179,28 +201,51 @@ export function ChatThread({
     const payload = text.trim();
     setText('');
 
+    const failSend = (message: string) => {
+      setError(message);
+      setText(payload);
+    };
+
     const socket = getChatSocket();
     if (socket.connected) {
-      socket.emit('send', { chatId, text: payload }, (res: ChatMessage | { message?: string }) => {
-        setSending(false);
-        if (res && 'id' in res) {
-          setChat((c) => appendMessage(c, res));
-        } else if (res && 'message' in res) {
-          setError(String(res.message));
+      let settled = false;
+      const timer = window.setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        const stillConnected = getChatSocket().connected;
+        if (!stillConnected) {
+          sendViaRest(payload)
+            .catch((err) => {
+              failSend(err instanceof Error ? err.message : t('chat.sendFailed'));
+            })
+            .finally(() => setSending(false));
+          return;
         }
+        failSend(t('chat.sendFailed'));
+        setSending(false);
+      }, SEND_ACK_TIMEOUT_MS);
+
+      socket.emit('send', { chatId, text: payload }, (res: ChatMessage | { message?: string }) => {
+        if (settled) {
+          if (isChatMessage(res)) setChat((c) => appendMessage(c, res));
+          return;
+        }
+        settled = true;
+        window.clearTimeout(timer);
+        setSending(false);
+        if (isChatMessage(res)) {
+          setChat((c) => appendMessage(c, res));
+          return;
+        }
+        failSend(res && 'message' in res && res.message ? String(res.message) : t('chat.sendFailed'));
       });
       return;
     }
 
     try {
-      const msg = await api<ChatMessage>(`/chats/${chatId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ text: payload }),
-      });
-      setChat((c) => appendMessage(c, msg));
+      await sendViaRest(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
-      setText(payload);
+      failSend(err instanceof Error ? err.message : t('chat.sendFailed'));
     } finally {
       setSending(false);
     }
