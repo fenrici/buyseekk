@@ -94,12 +94,12 @@ export function notificationCopy(
     case NotificationType.OFFER_ACCEPTED:
       return en
         ? {
-            title: 'Offer accepted',
-            message: `Your offer for ${context.requestTitle ?? 'a request'} was accepted`,
+            title: 'The buyer wants to negotiate',
+            message: `The buyer wants to move forward with your offer for ${context.requestTitle ?? 'a request'}`,
           }
         : {
-            title: 'Oferta aceptada',
-            message: `Tu oferta para ${context.requestTitle ?? 'una solicitud'} fue aceptada`,
+            title: 'El comprador quiere negociar',
+            message: `El comprador quiere avanzar con tu oferta para ${context.requestTitle ?? 'una solicitud'}`,
           };
     case NotificationType.OFFER_REJECTED:
       return en
@@ -110,6 +110,16 @@ export function notificationCopy(
         : {
             title: 'Oferta rechazada',
             message: `Tu oferta para ${context.requestTitle ?? 'una solicitud'} fue rechazada`,
+          };
+    case NotificationType.DEAL_COMPLETED:
+      return en
+        ? {
+            title: 'Deal completed',
+            message: `The buyer confirmed they closed the deal with you for ${context.requestTitle ?? 'a request'}`,
+          }
+        : {
+            title: 'Operación concretada',
+            message: `El comprador confirmó que cerró la operación con vos para ${context.requestTitle ?? 'una solicitud'}`,
           };
     case NotificationType.NEW_MESSAGE:
       return en

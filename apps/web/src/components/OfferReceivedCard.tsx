@@ -11,6 +11,7 @@ type Props = {
   offer: OfferItem;
   onAccept: (offerId: string) => void;
   onReject: (offerId: string) => void;
+  onComplete?: (offerId: string) => void;
   header?: ReactNode;
   subtitle?: ReactNode;
   sellerName?: string;
@@ -20,6 +21,7 @@ export function OfferReceivedCard({
   offer,
   onAccept,
   onReject,
+  onComplete,
   header,
   subtitle,
   sellerName,
@@ -37,9 +39,12 @@ export function OfferReceivedCard({
         subtitle={decisionSubtitle}
         offerId={offer.id}
         status={offer.status}
+        dealCompletedAt={offer.dealCompletedAt}
+        requestStatus={offer.request?.status}
         chatId={offer.chatId}
         onAccept={onAccept}
         onReject={onReject}
+        onComplete={onComplete}
       />
       <div className="mt-2 flex justify-end">
         <ReportButton target={{ offerId: offer.id }} />

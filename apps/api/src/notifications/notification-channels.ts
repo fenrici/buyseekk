@@ -24,6 +24,7 @@ const EMAIL_TYPES = new Set<NotificationType>([
   NotificationType.NEW_OFFER,
   NotificationType.OFFER_ACCEPTED,
   NotificationType.OFFER_REJECTED,
+  NotificationType.DEAL_COMPLETED,
   NotificationType.NEW_MESSAGE,
   NotificationType.NEW_MATCHING_REQUEST,
   NotificationType.REQUEST_EXPIRING,
@@ -37,6 +38,8 @@ export function notificationEmailPath(type: NotificationType, entityId: string |
     case NotificationType.OFFER_ACCEPTED:
     case NotificationType.OFFER_REJECTED:
       return '/seller/offers';
+    case NotificationType.DEAL_COMPLETED:
+      return entityId ? `/chats/${entityId}` : '/seller/offers';
     case NotificationType.NEW_MESSAGE:
       return entityId ? `/chats/${entityId}` : '/chats';
     case NotificationType.NEW_MATCHING_REQUEST:

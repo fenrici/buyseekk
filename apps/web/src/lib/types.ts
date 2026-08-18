@@ -240,6 +240,7 @@ export interface OfferItem {
   message: string;
   imageUrls?: string[];
   status: string;
+  dealCompletedAt?: string | null;
   hiddenByModeration?: boolean;
   moderationReviewRequired?: boolean;
   requestTitle: string;
@@ -259,6 +260,7 @@ export interface OfferItem {
     id: string;
     title: string;
     imageUrls?: string[];
+    status?: RequestStatusValue;
     user?: { id: string; name: string; avatarUrl?: string | null };
   };
   chatId?: string | null;

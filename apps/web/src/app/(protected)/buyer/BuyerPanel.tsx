@@ -115,15 +115,6 @@ export function BuyerPanel() {
     }
   }
 
-  async function closeDeal(id: string) {
-    try {
-      await api(`/requests/${id}/close`, { method: 'PATCH' });
-      router.push('/ratings');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('common.error'));
-    }
-  }
-
   async function archiveRequest(id: string) {
     try {
       await api(`/requests/${id}/pause`, { method: 'PATCH' });
@@ -232,7 +223,6 @@ export function BuyerPanel() {
                 locale={user.locale}
                 onDelete={removeRequest}
                 onClose={closeRequest}
-                onCloseDeal={closeDeal}
                 onArchive={archiveRequest}
                 onRenew={renewRequest}
                 onUpdated={() => loadMine(minePage)}

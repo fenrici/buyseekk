@@ -3,12 +3,11 @@ import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthUser } from '../common/types/auth-user';
 import { THROTTLE_LIMITS } from '../config/throttle.config';
 import { CreateOfferDto } from './offers.dto';
-import { SentOffersQueryDto } from './sent-offers.query.dto';
+import { OffersListQueryDto, SentOffersQueryDto } from './sent-offers.query.dto';
 import { OffersService } from './offers.service';
 
 @Controller('offers')
@@ -26,8 +25,8 @@ export class OffersController {
 
   @Get('received')
   @Roles('buyer')
-  received(@CurrentUser() user: AuthUser, @Query() query: PaginationQueryDto) {
-    return this.offers.received(user.id, query.page, query.limit);
+  received(@CurrentUser() user: AuthUser, @Query() query: OffersListQueryDto) {
+    return this.offers.received(user.id, query.page, query.limit, query.status);
   }
 
   @Get('received/highlights')
@@ -52,6 +51,13 @@ export class OffersController {
   @Roles('buyer')
   accept(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offers.accept(id, user.id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
+  @Patch(':id/complete')
+  @Roles('buyer')
+  complete(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.complete(id, user.id);
   }
 
   @Throttle({ default: THROTTLE_LIMITS.write })

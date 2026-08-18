@@ -29,9 +29,10 @@ type Props = {
   highlights: OfferHighlight[];
   onAccept: (offerId: string) => void;
   onReject: (offerId: string) => void;
+  onComplete?: (offerId: string) => void;
 };
 
-export function OfferHighlightsSummary({ highlights, onAccept, onReject }: Props) {
+export function OfferHighlightsSummary({ highlights, onAccept, onReject, onComplete }: Props) {
   const t = useT();
 
   if (!highlights.length) return null;
@@ -54,6 +55,7 @@ export function OfferHighlightsSummary({ highlights, onAccept, onReject }: Props
             offer={highlightToOfferItem(h)}
             onAccept={onAccept}
             onReject={onReject}
+            onComplete={onComplete}
             sellerName={h.sellerName}
             subtitle={<p className="text-sm text-slate-400">{t(REASON_KEY[h.label])}</p>}
             header={

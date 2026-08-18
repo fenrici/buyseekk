@@ -308,6 +308,11 @@ describe('P0 Phase 1 (e2e)', () => {
         .set(authHeader(buyer.token))
         .expect(200);
 
+      await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/complete`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
       const res = await request(app.getHttpServer())
         .get('/api/ratings/pending?limit=10&page=1')
         .set(authHeader(buyer.token))

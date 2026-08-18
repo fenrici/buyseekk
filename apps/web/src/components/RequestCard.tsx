@@ -23,7 +23,6 @@ type BuyerProps = {
   locale: User['locale'];
   onDelete: (id: string) => void | Promise<void>;
   onClose?: (id: string) => void | Promise<void>;
-  onCloseDeal?: (id: string) => void | Promise<void>;
   onArchive?: (id: string) => void | Promise<void>;
   onRenew?: (id: string) => void | Promise<void>;
   onUpdated?: () => void;
@@ -94,7 +93,7 @@ export function RequestCard(props: Props) {
   const isInactive = request.status === 'INACTIVA';
   const isNegotiating = request.status === 'NEGOCIANDO';
   const canEdit = !hasAccepted && !isClosed && !isArchived && !isNegotiating && !isPaused;
-  const showDealActions = (isNegotiating || (isPaused && hasAccepted)) && !!props.onCloseDeal;
+  const showDealFailedAction = (isNegotiating || (isPaused && hasAccepted)) && !!props.onClose;
   const canPause = !isClosed && !isArchived && !isPaused;
   const canRenew = isPaused || isArchived || isInactive;
 
@@ -166,33 +165,20 @@ export function RequestCard(props: Props) {
                   {t('buyer.archiveAction')}
                 </button>
               )}
-              {showDealActions && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(t('buyer.dealCompleteConfirm'))) {
-                        void props.onCloseDeal?.(request.id);
-                      }
-                    }}
-                    className={`${actionBtn} border-emerald-200 text-emerald-700`}
-                  >
-                    {t('buyer.dealCompleteAction')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(t('buyer.dealFailedConfirm'))) {
-                        void props.onCloseDeal?.(request.id);
-                      }
-                    }}
-                    className={`${actionBtn} border-amber-200 text-amber-700`}
-                  >
-                    {t('buyer.dealFailedAction')}
-                  </button>
-                </>
+              {showDealFailedAction && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t('buyer.dealFailedConfirm'))) {
+                      void props.onClose?.(request.id);
+                    }
+                  }}
+                  className={`${actionBtn} border-amber-200 text-amber-700`}
+                >
+                  {t('buyer.dealFailedAction')}
+                </button>
               )}
-              {!isClosed && !showDealActions && props.onClose && (
+              {!isClosed && !showDealFailedAction && props.onClose && (
                 <button
                   type="button"
                   onClick={() => {

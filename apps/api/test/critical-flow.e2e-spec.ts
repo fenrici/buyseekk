@@ -122,6 +122,11 @@ describe('Critical business flow (e2e)', () => {
 
     expect(messageRes.body.text).toBe('Perfecto, coordinemos la entrega.');
 
+    await request(app.getHttpServer())
+      .patch(`/api/offers/${offerId}/complete`)
+      .set(authHeader(buyer.token))
+      .expect(200);
+
     const ratingRes = await request(app.getHttpServer())
       .post('/api/ratings')
       .set(authHeader(buyer.token))

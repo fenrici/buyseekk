@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Locale, OfferStatus, RatingType, SellerType, UserMode, UserRole } from '@prisma/client';
+import { Locale, RatingType, SellerType, UserMode, UserRole } from '@prisma/client';
 import {
   canEnterMode,
   hasCompletedSellerProfile,
@@ -56,7 +56,7 @@ export class UsersService {
       this.ratings.getStats(userId),
       this.prisma.offer.count({
         where: {
-          status: OfferStatus.ACEPTADA,
+          dealCompletedAt: { not: null },
           OR: [{ sellerId: userId }, { request: { userId } }],
         },
       }),

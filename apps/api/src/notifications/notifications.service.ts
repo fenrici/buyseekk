@@ -122,6 +122,7 @@ export class NotificationsService {
   }
 
   async notifyOfferAccepted(sellerId: string, locale: Locale, offerId: string, requestTitle: string) {
+    if (await this.hasNotification(sellerId, NotificationType.OFFER_ACCEPTED, offerId)) return;
     return this.create({
       userId: sellerId,
       type: NotificationType.OFFER_ACCEPTED,
@@ -133,12 +134,31 @@ export class NotificationsService {
   }
 
   async notifyOfferRejected(sellerId: string, locale: Locale, offerId: string, requestTitle: string) {
+    if (await this.hasNotification(sellerId, NotificationType.OFFER_REJECTED, offerId)) return;
     return this.create({
       userId: sellerId,
       type: NotificationType.OFFER_REJECTED,
       locale,
       entityId: offerId,
       entityType: NotificationEntityType.OFFER,
+      context: { requestTitle },
+    });
+  }
+
+  async notifyDealCompleted(
+    sellerId: string,
+    locale: Locale,
+    chatId: string,
+    offerId: string,
+    requestTitle: string,
+  ) {
+    if (await this.hasNotification(sellerId, NotificationType.DEAL_COMPLETED, offerId)) return;
+    return this.create({
+      userId: sellerId,
+      type: NotificationType.DEAL_COMPLETED,
+      locale,
+      entityId: chatId,
+      entityType: NotificationEntityType.CHAT,
       context: { requestTitle },
     });
   }

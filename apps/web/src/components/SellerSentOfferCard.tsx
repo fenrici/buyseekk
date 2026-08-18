@@ -24,6 +24,17 @@ export function SellerSentOfferCard({
   const locale = useLocale();
   const [dismissing, setDismissing] = useState(false);
   const statusClass = STATUS_CLASS[offer.status] ?? STATUS_CLASS.PENDIENTE;
+  const dealCompleted = !!offer.dealCompletedAt;
+  const requestClosedWithoutDeal =
+    offer.status === 'ACEPTADA' && !dealCompleted && offer.request?.status === 'CERRADA';
+
+  const acceptedBadge = dealCompleted
+    ? t('buyer.offerDealCompleted')
+    : requestClosedWithoutDeal
+      ? t('seller.requestClosed')
+      : offer.status === 'ACEPTADA'
+        ? t('seller.inNegotiation')
+        : offerStatusLabel(locale, offer.status);
 
   async function handleDismiss() {
     if (dismissing) return;
@@ -48,7 +59,7 @@ export function SellerSentOfferCard({
           <p className="mt-0.5 text-xs text-slate-500">{t('seller.offeredPrice')}</p>
         </div>
         <span className={`offer-status-badge ${statusClass}`}>
-          {offerStatusLabel(locale, offer.status)}
+          {acceptedBadge}
         </span>
       </div>
 
@@ -60,16 +71,32 @@ export function SellerSentOfferCard({
 
       <CompareBlock offer={offer} perspective="seller" />
 
+      {offer.status === 'PENDIENTE' && (
+        <p className="mt-3 text-sm text-slate-400">{t('seller.pendingWaiting')}</p>
+      )}
+
       {offer.status === 'ACEPTADA' && offer.chatId && (
-        <div className="mt-3 flex justify-end">
-          <Link href={`/chats/${offer.chatId}`} className="btn btn-primary text-sm">
-            💬 {t('seller.openChat')}
-          </Link>
+        <div className="mt-3 space-y-2">
+          {dealCompleted && (
+            <p className="text-sm text-emerald-300">{t('seller.dealCompletedHint')}</p>
+          )}
+          {requestClosedWithoutDeal && (
+            <p className="text-sm text-slate-400">{t('seller.requestClosedHint')}</p>
+          )}
+          {!dealCompleted && !requestClosedWithoutDeal && (
+            <p className="text-sm text-slate-400">{t('seller.inNegotiation')}</p>
+          )}
+          <div className="flex justify-end">
+            <Link href={`/chats/${offer.chatId}`} className="btn btn-primary text-sm">
+              💬 {t('seller.openChat')}
+            </Link>
+          </div>
         </div>
       )}
 
       {offer.status === 'RECHAZADA' && (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-400">{t('seller.rejectedNoReoffer')}</p>
           <button
             type="button"
             className="btn btn-ghost text-sm text-slate-400"

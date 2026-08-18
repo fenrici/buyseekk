@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus, Locale } from '@prisma/client';
+import { OfferStatus, RequestStatus, Locale, Prisma } from '@prisma/client';
 import {
   comparePrices,
   defaultAcceptMessageForLocale,
@@ -88,33 +88,41 @@ export class OffersService {
     await assertOfferSpamLimits(this.prisma, sellerId, dto.message);
     await this.subscription.assertDailyOfferLimit(seller);
 
-    const offer = await this.prisma.offer.create({
-      data: {
-        requestId: dto.requestId,
-        sellerId,
-        price: dto.price,
-        currency: dto.currency,
-        message: dto.message,
-        imageUrls: dto.imageUrls!,
-        requestTitle: request.title,
-        requestBudget: request.budget,
-        requestBudgetPeriod: request.budgetPeriod,
-        requestRequirements: request.requirements,
-        requestLocation: request.location,
-      },
-      include: {
-        seller: { select: { id: true, name: true, country: true } },
-        request: {
-          select: {
-            id: true,
-            title: true,
-            imageUrls: true,
-            userId: true,
-            user: { select: { locale: true } },
+    let offer;
+    try {
+      offer = await this.prisma.offer.create({
+        data: {
+          requestId: dto.requestId,
+          sellerId,
+          price: dto.price,
+          currency: dto.currency,
+          message: dto.message,
+          imageUrls: dto.imageUrls!,
+          requestTitle: request.title,
+          requestBudget: request.budget,
+          requestBudgetPeriod: request.budgetPeriod,
+          requestRequirements: request.requirements,
+          requestLocation: request.location,
+        },
+        include: {
+          seller: { select: { id: true, name: true, country: true } },
+          request: {
+            select: {
+              id: true,
+              title: true,
+              imageUrls: true,
+              userId: true,
+              user: { select: { locale: true } },
+            },
           },
         },
-      },
-    });
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException('Ya enviaste una oferta para esta solicitud');
+      }
+      throw err;
+    }
 
     await this.notifications.notifyNewOffer(
       request.userId,
@@ -126,11 +134,11 @@ export class OffersService {
     return this.withComparison(offer);
   }
 
-  async received(userId: string, page?: number, limit?: number) {
+  async received(userId: string, page?: number, limit?: number, status?: OfferStatus) {
     const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
 
     const where = {
-      status: OfferStatus.PENDIENTE,
+      status: status ?? OfferStatus.PENDIENTE,
       hiddenByModeration: false,
       request: { userId, active: true },
     };
@@ -143,7 +151,8 @@ export class OffersService {
         orderBy: { createdAt: 'desc' },
         include: {
           seller: { select: { id: true, name: true, country: true, avatarUrl: true, sellerType: true, businessName: true } },
-          request: { select: { id: true, title: true, imageUrls: true, currency: true } },
+          request: { select: { id: true, title: true, imageUrls: true, currency: true, status: true } },
+          chat: { select: { id: true } },
         },
       }),
       this.prisma.offer.count({ where }),
@@ -153,6 +162,7 @@ export class OffersService {
 
     const items = offers.map((o) => ({
       ...this.withComparison(o),
+      chatId: o.chat?.id ?? null,
       seller: {
         ...o.seller,
         rating: ratingMap[o.sellerId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
@@ -234,6 +244,7 @@ export class OffersService {
               id: true,
               title: true,
               imageUrls: true,
+              status: true,
               user: { select: { id: true, name: true, avatarUrl: true } },
             },
           },
@@ -285,31 +296,24 @@ export class OffersService {
     });
     if (!offer) throw new NotFoundException('Oferta no encontrada');
     if (offer.request.userId !== buyerId) throw new ForbiddenException();
+    if (!offer.request.active) throw new NotFoundException('Oferta no encontrada');
+    if (offer.request.status === RequestStatus.CERRADA && offer.status !== OfferStatus.ACEPTADA) {
+      throw new BadRequestException('La solicitud está cerrada');
+    }
 
-    const { updated, chat } = await this.prisma.$transaction(async (tx) => {
-      const alreadyAccepted = await tx.offer.findFirst({
-        where: { requestId: offer.requestId, status: OfferStatus.ACEPTADA },
-      });
-      if (alreadyAccepted) {
-        throw new BadRequestException('Ya hay una oferta aceptada para esta solicitud');
-      }
-
+    const { updated, chat, didTransition } = await this.prisma.$transaction(async (tx) => {
       const acceptResult = await tx.offer.updateMany({
         where: { id: offerId, status: OfferStatus.PENDIENTE },
         data: { status: OfferStatus.ACEPTADA, acceptedAt: new Date() },
       });
-      if (acceptResult.count === 0) {
-        throw new BadRequestException('La oferta ya fue procesada');
-      }
+      const didTransition = acceptResult.count > 0;
 
-      await tx.offer.updateMany({
-        where: {
-          requestId: offer.requestId,
-          id: { not: offerId },
-          status: OfferStatus.PENDIENTE,
-        },
-        data: { status: OfferStatus.RECHAZADA },
-      });
+      if (!didTransition) {
+        const current = await tx.offer.findUnique({ where: { id: offerId } });
+        if (!current || current.status !== OfferStatus.ACEPTADA) {
+          throw new BadRequestException('La oferta ya fue procesada');
+        }
+      }
 
       const updatedOffer = await tx.offer.findUniqueOrThrow({
         where: { id: offerId },
@@ -325,8 +329,9 @@ export class OffersService {
         updatedOffer.seller.defaultAcceptMessage?.trim() ||
         defaultAcceptMessageForLocale(updatedOffer.seller.locale ?? Locale.ES);
 
-      const newChat = await tx.chat.create({
-        data: {
+      const newChat = await tx.chat.upsert({
+        where: { offerId },
+        create: {
           offerId,
           messages: {
             create: [
@@ -341,27 +346,31 @@ export class OffersService {
             ],
           },
         },
+        update: {},
       });
 
-      // El comprador abrió la negociación: estado NEGOCIANDO + actividad
-      await tx.request.updateMany({
-        where: { id: offer.requestId, status: RequestStatus.ACTIVA },
-        data: { status: RequestStatus.NEGOCIANDO },
-      });
-      await tx.request.update({
-        where: { id: offer.requestId },
-        data: { lastBuyerActivityAt: new Date(), lastActivityAt: new Date() },
-      });
+      if (didTransition) {
+        await tx.request.updateMany({
+          where: { id: offer.requestId, status: RequestStatus.ACTIVA },
+          data: { status: RequestStatus.NEGOCIANDO },
+        });
+        await tx.request.update({
+          where: { id: offer.requestId },
+          data: { lastBuyerActivityAt: new Date(), lastActivityAt: new Date() },
+        });
+      }
 
-      return { updated: updatedOffer, chat: newChat };
+      return { updated: updatedOffer, chat: newChat, didTransition };
     });
 
-    await this.notifications.notifyOfferAccepted(
-      updated.sellerId,
-      updated.seller.locale,
-      updated.id,
-      updated.requestTitle,
-    );
+    if (didTransition) {
+      await this.notifications.notifyOfferAccepted(
+        updated.sellerId,
+        updated.seller.locale,
+        updated.id,
+        updated.requestTitle,
+      );
+    }
 
     return { ...this.withComparison(updated), chatId: chat.id };
   }
@@ -401,6 +410,124 @@ export class OffersService {
     );
 
     return this.withComparison(updated);
+  }
+
+  /** El comprador confirma que concretó la operación con este vendedor. */
+  async complete(offerId: string, buyerId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: {
+        request: true,
+        chat: { select: { id: true } },
+        seller: { select: { id: true, locale: true } },
+      },
+    });
+    if (!offer) throw new NotFoundException('Oferta no encontrada');
+    if (offer.request.userId !== buyerId) throw new ForbiddenException();
+    if (!offer.request.active) throw new NotFoundException('Oferta no encontrada');
+    if (offer.status !== OfferStatus.ACEPTADA) {
+      throw new BadRequestException('Solo podés concretar una oferta aceptada');
+    }
+    if (!offer.chat) {
+      throw new BadRequestException('Se requiere un chat para concretar la operación');
+    }
+
+    if (offer.dealCompletedAt) {
+      return {
+        ...this.withComparison(offer),
+        chatId: offer.chat.id,
+        requestId: offer.requestId,
+        requestStatus: offer.request.status,
+      };
+    }
+
+    const otherCompleted = await this.prisma.offer.findFirst({
+      where: {
+        requestId: offer.requestId,
+        dealCompletedAt: { not: null },
+        id: { not: offerId },
+      },
+      select: { id: true },
+    });
+    if (otherCompleted) {
+      throw new BadRequestException(
+        'Ya concretaste la operación con otro vendedor en esta solicitud',
+      );
+    }
+
+    if (offer.request.status === RequestStatus.CERRADA) {
+      throw new BadRequestException('La solicitud ya está cerrada');
+    }
+
+    let didComplete = false;
+    let updated;
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const completeResult = await tx.offer.updateMany({
+          where: {
+            id: offerId,
+            status: OfferStatus.ACEPTADA,
+            dealCompletedAt: null,
+          },
+          data: { dealCompletedAt: new Date() },
+        });
+
+        if (completeResult.count === 0) {
+          const current = await tx.offer.findUnique({ where: { id: offerId } });
+          if (!current?.dealCompletedAt) {
+            throw new BadRequestException('No se pudo concretar la operación');
+          }
+          return { updated: current, didComplete: false };
+        }
+
+        const now = new Date();
+        await tx.request.update({
+          where: { id: offer.requestId },
+          data: {
+            status: RequestStatus.CERRADA,
+            closedAt: now,
+            pausedAt: null,
+            lastBuyerActivityAt: now,
+            lastActivityAt: now,
+          },
+        });
+
+        const fresh = await tx.offer.findUniqueOrThrow({
+          where: { id: offerId },
+          include: {
+            seller: { select: { id: true, locale: true } },
+            request: { select: { status: true } },
+          },
+        });
+        return { updated: fresh, didComplete: true };
+      });
+      updated = result.updated;
+      didComplete = result.didComplete;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException(
+          'Ya concretaste la operación con otro vendedor en esta solicitud',
+        );
+      }
+      throw err;
+    }
+
+    if (didComplete) {
+      await this.notifications.notifyDealCompleted(
+        offer.sellerId,
+        offer.seller.locale,
+        offer.chat.id,
+        offer.id,
+        offer.requestTitle,
+      );
+    }
+
+    return {
+      ...this.withComparison(updated),
+      chatId: offer.chat.id,
+      requestId: offer.requestId,
+      requestStatus: RequestStatus.CERRADA,
+    };
   }
 
   /** El vendedor descarta de su lista una oferta rechazada (soft-dismiss). */

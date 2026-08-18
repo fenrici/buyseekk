@@ -12,10 +12,13 @@ import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
 
+type ReceivedStatusFilter = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+
 export default function BuyerOffersPage() {
   const router = useRouter();
   const { user } = useAuth();
   const t = useT();
+  const [statusFilter, setStatusFilter] = useState<ReceivedStatusFilter>('PENDIENTE');
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [offerHighlights, setOfferHighlights] = useState<OfferHighlight[]>([]);
   const [page, setPage] = useState(1);
@@ -24,13 +27,22 @@ export default function BuyerOffersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  useEffect(() => {
     if (!user) return;
     let cancelled = false;
     setError('');
     setLoading(true);
+    const loadHighlights = statusFilter === 'PENDIENTE';
     Promise.all([
-      api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/received?page=${page}`),
-      api<{ highlights: OfferHighlight[] }>('/offers/received/highlights'),
+      api<PaginatedResult<OfferItem> | OfferItem[]>(
+        `/offers/received?page=${page}&status=${statusFilter}`,
+      ),
+      loadHighlights
+        ? api<{ highlights: OfferHighlight[] }>('/offers/received/highlights')
+        : Promise.resolve({ highlights: [] as OfferHighlight[] }),
     ])
       .then(([raw, highlightsRes]) => {
         if (cancelled) return;
@@ -48,12 +60,17 @@ export default function BuyerOffersPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, page, t]);
+  }, [user, page, statusFilter, t]);
 
   async function refresh() {
+    const loadHighlights = statusFilter === 'PENDIENTE';
     const [raw, highlightsRes] = await Promise.all([
-      api<PaginatedResult<OfferItem> | OfferItem[]>(`/offers/received?page=${page}`),
-      api<{ highlights: OfferHighlight[] }>('/offers/received/highlights'),
+      api<PaginatedResult<OfferItem> | OfferItem[]>(
+        `/offers/received?page=${page}&status=${statusFilter}`,
+      ),
+      loadHighlights
+        ? api<{ highlights: OfferHighlight[] }>('/offers/received/highlights')
+        : Promise.resolve({ highlights: [] as OfferHighlight[] }),
     ]);
     const data = normalizePaginated(raw);
     setOffers(data.items);
@@ -83,10 +100,34 @@ export default function BuyerOffersPage() {
     }
   }
 
+  async function complete(id: string) {
+    try {
+      const res = await api<{ chatId?: string }>(`/offers/${id}/complete`, { method: 'PATCH' });
+      if (res.chatId) {
+        router.push(`/ratings`);
+        return;
+      }
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   if (!user) return null;
 
   const highlightIds = new Set(offerHighlights.map((h) => h.offerId));
   const otherOffers = offers.filter((o) => !highlightIds.has(o.id));
+  const statusFilters: { id: ReceivedStatusFilter; label: string }[] = [
+    { id: 'PENDIENTE', label: t('buyer.receivedFilterPending') },
+    { id: 'ACEPTADA', label: t('buyer.receivedFilterAccepted') },
+    { id: 'RECHAZADA', label: t('buyer.receivedFilterRejected') },
+  ];
+  const emptyCopy =
+    statusFilter === 'ACEPTADA'
+      ? { title: t('buyer.noReceivedAccepted'), hint: t('buyer.noReceivedAcceptedHint') }
+      : statusFilter === 'RECHAZADA'
+        ? { title: t('buyer.noReceivedRejected'), hint: t('buyer.noReceivedRejectedHint') }
+        : { title: t('buyer.noOffers'), hint: null };
 
   return (
     <div className="panel-dark">
@@ -94,6 +135,21 @@ export default function BuyerOffersPage() {
       <main className="mx-auto max-w-4xl px-4 py-10">
         <h1 className="text-3xl font-bold text-white">{t('buyer.receivedTitle')}</h1>
         <p className="mt-1 text-slate-500">{t('buyer.receivedSubtitle')}</p>
+
+        <div className="panel-tabs mt-6" role="tablist" aria-label={t('buyer.receivedTitle')}>
+          {statusFilters.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              role="tab"
+              className={`panel-tab ${statusFilter === filter.id ? 'active' : ''}`}
+              onClick={() => setStatusFilter(filter.id)}
+              aria-selected={statusFilter === filter.id}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
         {meta.total > 0 && (
           <p className="mt-3 text-sm text-slate-400">
@@ -107,15 +163,16 @@ export default function BuyerOffersPage() {
           <PanelListLoading loading={loading} />
           {!loading && (
             <>
-              {offerHighlights.length > 0 && (
+              {statusFilter === 'PENDIENTE' && offerHighlights.length > 0 && (
                 <OfferHighlightsSummary
                   highlights={offerHighlights}
                   onAccept={accept}
                   onReject={reject}
+                  onComplete={complete}
                 />
               )}
 
-              {otherOffers.length > 0 && offerHighlights.length > 0 && (
+              {otherOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                   {t('highlights.allOffers')}
                 </h2>
@@ -123,16 +180,18 @@ export default function BuyerOffersPage() {
 
               {offers.length === 0 && !error && (
                 <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
-                  <p className="text-slate-400">{t('buyer.noOffers')}</p>
+                  <p className="text-slate-400">{emptyCopy.title}</p>
+                  {emptyCopy.hint && <p className="mt-2 text-sm text-slate-500">{emptyCopy.hint}</p>}
                 </div>
               )}
 
-              {otherOffers.map((o) => (
+              {(statusFilter === 'PENDIENTE' ? otherOffers : offers).map((o) => (
                 <OfferReceivedCard
                   key={o.id}
                   offer={o}
                   onAccept={accept}
                   onReject={reject}
+                  onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
                 />
               ))}
 

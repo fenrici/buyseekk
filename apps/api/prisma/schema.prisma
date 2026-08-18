@@ -112,6 +112,7 @@ enum NotificationType {
   NEW_OFFER
   OFFER_ACCEPTED
   OFFER_REJECTED
+  DEAL_COMPLETED
   NEW_MESSAGE
   REQUEST_EXPIRING
   REQUEST_INACTIVE
@@ -383,6 +384,7 @@ model Offer {
   requestLocation       String
   createdAt             DateTime    @default(now())
   acceptedAt            DateTime?
+  dealCompletedAt       DateTime?
 
   chat Chat?
 
@@ -390,6 +392,7 @@ model Offer {
   @@index([sellerId])
   @@index([sellerId, dismissedBySeller, createdAt])
   @@index([requestId, status])
+  @@index([requestId, dealCompletedAt])
 }
 
 model Chat {

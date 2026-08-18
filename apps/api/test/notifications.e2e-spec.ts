@@ -143,6 +143,7 @@ describe('notification email paths', () => {
     expect(notificationEmailPath(NotificationType.NEW_OFFER, 'offer-1')).toBe('/buyer/offers');
     expect(notificationEmailPath(NotificationType.OFFER_ACCEPTED, 'offer-1')).toBe('/seller/offers');
     expect(notificationEmailPath(NotificationType.OFFER_REJECTED, 'offer-1')).toBe('/seller/offers');
+    expect(notificationEmailPath(NotificationType.DEAL_COMPLETED, 'chat-1')).toBe('/chats/chat-1');
     expect(notificationEmailPath(NotificationType.NEW_MESSAGE, 'chat-1')).toBe('/chats/chat-1');
     expect(notificationEmailPath(NotificationType.NEW_MESSAGE, null)).toBe('/chats');
     expect(notificationEmailPath(NotificationType.NEW_MATCHING_REQUEST, 'req-1')).toBe(

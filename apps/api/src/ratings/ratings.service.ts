@@ -71,7 +71,7 @@ export class RatingsService {
     return result;
   }
 
-  private async getOfferContext(offerId: string, userId: string) {
+  private async getNegotiationOfferContext(offerId: string, userId: string) {
     const offer = await this.prisma.offer.findUnique({
       where: { id: offerId },
       include: {
@@ -95,35 +95,48 @@ export class RatingsService {
     return { offer, isBuyer, isSeller, toUserId, chat: offer.chat };
   }
 
+  private async getCompletedOfferContext(offerId: string, userId: string) {
+    const ctx = await this.getNegotiationOfferContext(offerId, userId);
+    if (!ctx.offer.dealCompletedAt) {
+      throw new BadRequestException(
+        'Solo podés dejar una valoración después de concretar la operación',
+      );
+    }
+    return ctx;
+  }
+
   async create(fromUserId: string, dto: CreateRatingDto) {
     const existing = await this.prisma.rating.findUnique({
       where: { fromUserId_offerId: { fromUserId, offerId: dto.offerId } },
     });
     if (existing) throw new ConflictException('Ya valoraste esta oferta');
 
-    const { offer, isBuyer, isSeller, toUserId, chat } = await this.getOfferContext(
-      dto.offerId,
-      fromUserId,
-    );
-
     if (dto.type === RatingType.NO_RESPONSE) {
+      const { offer, isSeller, toUserId, chat } = await this.getNegotiationOfferContext(
+        dto.offerId,
+        fromUserId,
+      );
       if (!isSeller) {
         throw new ForbiddenException('Solo el vendedor puede marcar falta de respuesta');
       }
       const buyerReplied = chat.messages.some((m) => m.fromRole === 'buyer');
       if (buyerReplied) {
-        throw new BadRequestException('El comprador respondió en el chat — usá una valoración con estrellas');
+        throw new BadRequestException(
+          'El comprador respondió en el chat — usá una valoración con estrellas',
+        );
       }
       return this.prisma.rating.create({
         data: {
           fromUserId,
           toUserId,
-          offerId: dto.offerId,
+          offerId: offer.id,
           type: RatingType.NO_RESPONSE,
           comment: dto.comment?.trim() || 'El comprador no respondió en el chat',
         },
       });
     }
+
+    const { toUserId } = await this.getCompletedOfferContext(dto.offerId, fromUserId);
 
     if (!dto.stars || dto.stars < 1 || dto.stars > 5) {
       throw new BadRequestException('Las valoraciones requieren entre 1 y 5 estrellas');
@@ -146,6 +159,7 @@ export class RatingsService {
 
     const offers = await this.prisma.offer.findMany({
       where: {
+        dealCompletedAt: { not: null },
         status: OfferStatus.ACEPTADA,
         chat: { isNot: null },
         OR: [{ sellerId: userId }, { request: { userId } }],
@@ -155,7 +169,7 @@ export class RatingsService {
         seller: { select: { id: true, name: true, avatarUrl: true } },
         request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
       },
-      orderBy: { acceptedAt: 'desc' },
+      orderBy: { dealCompletedAt: 'desc' },
     });
 
     const rated = await this.prisma.rating.findMany({
@@ -185,7 +199,10 @@ export class RatingsService {
   }
 
   async forOffer(offerId: string, userId: string) {
-    const { offer, isBuyer, toUserId, chat } = await this.getOfferContext(offerId, userId);
+    const { offer, isBuyer, toUserId, chat } = await this.getNegotiationOfferContext(
+      offerId,
+      userId,
+    );
     const partner = await this.prisma.user.findUnique({
       where: { id: toUserId },
       select: { id: true, name: true, avatarUrl: true },
@@ -197,14 +214,16 @@ export class RatingsService {
     });
     const partnerStats = await this.getStats(toUserId);
     const buyerReplied = chat.messages.some((m) => m.fromRole === 'buyer');
+    const dealCompleted = offer.dealCompletedAt != null;
 
     return {
       offerId,
       myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
       partner: { ...partner, stats: partnerStats },
       myRating: mine,
-      canMarkNoResponse: !isBuyer && !buyerReplied && !mine,
-      canReview: !mine,
+      canMarkNoResponse: !isBuyer && !buyerReplied && !mine && !dealCompleted,
+      canReview: dealCompleted && !mine,
+      dealCompleted,
     };
   }
 }
