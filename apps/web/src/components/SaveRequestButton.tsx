@@ -101,5 +101,5 @@ export function canSellerOfferOnRequest(
 ): boolean {
   if (myOffer) return false;
   if (!status) return true;
-  return status === 'ACTIVA' || status === 'NEGOCIANDO' || status === 'INACTIVA';
+  return status === 'ACTIVA' || status === 'NEGOCIANDO';
 }

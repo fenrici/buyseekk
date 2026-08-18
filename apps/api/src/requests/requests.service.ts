@@ -8,7 +8,6 @@ import {
 import { Country, Currency, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
 import {
   citiesForCountry,
-  archivedBuyerActivityAt,
   isValidBrand,
   isValidCarYear,
   isValidColor,
@@ -42,6 +41,7 @@ import {
   confirmationCutoff,
   effectiveRequestStatus,
   inactiveAfterConfirmCutoff,
+  countsTowardBuyerLimitWhere,
   isVisibleToSellers,
   sortRequestsForSeller,
   toLifecycleInput,
@@ -310,7 +310,7 @@ export class RequestsService {
     }
 
     const activeCount = await this.prisma.request.count({
-      where: { userId, active: true, ...visibleToSellersWhere() },
+      where: { userId, ...countsTowardBuyerLimitWhere() },
     });
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
       throw new BadRequestException(`Máximo ${MAX_ACTIVE_REQUESTS} solicitudes activas`);
@@ -651,13 +651,14 @@ export class RequestsService {
     if (query.scope === 'open') {
       where.active = true;
       where.status = { not: RequestStatus.CERRADA };
-      where.lastBuyerActivityAt = { gte: archiveCutoff() };
+      where.OR = [{ pausedAt: { not: null } }, { lastBuyerActivityAt: { gte: archiveCutoff() } }];
     } else if (query.scope === 'closed') {
       where.active = true;
       where.status = RequestStatus.CERRADA;
     } else if (query.scope === 'archived') {
       where.active = true;
       where.status = { not: RequestStatus.CERRADA };
+      where.pausedAt = null;
       where.lastBuyerActivityAt = { lt: archiveCutoff() };
     }
 
@@ -920,7 +921,7 @@ export class RequestsService {
       throw new NotFoundException('Solicitud no encontrada');
     }
 
-    // Cerradas, archivadas y pendientes dejan de ser visibles para vendedores (salvo si las guardó)
+    // Cerradas, pausadas, archivadas y pendientes: no visibles para vendedores (salvo si las guardó)
     if (viewer && !isVisibleToSellers(toLifecycleInput(req))) {
       const saved = await this.prisma.savedRequest.findUnique({
         where: { sellerId_requestId: { sellerId: viewer.id, requestId: id } },
@@ -1004,7 +1005,7 @@ export class RequestsService {
     return this.formatRequest(await this.findByIdRaw(id));
   }
 
-  /** Pausar búsqueda: archiva de inmediato (fuera de exploración, reactivable con renew). */
+  /** Pausar búsqueda: oculta a vendedores sin archivar ni alterar actividad. */
   async pause(userId: string, id: string) {
     const req = await this.prisma.request.findUnique({ where: { id } });
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
@@ -1013,15 +1014,12 @@ export class RequestsService {
       throw new BadRequestException('La solicitud está cerrada');
     }
 
-    const archivedAt = archivedBuyerActivityAt();
-    await this.prisma.request.update({
-      where: { id },
-      data: {
-        lastBuyerActivityAt: archivedAt,
-        lastActivityAt: archivedAt,
-        pausedAt: null,
-      },
-    });
+    if (!req.pausedAt) {
+      await this.prisma.request.update({
+        where: { id },
+        data: { pausedAt: new Date() },
+      });
+    }
     return this.formatRequest(await this.findByIdRaw(id));
   }
 

@@ -4,6 +4,7 @@ import {
   confirmationCutoff,
   effectiveRequestStatus,
   inactiveAfterConfirmCutoff,
+  isOfferable,
   isVisibleToSellers,
   savedListPriority,
   sellerListPriority,
@@ -50,9 +51,31 @@ assert.equal(
   'ARCHIVADA',
 );
 
+assert.equal(
+  effectiveRequestStatus(base({ pausedAt: new Date(), lastBuyerActivityAt: daysAgo(10) })),
+  'PAUSADA',
+);
+assert.equal(
+  effectiveRequestStatus(base({ status: 'NEGOCIANDO', pausedAt: new Date() })),
+  'PAUSADA',
+);
+assert.equal(
+  effectiveRequestStatus(base({ status: 'CERRADA', pausedAt: new Date() })),
+  'CERRADA',
+);
+
 assert.equal(isVisibleToSellers(base({ lastBuyerActivityAt: daysAgo(7, 6) })), false);
 assert.equal(isVisibleToSellers(base({ lastBuyerActivityAt: daysAgo(7, 25) })), true);
 assert.equal(isVisibleToSellers(base({ lastBuyerActivityAt: daysAgo(10) })), false);
+assert.equal(isVisibleToSellers(base({ pausedAt: new Date() })), false);
+assert.equal(isVisibleToSellers(base({ active: false })), false);
+
+assert.equal(isOfferable(base()), true);
+assert.equal(isOfferable(base({ status: 'NEGOCIANDO' })), true);
+assert.equal(isOfferable(base({ lastBuyerActivityAt: daysAgo(7, 25) })), false);
+assert.equal(isOfferable(base({ pausedAt: new Date() })), false);
+assert.equal(isOfferable(base({ status: 'CERRADA' })), false);
+assert.equal(isOfferable(base({ active: false })), false);
 
 assert.equal(sellerListPriority('ACTIVA'), 0);
 assert.equal(sellerListPriority('NEGOCIANDO'), 0);
@@ -64,6 +87,7 @@ assert.equal(savedListPriority('NEGOCIANDO'), 1);
 assert.equal(savedListPriority('INACTIVA'), 2);
 assert.equal(savedListPriority('PENDIENTE_DE_CONFIRMACION'), 2);
 assert.equal(savedListPriority('ARCHIVADA'), 3);
+assert.equal(savedListPriority('PAUSADA'), 3);
 assert.equal(savedListPriority('CERRADA'), 3);
 
 const sortedSaved = sortSavedRequestsForSeller([

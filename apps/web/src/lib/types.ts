@@ -66,6 +66,7 @@ export interface PublicProfile {
 export type RequestStatusValue =
   | 'ACTIVA'
   | 'NEGOCIANDO'
+  | 'PAUSADA'
   | 'PENDIENTE_DE_CONFIRMACION'
   | 'INACTIVA'
   | 'CERRADA'

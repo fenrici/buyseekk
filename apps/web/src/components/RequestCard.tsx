@@ -6,7 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
 import { RequestMeta } from '@/components/RequestMeta';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
-import { SaveRequestButton } from '@/components/SaveRequestButton';
+import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { useT } from '@/lib/i18n';
 import { RequestItem, User } from '@/lib/types';
@@ -71,9 +71,15 @@ export function RequestCard(props: Props) {
                 <UserRatingBadge stats={request.user.rating} compact />
               </div>
             </div>
-            <Link href={`/requests/${request.id}`} className="btn btn-accent mt-4 w-full">
-              {t('seller.sendOffer')}
-            </Link>
+            {canSellerOfferOnRequest(request.status, request.myOffer) ? (
+              <Link href={`/requests/${request.id}`} className="btn btn-accent mt-4 w-full">
+                {t('seller.sendOffer')}
+              </Link>
+            ) : (
+              <Link href={`/requests/${request.id}`} className="btn btn-ghost mt-4 w-full border">
+                {t('savedRequest.viewDetail')}
+              </Link>
+            )}
           </div>
         </div>
       </article>
@@ -83,9 +89,14 @@ export function RequestCard(props: Props) {
   const hasAccepted = (request.offers ?? []).some((o) => o.status === 'ACEPTADA');
   const isClosed = request.status === 'CERRADA';
   const isArchived = request.status === 'ARCHIVADA';
+  const isPaused = request.status === 'PAUSADA';
   const isPending = request.status === 'PENDIENTE_DE_CONFIRMACION';
+  const isInactive = request.status === 'INACTIVA';
   const isNegotiating = request.status === 'NEGOCIANDO';
-  const canEdit = !hasAccepted && !isClosed && !isArchived && !isNegotiating;
+  const canEdit = !hasAccepted && !isClosed && !isArchived && !isNegotiating && !isPaused;
+  const showDealActions = (isNegotiating || (isPaused && hasAccepted)) && !!props.onCloseDeal;
+  const canPause = !isClosed && !isArchived && !isPaused;
+  const canRenew = isPaused || isArchived || isInactive;
 
   const actionBtn =
     'shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold sm:text-sm';
@@ -133,16 +144,16 @@ export function RequestCard(props: Props) {
                   {t('buyer.edit')}
                 </button>
               )}
-              {isArchived && props.onRenew && (
+              {canRenew && props.onRenew && (
                 <button
                   type="button"
                   onClick={() => void props.onRenew?.(request.id)}
                   className={`${actionBtn} border-indigo-200 text-indigo-600`}
                 >
-                  {t('reminder.keep')}
+                  {isPaused ? t('buyer.reactivateAction') : t('reminder.keep')}
                 </button>
               )}
-              {!isClosed && !isArchived && props.onArchive && (
+              {canPause && props.onArchive && (
                 <button
                   type="button"
                   onClick={() => {
@@ -155,7 +166,7 @@ export function RequestCard(props: Props) {
                   {t('buyer.archiveAction')}
                 </button>
               )}
-              {isNegotiating && props.onCloseDeal && (
+              {showDealActions && (
                 <>
                   <button
                     type="button"
@@ -181,7 +192,7 @@ export function RequestCard(props: Props) {
                   </button>
                 </>
               )}
-              {!isClosed && !isNegotiating && props.onClose && (
+              {!isClosed && !showDealActions && props.onClose && (
                 <button
                   type="button"
                   onClick={() => {

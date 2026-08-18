@@ -12,6 +12,7 @@ export type StoredRequestStatus = 'ACTIVA' | 'NEGOCIANDO' | 'CERRADA';
 export type EffectiveRequestStatus =
   | 'ACTIVA'
   | 'NEGOCIANDO'
+  | 'PAUSADA'
   | 'PENDIENTE_DE_CONFIRMACION'
   | 'INACTIVA'
   | 'CERRADA'
@@ -21,6 +22,7 @@ export type RequestLifecycleInput = {
   status: StoredRequestStatus;
   lastBuyerActivityAt: Date;
   pausedAt?: Date | null;
+  active?: boolean;
 };
 
 export function confirmationCutoff(now = Date.now()) {
@@ -51,6 +53,7 @@ export function effectiveRequestStatus(
   now = Date.now(),
 ): EffectiveRequestStatus {
   if (req.status === 'CERRADA') return 'CERRADA';
+  if (req.pausedAt) return 'PAUSADA';
 
   const idleMs = idleMsSince(req.lastBuyerActivityAt, now);
   if (idleMs >= REQUEST_ARCHIVE_DAYS * DAY_MS) return 'ARCHIVADA';
@@ -62,8 +65,16 @@ export function effectiveRequestStatus(
 }
 
 export function isVisibleToSellers(req: RequestLifecycleInput, now = Date.now()) {
+  if (req.active === false) return false;
   const status = effectiveRequestStatus(req, now);
   return status === 'ACTIVA' || status === 'NEGOCIANDO' || status === 'INACTIVA';
+}
+
+/** Puede recibir una oferta nueva. No incluye inactivas ni pausadas. */
+export function isOfferable(req: RequestLifecycleInput, now = Date.now()) {
+  if (req.active === false) return false;
+  const status = effectiveRequestStatus(req, now);
+  return status === 'ACTIVA' || status === 'NEGOCIANDO';
 }
 
 /** Prioridad en exploración: Activa/Negociando primero, luego Inactiva. */
@@ -73,7 +84,7 @@ export function sellerListPriority(status: EffectiveRequestStatus) {
   return 2;
 }
 
-/** Prioridad en guardadas: Activas → Negociando → Inactivas → Archivadas/Cerradas. */
+/** Prioridad en guardadas: Activas → Negociando → Inactivas → Pausadas/Archivadas/Cerradas. */
 export function savedListPriority(status: EffectiveRequestStatus) {
   if (status === 'ACTIVA') return 0;
   if (status === 'NEGOCIANDO') return 1;

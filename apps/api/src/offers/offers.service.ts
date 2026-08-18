@@ -23,7 +23,7 @@ import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
+import { isOfferable, isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 import { CreateOfferDto } from './offers.dto';
 
 @Injectable()
@@ -55,8 +55,12 @@ export class OffersService {
     if (request.status === RequestStatus.CERRADA) {
       throw new BadRequestException('La solicitud está cerrada y no acepta nuevas ofertas');
     }
-    if (!isVisibleToSellers(toLifecycleInput(request))) {
-      throw new NotFoundException('Solicitud no encontrada');
+    const lifecycle = toLifecycleInput(request);
+    if (!isOfferable(lifecycle)) {
+      if (!isVisibleToSellers(lifecycle)) {
+        throw new NotFoundException('Solicitud no encontrada');
+      }
+      throw new BadRequestException('La solicitud no acepta nuevas ofertas');
     }
 
     const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });

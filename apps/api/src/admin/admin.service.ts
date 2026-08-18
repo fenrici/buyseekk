@@ -278,7 +278,7 @@ export class AdminService {
 
     const updated = await this.prisma.request.update({
       where: { id },
-      data: { status: RequestStatus.CERRADA, active: false, closedAt: new Date() },
+      data: { status: RequestStatus.CERRADA, active: false, closedAt: new Date(), pausedAt: null },
     });
 
     await this.securityLog.log(SecurityEvent.ADMIN_REQUEST_CLOSED, {
@@ -302,6 +302,7 @@ export class AdminService {
         status: RequestStatus.ACTIVA,
         active: true,
         closedAt: null,
+        pausedAt: null,
         lastActivityAt: now,
         lastBuyerActivityAt: now,
       },

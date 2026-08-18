@@ -9,6 +9,7 @@ import { sortSavedRequestsForSeller } from '@buyseekk/shared';
 import { isSellerCapable, type AuthUser } from '../common/types/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestsService } from '../requests/requests.service';
+import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
 
 @Injectable()
 export class SavedRequestsService {
@@ -29,6 +30,9 @@ export class SavedRequestsService {
     if (req.userId === user.id) throw new ForbiddenException('No podés guardar tu propia solicitud');
     if (req.country !== user.country) throw new NotFoundException('Solicitud no encontrada');
     if (user.sellerCategory && req.category !== user.sellerCategory) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    if (!isVisibleToSellers(toLifecycleInput(req))) {
       throw new NotFoundException('Solicitud no encontrada');
     }
     return req;

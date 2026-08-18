@@ -4,6 +4,7 @@ import {
   confirmationCutoff,
   effectiveRequestStatus,
   inactiveAfterConfirmCutoff,
+  isOfferable,
   isVisibleToSellers,
   sortRequestsForSeller,
   type EffectiveRequestStatus,
@@ -15,6 +16,7 @@ export {
   confirmationCutoff,
   effectiveRequestStatus,
   inactiveAfterConfirmCutoff,
+  isOfferable,
   isVisibleToSellers,
   sortRequestsForSeller,
   type EffectiveRequestStatus,
@@ -25,6 +27,7 @@ type LifecycleRow = {
   status: RequestStatus;
   lastBuyerActivityAt: Date;
   pausedAt: Date | null;
+  active?: boolean;
 };
 
 export function toLifecycleInput(req: LifecycleRow): RequestLifecycleInput {
@@ -32,10 +35,11 @@ export function toLifecycleInput(req: LifecycleRow): RequestLifecycleInput {
     status: req.status as RequestLifecycleInput['status'],
     lastBuyerActivityAt: req.lastBuyerActivityAt,
     pausedAt: req.pausedAt,
+    active: req.active,
   };
 }
 
-/** Condiciones Prisma: oculta Pendiente de confirmación y Archivada; muestra Inactiva. */
+/** Condiciones Prisma: oculta Pendiente, Archivada y Pausada; muestra Inactiva. */
 export function visibleToSellersWhere(now = Date.now()) {
   const confirmation = confirmationCutoff(now);
   const inactive = inactiveAfterConfirmCutoff(now);
@@ -43,6 +47,7 @@ export function visibleToSellersWhere(now = Date.now()) {
 
   return {
     status: { not: RequestStatus.CERRADA },
+    pausedAt: null,
     lastBuyerActivityAt: { gte: archive },
     OR: [
       { lastBuyerActivityAt: { gte: confirmation } },
@@ -54,5 +59,16 @@ export function visibleToSellersWhere(now = Date.now()) {
         { lastBuyerActivityAt: { gte: inactive } },
       ],
     },
+  };
+}
+
+/** Solicitudes que ocupan cupo del comprador (visibles o pausadas explícitamente). */
+export function countsTowardBuyerLimitWhere(now = Date.now()) {
+  return {
+    active: true,
+    OR: [
+      { pausedAt: { not: null }, status: { not: RequestStatus.CERRADA } },
+      visibleToSellersWhere(now),
+    ],
   };
 }

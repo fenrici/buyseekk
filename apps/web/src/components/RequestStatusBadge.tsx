@@ -6,6 +6,7 @@ import { RequestStatusValue } from '@/lib/types';
 const STATUS_STYLES: Record<RequestStatusValue, string> = {
   ACTIVA: 'bg-emerald-100 text-emerald-700',
   NEGOCIANDO: 'bg-indigo-100 text-indigo-700',
+  PAUSADA: 'bg-slate-200 text-slate-700',
   PENDIENTE_DE_CONFIRMACION: 'bg-amber-100 text-amber-800',
   INACTIVA: 'bg-amber-100 text-amber-700',
   CERRADA: 'bg-slate-100 text-slate-500',
