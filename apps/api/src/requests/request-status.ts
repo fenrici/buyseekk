@@ -1,4 +1,5 @@
 import { RequestStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import {
   archiveCutoff,
   confirmationCutoff,
@@ -59,6 +60,36 @@ export function visibleToSellersWhere(now = Date.now()) {
         { lastBuyerActivityAt: { gte: inactive } },
       ],
     },
+  };
+}
+
+/**
+ * Solicitudes que pueden requerir notificación de lifecycle (PENDIENTE_DE_CONFIRMACION o INACTIVA).
+ * Evita escanear requests activas recientes o ya archivadas.
+ */
+export function lifecycleNotificationScanWhere(now = Date.now()): Prisma.RequestWhereInput {
+  const confirmation = confirmationCutoff(now);
+  const inactive = inactiveAfterConfirmCutoff(now);
+  const archive = archiveCutoff(now);
+
+  return {
+    active: true,
+    status: { not: RequestStatus.CERRADA },
+    pausedAt: null,
+    OR: [
+      {
+        lastBuyerActivityAt: {
+          lte: confirmation,
+          gt: inactive,
+        },
+      },
+      {
+        lastBuyerActivityAt: {
+          lte: inactive,
+          gt: archive,
+        },
+      },
+    ],
   };
 }
 

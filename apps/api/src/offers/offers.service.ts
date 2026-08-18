@@ -10,6 +10,7 @@ import { OfferStatus, RequestStatus, Locale, Prisma } from '@prisma/client';
 import {
   comparePrices,
   defaultAcceptMessageForLocale,
+  OFFER_HIGHLIGHTS_POOL_LIMIT,
   parsePagination,
   pickOfferHighlights,
   type OfferForHighlight,
@@ -201,6 +202,7 @@ export class OffersService {
         request: { userId, active: true },
       },
       orderBy: { createdAt: 'desc' },
+      take: OFFER_HIGHLIGHTS_POOL_LIMIT,
       include: {
         seller: {
           select: {

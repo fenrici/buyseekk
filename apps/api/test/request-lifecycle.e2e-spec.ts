@@ -417,5 +417,127 @@ describe('Request lifecycle (e2e)', () => {
       });
       expect(inactive).toHaveLength(0);
     });
+
+    it('allows a new expiring notification after renew starts a new activity cycle', async () => {
+      const notifications = app.get(NotificationsService);
+      const buyer = await createBuyer();
+      const created = await createRequest(buyer.token);
+      const firstCycleAt = new Date(Date.now() - 7 * DAY_MS - 2 * HOUR_MS);
+
+      await prisma.request.update({
+        where: { id: created.id },
+        data: { lastBuyerActivityAt: firstCycleAt },
+      });
+
+      await notifications.scanRequestLifecycle();
+      await notifications.scanRequestLifecycle();
+
+      let expiring = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_EXPIRING, entityId: created.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(expiring).toHaveLength(1);
+      expect(expiring[0].dedupeKey).toContain(String(firstCycleAt.getTime()));
+
+      await request(app.getHttpServer())
+        .patch(`/api/requests/${created.id}/renew`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const renewed = await prisma.request.findUniqueOrThrow({ where: { id: created.id } });
+      const secondCycleAt = new Date(renewed.lastBuyerActivityAt.getTime() - 7 * DAY_MS - 2 * HOUR_MS);
+      await prisma.request.update({
+        where: { id: created.id },
+        data: { lastBuyerActivityAt: secondCycleAt },
+      });
+
+      await notifications.scanRequestLifecycle();
+
+      expiring = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_EXPIRING, entityId: created.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(expiring).toHaveLength(2);
+      expect(expiring[1].dedupeKey).toContain(String(secondCycleAt.getTime()));
+    });
+
+    it('dedupes inactive notifications per activity cycle and allows a new cycle after renew', async () => {
+      const notifications = app.get(NotificationsService);
+      const buyer = await createBuyer();
+      const created = await createRequest(buyer.token);
+      const firstCycleAt = new Date(Date.now() - 8 * DAY_MS - 2 * HOUR_MS);
+
+      await prisma.request.update({
+        where: { id: created.id },
+        data: { lastBuyerActivityAt: firstCycleAt },
+      });
+
+      await notifications.scanRequestLifecycle();
+      await notifications.scanRequestLifecycle();
+
+      let inactive = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_INACTIVE, entityId: created.id },
+      });
+      expect(inactive).toHaveLength(1);
+
+      await request(app.getHttpServer())
+        .patch(`/api/requests/${created.id}/renew`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const renewed = await prisma.request.findUniqueOrThrow({ where: { id: created.id } });
+      const secondCycleAt = new Date(renewed.lastBuyerActivityAt.getTime() - 8 * DAY_MS - 2 * HOUR_MS);
+      await prisma.request.update({
+        where: { id: created.id },
+        data: { lastBuyerActivityAt: secondCycleAt },
+      });
+
+      await notifications.scanRequestLifecycle();
+
+      inactive = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_INACTIVE, entityId: created.id },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(inactive).toHaveLength(2);
+    });
+
+    it('creates only one lifecycle notification when concurrent scans race on the same cycle', async () => {
+      const notifications = app.get(NotificationsService);
+      const buyer = await createBuyer();
+      const created = await createRequest(buyer.token);
+      const cycleAt = new Date(Date.now() - 7 * DAY_MS - 2 * HOUR_MS);
+
+      await prisma.request.update({
+        where: { id: created.id },
+        data: { lastBuyerActivityAt: cycleAt },
+      });
+
+      const stored = await prisma.request.findUniqueOrThrow({
+        where: { id: created.id },
+        include: { user: { select: { locale: true } } },
+      });
+
+      await Promise.all([
+        notifications.notifyRequestExpiring(
+          buyer.user.id,
+          stored.user.locale,
+          stored.id,
+          stored.title,
+          stored.lastBuyerActivityAt,
+        ),
+        notifications.notifyRequestExpiring(
+          buyer.user.id,
+          stored.user.locale,
+          stored.id,
+          stored.title,
+          stored.lastBuyerActivityAt,
+        ),
+      ]);
+
+      const expiring = await prisma.notification.findMany({
+        where: { userId: buyer.user.id, type: NotificationType.REQUEST_EXPIRING, entityId: created.id },
+      });
+      expect(expiring).toHaveLength(1);
+    });
   });
 });

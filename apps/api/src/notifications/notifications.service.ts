@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Locale, Notification, NotificationEntityType, NotificationType } from '@prisma/client';
+import { Locale, Notification, NotificationEntityType, NotificationType, Prisma, UserRole } from '@prisma/client';
 import { effectiveRequestStatus, parseSellerFiltersJson, requestMatchesSellerFilters, type MatchableRequest, parseNotificationPreferences, isGatedNotificationType, isNotificationTypeEnabled } from '@buyseekk/shared';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,9 +10,10 @@ import {
   PushNotificationChannel,
 } from './notification-channels';
 import { notificationCopy } from './notification-copy';
+import { notificationDedupeKey } from './notification-dedupe';
 import { NotificationPayload } from './notification-delivery.interface';
 import { isSellerCapable } from '../common/types/auth-user';
-import { isOfferable, toLifecycleInput, visibleToSellersWhere } from '../requests/request-status';
+import { isOfferable, lifecycleNotificationScanWhere, toLifecycleInput, visibleToSellersWhere } from '../requests/request-status';
 
 type AlertSeller = {
   id: string;
@@ -38,6 +39,8 @@ type CreateInput = {
   entityType?: NotificationEntityType;
   title?: string;
   message?: string;
+  dedupeKey?: string | null;
+  lastBuyerActivityAt?: Date;
 };
 
 @Injectable()
@@ -114,76 +117,85 @@ export class NotificationsService {
     }
 
     const copy = notificationCopy(input.type, input.locale, input.context ?? {});
-    const row = await this.prisma.notification.create({
-      data: {
-        userId: input.userId,
-        type: input.type,
-        title: input.title ?? copy.title,
-        message: input.message ?? copy.message,
-        entityId: input.entityId,
-        entityType: input.entityType,
-      },
-    });
+    const dedupeKey =
+      input.dedupeKey !== undefined
+        ? input.dedupeKey
+        : input.entityId
+          ? notificationDedupeKey(input.type, input.entityId, {
+              lastBuyerActivityAt: input.lastBuyerActivityAt,
+            })
+          : null;
+
+    let row: Notification;
+    try {
+      row = await this.prisma.notification.create({
+        data: {
+          userId: input.userId,
+          type: input.type,
+          title: input.title ?? copy.title,
+          message: input.message ?? copy.message,
+          entityId: input.entityId,
+          entityType: input.entityType,
+          dedupeKey,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002' &&
+        dedupeKey
+      ) {
+        return null;
+      }
+      throw err;
+    }
     const payload = this.toPayload(row);
     await this.dispatch(input.userId, payload);
     return payload;
   }
 
-  private async hasNotification(userId: string, type: NotificationType, entityId: string) {
-    const existing = await this.prisma.notification.findFirst({
-      where: { userId, type, entityId },
-    });
-    return !!existing;
-  }
-
   async notifyNewOffer(buyerId: string, locale: Locale, offerId: string, requestTitle: string) {
     return this.bestEffort(
       { type: NotificationType.NEW_OFFER, userId: buyerId, entityId: offerId },
-      async () => {
-        if (await this.hasNotification(buyerId, NotificationType.NEW_OFFER, offerId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: buyerId,
           type: NotificationType.NEW_OFFER,
           locale,
           entityId: offerId,
           entityType: NotificationEntityType.OFFER,
           context: { requestTitle },
-        });
-      },
+        }),
     );
   }
 
   async notifyOfferAccepted(sellerId: string, locale: Locale, offerId: string, requestTitle: string) {
     return this.bestEffort(
       { type: NotificationType.OFFER_ACCEPTED, userId: sellerId, entityId: offerId },
-      async () => {
-        if (await this.hasNotification(sellerId, NotificationType.OFFER_ACCEPTED, offerId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: sellerId,
           type: NotificationType.OFFER_ACCEPTED,
           locale,
           entityId: offerId,
           entityType: NotificationEntityType.OFFER,
           context: { requestTitle },
-        });
-      },
+        }),
     );
   }
 
   async notifyOfferRejected(sellerId: string, locale: Locale, offerId: string, requestTitle: string) {
     return this.bestEffort(
       { type: NotificationType.OFFER_REJECTED, userId: sellerId, entityId: offerId },
-      async () => {
-        if (await this.hasNotification(sellerId, NotificationType.OFFER_REJECTED, offerId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: sellerId,
           type: NotificationType.OFFER_REJECTED,
           locale,
           entityId: offerId,
           entityType: NotificationEntityType.OFFER,
           context: { requestTitle },
-        });
-      },
+        }),
     );
   }
 
@@ -200,17 +212,15 @@ export class NotificationsService {
   ) {
     return this.bestEffort(
       { type: NotificationType.DEAL_COMPLETED, userId: sellerId, entityId: chatId },
-      async () => {
-        if (await this.hasNotification(sellerId, NotificationType.DEAL_COMPLETED, chatId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: sellerId,
           type: NotificationType.DEAL_COMPLETED,
           locale,
           entityId: chatId,
           entityType: NotificationEntityType.CHAT,
           context: { requestTitle },
-        });
-      },
+        }),
     );
   }
 
@@ -235,54 +245,62 @@ export class NotificationsService {
     );
   }
 
-  async notifyRequestExpiring(buyerId: string, locale: Locale, requestId: string, requestTitle: string) {
+  async notifyRequestExpiring(
+    buyerId: string,
+    locale: Locale,
+    requestId: string,
+    requestTitle: string,
+    lastBuyerActivityAt: Date,
+  ) {
     return this.bestEffort(
       { type: NotificationType.REQUEST_EXPIRING, userId: buyerId, entityId: requestId },
-      async () => {
-        if (await this.hasNotification(buyerId, NotificationType.REQUEST_EXPIRING, requestId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: buyerId,
           type: NotificationType.REQUEST_EXPIRING,
           locale,
           entityId: requestId,
           entityType: NotificationEntityType.REQUEST,
           context: { requestTitle },
-        });
-      },
+          lastBuyerActivityAt,
+        }),
     );
   }
 
-  async notifyRequestInactive(buyerId: string, locale: Locale, requestId: string, requestTitle: string) {
+  async notifyRequestInactive(
+    buyerId: string,
+    locale: Locale,
+    requestId: string,
+    requestTitle: string,
+    lastBuyerActivityAt: Date,
+  ) {
     return this.bestEffort(
       { type: NotificationType.REQUEST_INACTIVE, userId: buyerId, entityId: requestId },
-      async () => {
-        if (await this.hasNotification(buyerId, NotificationType.REQUEST_INACTIVE, requestId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: buyerId,
           type: NotificationType.REQUEST_INACTIVE,
           locale,
           entityId: requestId,
           entityType: NotificationEntityType.REQUEST,
           context: { requestTitle },
-        });
-      },
+          lastBuyerActivityAt,
+        }),
     );
   }
 
   async notifyRequestClosed(buyerId: string, locale: Locale, requestId: string, requestTitle: string) {
     return this.bestEffort(
       { type: NotificationType.REQUEST_CLOSED, userId: buyerId, entityId: requestId },
-      async () => {
-        if (await this.hasNotification(buyerId, NotificationType.REQUEST_CLOSED, requestId)) return null;
-        return this.create({
+      async () =>
+        this.create({
           userId: buyerId,
           type: NotificationType.REQUEST_CLOSED,
           locale,
           entityId: requestId,
           entityType: NotificationEntityType.REQUEST,
           context: { requestTitle },
-        });
-      },
+        }),
     );
   }
 
@@ -317,11 +335,8 @@ export class NotificationsService {
   ) {
     return this.bestEffort(
       { type: NotificationType.NEW_MATCHING_REQUEST, userId: sellerId, entityId: requestId },
-      async () => {
-        if (await this.hasNotification(sellerId, NotificationType.NEW_MATCHING_REQUEST, requestId)) {
-          return null;
-        }
-        return this.create({
+      async () =>
+        this.create({
           userId: sellerId,
           type: NotificationType.NEW_MATCHING_REQUEST,
           locale,
@@ -336,8 +351,7 @@ export class NotificationsService {
             operation: context.operation ?? '',
             bedrooms: context.bedrooms != null ? String(context.bedrooms) : '',
           },
-        });
-      },
+        }),
     );
   }
 
@@ -383,6 +397,16 @@ export class NotificationsService {
       if (!isOfferable(toLifecycleInput(request))) return;
 
       const savedSearches = await this.prisma.savedSearch.findMany({
+        where: {
+          userId: { not: request.userId },
+          OR: [{ category: null }, { category: request.category }],
+          user: {
+            country: request.country,
+            blocked: false,
+            suspended: false,
+            role: { in: [UserRole.SELLER, UserRole.BOTH] },
+          },
+        },
         include: {
           user: {
             select: {
@@ -529,7 +553,7 @@ export class NotificationsService {
   async scanRequestLifecycle() {
     const now = Date.now();
     const requests = await this.prisma.request.findMany({
-      where: { active: true, status: { not: 'CERRADA' }, pausedAt: null },
+      where: lifecycleNotificationScanWhere(now),
       include: { user: { select: { id: true, locale: true } } },
     });
 
@@ -541,9 +565,21 @@ export class NotificationsService {
       }, now);
 
       if (status === 'PENDIENTE_DE_CONFIRMACION') {
-        await this.notifyRequestExpiring(req.userId, req.user.locale, req.id, req.title);
+        await this.notifyRequestExpiring(
+          req.userId,
+          req.user.locale,
+          req.id,
+          req.title,
+          req.lastBuyerActivityAt,
+        );
       } else if (status === 'INACTIVA') {
-        await this.notifyRequestInactive(req.userId, req.user.locale, req.id, req.title);
+        await this.notifyRequestInactive(
+          req.userId,
+          req.user.locale,
+          req.id,
+          req.title,
+          req.lastBuyerActivityAt,
+        );
       }
     }
   }

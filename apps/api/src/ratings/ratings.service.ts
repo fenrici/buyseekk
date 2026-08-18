@@ -34,33 +34,32 @@ export class RatingsService {
     const unique = [...new Set(userIds)];
     if (unique.length === 0) return {};
 
-    const reviews = await this.prisma.rating.findMany({
-      where: { toUserId: { in: unique }, type: RatingType.REVIEW, stars: { not: null } },
-      select: { toUserId: true, stars: true },
-    });
-    const noResponses = await this.prisma.rating.groupBy({
-      by: ['toUserId'],
-      where: { toUserId: { in: unique }, type: RatingType.NO_RESPONSE },
-      _count: { _all: true },
-    });
+    const [reviewStats, noResponses] = await Promise.all([
+      this.prisma.rating.groupBy({
+        by: ['toUserId'],
+        where: { toUserId: { in: unique }, type: RatingType.REVIEW, stars: { not: null } },
+        _avg: { stars: true },
+        _count: { stars: true },
+      }),
+      this.prisma.rating.groupBy({
+        by: ['toUserId'],
+        where: { toUserId: { in: unique }, type: RatingType.NO_RESPONSE },
+        _count: { _all: true },
+      }),
+    ]);
 
     const result: Record<string, UserRatingStats> = {};
     for (const id of unique) {
       result[id] = this.emptyStats();
     }
 
-    const reviewBuckets = new Map<string, number[]>();
-    for (const r of reviews) {
-      const bucket = reviewBuckets.get(r.toUserId) ?? [];
-      bucket.push(r.stars ?? 0);
-      reviewBuckets.set(r.toUserId, bucket);
-    }
-    for (const [id, stars] of reviewBuckets) {
-      const reviewCount = stars.length;
-      result[id] = {
-        avgStars: Math.round((stars.reduce((s, n) => s + n, 0) / reviewCount) * 10) / 10,
+    for (const row of reviewStats) {
+      const reviewCount = row._count.stars;
+      const avg = row._avg.stars;
+      result[row.toUserId] = {
+        avgStars: avg != null ? Math.round(avg * 10) / 10 : null,
         reviewCount,
-        noResponseCount: result[id]?.noResponseCount ?? 0,
+        noResponseCount: result[row.toUserId]?.noResponseCount ?? 0,
       };
     }
     for (const row of noResponses) {

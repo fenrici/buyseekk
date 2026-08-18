@@ -187,4 +187,42 @@ describe('Seller matching alerts (e2e)', () => {
     });
     expect(notifications).toHaveLength(0);
   });
+
+  it('does not match saved searches from sellers in another country', async () => {
+    const seller = await prisma.user.create({
+      data: {
+        email: `alert-ar-${runId}@test.buyseekk.com`,
+        passwordHash: 'test',
+        name: 'Seller AR',
+        role: 'SELLER',
+        country: 'AR',
+        locale: 'ES',
+        currency: 'USD',
+        emailVerified: true,
+      },
+    });
+    await prisma.savedSearch.create({
+      data: {
+        userId: seller.id,
+        name: 'BMW AR',
+        category: 'AUTOS',
+        filters: bmwMiamiFilters,
+      },
+    });
+
+    const buyer = await registerUser(app, {
+      email: `alert-us-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Buyer US',
+      role: 'BUYER',
+      country: 'US',
+    });
+
+    await createAutoRequest(buyer.token).expect(201);
+
+    const notifications = await prisma.notification.findMany({
+      where: { userId: seller.id, type: 'NEW_MATCHING_REQUEST' },
+    });
+    expect(notifications).toHaveLength(0);
+  });
 });

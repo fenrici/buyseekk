@@ -280,6 +280,7 @@ chmod +x scripts/smoke-prod.sh
 | **Uploads** | `STORAGE_PROVIDER=r2` + vars R2 (obligatorio) |
 | **Emails** | `EMAIL_PROVIDER=resend` + dominio verificado |
 | **WebSocket multi-réplica** | `REDIS_URL` + 1 sola réplica hasta tener Redis |
+| **DB / performance** | Ver sección PostgreSQL abajo; lanzar con **1 réplica API** |
 | **Demo login** | No setear `NEXT_PUBLIC_ENABLE_DEMO_LOGIN` en Vercel |
 | **Observabilidad** | `SENTRY_DSN` (API) + `NEXT_PUBLIC_SENTRY_DSN` (web) |
 
@@ -294,6 +295,70 @@ chmod +x scripts/smoke-prod.sh
 | 502 en health | Esperá 1–2 min; migrate deploy corre al inicio |
 | Login ok pero fetch falla | `NEXT_PUBLIC_API_URL` mal seteada en Vercel — redeploy web después de cambiarla |
 | Imágenes rotas | Normal en staging: uploads efímeros hasta migrar a R2 |
+
+---
+
+## PostgreSQL, conexiones y escalado (Fase 8)
+
+### Prisma y pool
+
+- **Prisma 6** (`@prisma/client ^6.5`): una instancia `PrismaClient` por proceso NestJS (singleton global).
+- El pool lo gestiona Prisma/driver; no hay PgBouncer en el repo.
+- Parámetros opcionales en `DATABASE_URL` (PostgreSQL directo):
+  - `connection_limit=N` — conexiones máximas **por réplica** (default ~`num_cpus * 2 + 1`).
+  - `pool_timeout=SECS` — espera al obtener conexión del pool.
+- Regla: `(connection_limit × réplicas API) + margen admin` debe ser **menor** que `max_connections` de Postgres (Railway suele ~97 en planes pequeños).
+
+Ejemplo conservador con **1 réplica**:
+
+```
+DATABASE_URL=postgresql://...?connection_limit=10&pool_timeout=10
+```
+
+### Réplicas API recomendadas al lanzar
+
+| Config | Cuándo |
+|--------|--------|
+| **1 réplica API** | Lanzamiento inicial recomendado |
+| **2+ réplicas** | Solo con `REDIS_URL` configurado (Socket.IO adapter) |
+
+Con **1 réplica** funciona sin Redis:
+
+- HTTP / REST
+- Chat WebSocket (misma instancia)
+- Throttle en memoria (60/min por proceso = global)
+- Cron lifecycle + token cleanup (una sola ejecución)
+
+Con **2+ réplicas sin lock distribuido**:
+
+| Componente | Riesgo |
+|------------|--------|
+| Socket.IO sin Redis | Eventos no cruzan procesos — **requiere REDIS_URL** |
+| Throttle | Límite por réplica, no global |
+| Cron `@Cron` | Duplicado en cada réplica; dedupe parcial en DB |
+| Rate limit WS chat | Por proceso |
+
+**Redis** hoy se usa solo para Socket.IO adapter (+ ping en `/api/health/ready`). No hay cache ni colas.
+
+### Health checks
+
+| Ruta | Uso |
+|------|-----|
+| `GET /api/health/live` | Liveness — proceso vivo, sin DB |
+| `GET /api/health/ready` | Readiness — `SELECT 1` + Redis si configurado |
+| `GET /api/health` | Alias de readiness (compatibilidad) |
+
+### Backups
+
+- Activar backups automáticos en Railway Postgres.
+- PITR si el plan lo incluye antes de escalar tráfico real.
+
+### Señales para escalar
+
+- Latencia p95 en marketplace `/api/requests` con muchos filtros.
+- Conexiones Postgres cerca del límite.
+- Necesidad de >1 réplica API → configurar `REDIS_URL` primero.
+- Tabla `Message` > millones de filas → revisar retención (fuera de scope MVP).
 
 ---
 

@@ -7,6 +7,10 @@ export const MAX_IMAGES_PER_ENTITY = 5;
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
+/** Máximo de ofertas pendientes evaluadas para highlights del comprador. */
+export const OFFER_HIGHLIGHTS_POOL_LIMIT = 50;
+/** Máximo de solicitudes guardadas devueltas en un listado. */
+export const MAX_SAVED_REQUESTS_LIST = 100;
 
 /** Días sin actividad del comprador antes de Pendiente de confirmación. */
 export const REQUEST_CONFIRMATION_DAYS = 7;

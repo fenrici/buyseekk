@@ -229,9 +229,11 @@ model Notification {
   message    String
   entityId   String?
   entityType NotificationEntityType?
+  dedupeKey  String?
   read       Boolean                 @default(false)
   createdAt  DateTime                @default(now())
 
+  @@unique([userId, dedupeKey])
   @@index([userId, read, createdAt])
   @@index([userId, createdAt])
   @@index([userId, type, entityId])
@@ -302,6 +304,7 @@ model SavedSearch {
 
   @@unique([userId, name])
   @@index([userId, isDefault])
+  @@index([category])
 }
 
 model SavedRequest {

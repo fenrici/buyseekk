@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { sortSavedRequestsForSeller } from '@buyseekk/shared';
+import { sortSavedRequestsForSeller, MAX_SAVED_REQUESTS_LIST } from '@buyseekk/shared';
 import { isSellerCapable, type AuthUser } from '../common/types/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestsService } from '../requests/requests.service';
@@ -43,6 +43,7 @@ export class SavedRequestsService {
     const rows = await this.prisma.savedRequest.findMany({
       where: { sellerId: user.id },
       orderBy: { createdAt: 'desc' },
+      take: MAX_SAVED_REQUESTS_LIST,
       select: { requestId: true, createdAt: true },
     });
     if (rows.length === 0) return [];

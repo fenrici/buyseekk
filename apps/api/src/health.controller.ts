@@ -33,8 +33,25 @@ export class HealthController {
     };
   }
 
+  /** Liveness: proceso arriba, sin tocar DB. */
+  @Get('health/live')
+  live() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  /** Readiness: DB (+ Redis si está configurado). */
+  @Get('health/ready')
+  async ready() {
+    return this.checkDependencies();
+  }
+
+  /** Alias de readiness para compatibilidad con probes existentes. */
   @Get('health')
   async health() {
+    return this.checkDependencies();
+  }
+
+  private async checkDependencies() {
     const timestamp = new Date().toISOString();
     try {
       await this.prisma.$queryRaw`SELECT 1`;
