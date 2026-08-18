@@ -10,6 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAccountActive } from '../common/utils/assert-not-blocked';
+import { parseCorsOrigins } from '../config/cors-origins';
 import { NotificationPayload } from './notification-delivery.interface';
 
 type AuthedSocket = Socket & { data: { userId: string } };
@@ -17,7 +19,7 @@ type AuthedSocket = Socket & { data: { userId: string } };
 @WebSocketGateway({
   namespace: '/notifications',
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'],
+    origin: parseCorsOrigins(process.env.CORS_ORIGIN),
     credentials: true,
   },
 })
@@ -42,6 +44,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
       });
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user) throw new Error('user not found');
+      assertAccountActive(user);
 
       (client as AuthedSocket).data.userId = user.id;
       client.join(this.userRoom(user.id));

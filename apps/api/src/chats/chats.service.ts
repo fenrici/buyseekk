@@ -67,7 +67,10 @@ export class ChatsService {
     throw new ForbiddenException();
   }
 
-  /** Chats visibles según el modo activo: comprador vs vendedor en cuentas BOTH. */
+  /**
+   * Filtro de listado (UI): qué hilos mostrar en el modo activo.
+   * No es autorización: `assertParticipant` valida ownership al abrir un chat.
+   */
   private chatsWhereForMode(userId: string, activeMode: UserMode) {
     const accepted = { status: OfferStatus.ACEPTADA };
     if (activeMode === UserMode.SELLER) {

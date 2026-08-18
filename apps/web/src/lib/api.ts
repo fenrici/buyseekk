@@ -9,48 +9,66 @@ function normalizeApiUrl(raw?: string) {
 export const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 const TOKEN_KEY = 'buyseekk_token';
-const REFRESH_KEY = 'buyseekk_refresh_token';
+const LEGACY_REFRESH_KEY = 'buyseekk_refresh_token';
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
-export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(REFRESH_KEY);
-}
-
 export function setToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
-export function setRefreshToken(token: string) {
-  localStorage.setItem(REFRESH_KEY, token);
-}
-
-export function setAuthTokens(token: string, refreshToken: string) {
+export function setAuthTokens(token: string) {
   setToken(token);
-  setRefreshToken(refreshToken);
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(LEGACY_REFRESH_KEY);
+  }
 }
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(LEGACY_REFRESH_KEY);
   void import('./socket').then((mod) => mod.disconnectChatSocket()).catch(() => {});
 }
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function tryRefreshSession(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
+function shouldAttemptRefresh(path: string) {
+  const skip = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+    '/auth/logout',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ];
+  return !skip.some((prefix) => path === prefix || path.startsWith(`${prefix}?`));
+}
 
+function isAccountDisabledCode(code?: string) {
+  return code === 'ACCOUNT_BLOCKED' || code === 'ACCOUNT_SUSPENDED';
+}
+
+async function tryRefreshSession(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/api/auth/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
@@ -58,8 +76,8 @@ async function tryRefreshSession(): Promise<boolean> {
           clearToken();
           return false;
         }
-        if (data.token && data.refreshToken) {
-          setAuthTokens(data.token, data.refreshToken);
+        if (data.token) {
+          setAuthTokens(data.token);
           return true;
         }
         clearToken();
@@ -102,6 +120,12 @@ export function normalizePaginated<T>(data: PaginatedResult<T> | T[]): Paginated
   };
 }
 
+function throwApiError(data: Record<string, unknown>, status: number): never {
+  const msg = data.message ?? data.error ?? 'Error en la solicitud';
+  const code = typeof data.code === 'string' ? data.code : undefined;
+  throw new ApiError(Array.isArray(msg) ? msg.join(', ') : String(msg), status, code);
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
@@ -114,10 +138,19 @@ export async function api<T>(
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}/api${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
+  const res = await fetch(`${API_URL}/api${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 
-  if (res.status === 401 && retryOnUnauthorized && !path.startsWith('/auth/')) {
+  if (res.status === 403 && isAccountDisabledCode(typeof data.code === 'string' ? data.code : undefined)) {
+    clearToken();
+    throwApiError(data, res.status);
+  }
+
+  if (res.status === 401 && retryOnUnauthorized && shouldAttemptRefresh(path)) {
     const refreshed = await tryRefreshSession();
     if (refreshed) {
       return api<T>(path, options, false);
@@ -125,8 +158,7 @@ export async function api<T>(
   }
 
   if (!res.ok) {
-    const msg = data.message ?? data.error ?? 'Error en la solicitud';
-    throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+    throwApiError(data, res.status);
   }
   return data as T;
 }
@@ -152,11 +184,15 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}/api/uploads`, { method: 'POST', headers, body: form });
-  const data = await res.json().catch(() => ({}));
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 
   if (!res.ok) {
     const msg = data.message ?? data.error ?? 'Error al subir imagen';
-    throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+    throw new ApiError(
+      Array.isArray(msg) ? msg.join(', ') : String(msg),
+      res.status,
+      typeof data.code === 'string' ? data.code : undefined,
+    );
   }
   return data as { url: string };
 }

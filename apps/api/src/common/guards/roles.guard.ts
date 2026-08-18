@@ -4,6 +4,7 @@ import { UserRole } from '@prisma/client';
 import { ROLES_KEY, AppRole } from '../decorators/roles.decorator';
 import { AuthUser, isBuyerCapable, isSellerCapable } from '../types/auth-user';
 
+/** Autoriza por capacidad real (`role`), nunca por `activeMode` (solo UI). */
 function hasRole(user: AuthUser, role: AppRole) {
   if (role === 'buyer') return isBuyerCapable(user.role);
   return isSellerCapable(user.role);

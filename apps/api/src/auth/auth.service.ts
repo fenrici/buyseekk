@@ -15,11 +15,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   ForgotPasswordDto,
   LoginDto,
-  RefreshTokenDto,
   RegisterDto,
   ResetPasswordDto,
   VerifyEmailDto,
 } from './auth.dto';
+import { canonicalizeEmail } from './email-canonicalize';
+import { parseDurationMs } from './refresh-cookie';
 import { EmailService } from './email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SecurityContext, SecurityLogService } from './security-log.service';
@@ -66,18 +67,13 @@ export class AuthService {
     return this.config.get<string>('JWT_REFRESH_EXPIRES', '30d');
   }
 
-  private parseDurationMs(value: string): number {
-    const match = /^(\d+)([smhd])$/.exec(value.trim());
-    if (!match) return 30 * 24 * 60 * 60 * 1000;
-    const amount = Number(match[1]);
-    const unit = match[2];
-    const multipliers: Record<string, number> = {
-      s: 1000,
-      m: 60 * 1000,
-      h: 60 * 60 * 1000,
-      d: 24 * 60 * 60 * 1000,
-    };
-    return amount * (multipliers[unit] ?? multipliers.d);
+  private async findUserByEmail(email: string) {
+    const canonical = canonicalizeEmail(email);
+    const exact = await this.prisma.user.findUnique({ where: { email: canonical } });
+    if (exact) return exact;
+    return this.prisma.user.findFirst({
+      where: { email: { equals: canonical, mode: 'insensitive' } },
+    });
   }
 
   private signAccessToken(user: User) {
@@ -90,7 +86,7 @@ export class AuthService {
   private async issueRefreshToken(userId: string): Promise<string> {
     const plain = generateSecureToken();
     const tokenHash = hashToken(plain);
-    const expiresAt = new Date(Date.now() + this.parseDurationMs(this.getRefreshExpiresIn()));
+    const expiresAt = new Date(Date.now() + parseDurationMs(this.getRefreshExpiresIn()));
     await this.prisma.refreshToken.create({
       data: { userId, tokenHash, expiresAt },
     });
@@ -141,7 +137,8 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, ctx: SecurityContext = {}) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = canonicalizeEmail(dto.email);
+    const existing = await this.findUserByEmail(email);
     if (existing) throw new ConflictException('Email ya registrado');
 
     const isSeller = dto.role === UserRole.SELLER || dto.role === UserRole.BOTH;
@@ -166,7 +163,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         passwordHash,
         name: dto.name,
         role,
@@ -194,12 +191,13 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, ctx: SecurityContext = {}) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = canonicalizeEmail(dto.email);
+    const user = await this.findUserByEmail(email);
     if (!user) {
       await this.securityLog.log(SecurityEvent.LOGIN_FAILED, {
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        metadata: { email: dto.email, reason: 'user_not_found' },
+        metadata: { email, reason: 'user_not_found' },
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -210,7 +208,7 @@ export class AuthService {
         userId: user.id,
         ip: ctx.ip,
         userAgent: ctx.userAgent,
-        metadata: { email: dto.email, reason: 'invalid_password' },
+        metadata: { email, reason: 'invalid_password' },
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -237,8 +235,11 @@ export class AuthService {
     return { user: this.toPublicUser(sessionUser), ...tokens };
   }
 
-  async refresh(dto: RefreshTokenDto, ctx: SecurityContext = {}) {
-    const tokenHash = hashToken(dto.refreshToken);
+  async refresh(plainToken: string | undefined, ctx: SecurityContext = {}) {
+    if (!plainToken) {
+      throw new UnauthorizedException('Sesión expirada. Volvé a iniciar sesión');
+    }
+    const tokenHash = hashToken(plainToken);
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
@@ -260,8 +261,9 @@ export class AuthService {
     return { user: this.toPublicUser(stored.user), ...tokens };
   }
 
-  async logout(dto: RefreshTokenDto, ctx: SecurityContext = {}) {
-    const tokenHash = hashToken(dto.refreshToken);
+  async logout(plainToken: string | undefined, ctx: SecurityContext = {}) {
+    if (!plainToken) return { ok: true };
+    const tokenHash = hashToken(plainToken);
     const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
     if (stored && !stored.revokedAt) {
       await this.prisma.refreshToken.update({
@@ -327,9 +329,21 @@ export class AuthService {
     return { ok: true };
   }
 
+  private async padForgotTiming(startedAt: number) {
+    const minMs = 180;
+    const wait = minMs - (Date.now() - startedAt);
+    if (wait > 0) {
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+
   async forgotPassword(dto: ForgotPasswordDto, ctx: SecurityContext = {}) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const startedAt = Date.now();
+    const email = canonicalizeEmail(dto.email);
+    const user = await this.findUserByEmail(email);
     if (!user) {
+      await bcrypt.hash('forgot-password-timing-pad', 10);
+      await this.padForgotTiming(startedAt);
       return { ok: true };
     }
 
@@ -353,6 +367,7 @@ export class AuthService {
       userAgent: ctx.userAgent,
     });
 
+    await this.padForgotTiming(startedAt);
     return { ok: true };
   }
 

@@ -30,7 +30,7 @@ import { DemoModule } from './demo/demo.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
-      skipIf: () => process.env.NODE_ENV === 'test',
+      skipIf: () => process.env.NODE_ENV === 'test' && process.env.ENABLE_THROTTLE_IN_TEST !== '1',
       getTracker: (req) => throttleTrackerFromRequest(req),
       throttlers: buildThrottlerDefinitions(),
     }),

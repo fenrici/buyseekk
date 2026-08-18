@@ -17,6 +17,8 @@ export const THROTTLE_LIMITS = {
   write: { ttl: 60_000, limit: envInt('THROTTLE_WRITE_LIMIT', 60) },
   /** Forgot / resend / reset: endpoints que disparan email. */
   authEmail: { ttl: 60_000, limit: envInt('THROTTLE_AUTH_EMAIL_LIMIT', 10) },
+  /** Refresh/logout cookie. Alto para tabs; no ilimitado. */
+  refresh: { ttl: 60_000, limit: envInt('THROTTLE_REFRESH_LIMIT', 60) },
 } as const;
 
 export type ThrottleProfile = keyof typeof THROTTLE_LIMITS;

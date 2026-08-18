@@ -13,6 +13,7 @@ import { ReportButton } from '@/components/ReportButton';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLocale, useT } from '@/lib/i18n';
 import { formatProfileLocation } from '@/lib/profile-location';
+import { safeExternalHttpUrl } from '@/lib/safe-url';
 
 export default function PublicProfilePage() {
   const params = useParams<{ id: string }>();
@@ -34,6 +35,7 @@ export default function PublicProfilePage() {
 
   const isSeller = profile && (profile.role === 'SELLER' || profile.role === 'BOTH');
   const displayName = profile?.businessName || profile?.name || '';
+  const websiteHref = safeExternalHttpUrl(profile?.website);
   const memberSince = profile
     ? new Date(profile.createdAt).toLocaleDateString(locale === 'EN' ? 'en-US' : 'es-AR', {
         month: 'long',
@@ -119,18 +121,16 @@ export default function PublicProfilePage() {
                 )}
               </div>
 
-              {profile.website && (
+              {websiteHref && (
                 <div className="mt-5 flex flex-wrap gap-3 border-t border-white/10 pt-4 text-sm">
-                  {profile.website && (
-                    <a
-                      href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-indigo-600 hover:underline"
-                    >
-                      🌐 {profile.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  )}
+                  <a
+                    href={websiteHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-indigo-600 hover:underline"
+                  >
+                    🌐 {websiteHref.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
                 </div>
               )}
 

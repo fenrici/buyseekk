@@ -46,14 +46,14 @@ En **Variables** del servicio API, agregá:
 | Variable | Valor | Notas |
 |----------|-------|-------|
 | `DATABASE_URL` | *(referencia a Postgres)* | Obligatorio |
-| `JWT_SECRET` | string aleatorio ≥16 chars | Ver comando abajo |
+| `JWT_SECRET` | string aleatorio ≥32 chars | Ver comando abajo |
 | `JWT_EXPIRES_IN` | `7d` | Opcional |
 | `NODE_ENV` | `production` | Obligatorio |
 | `CORS_ORIGIN` | URL de Vercel (sin `/` final) | Actualizar después del paso 3 |
 | `STORAGE_PROVIDER` | `local` o `r2` | En prod usar `r2` (ver 2.4.1) |
 | `LAUNCH_COUNTRY` | `US` | Mercado único en lanzamiento |
 | `WEB_URL` | URL de Vercel | Links en emails (auth + notificaciones) |
-| `PLUS_FEATURES_UNLOCKED` | `false` o `true` | `false` aplica límites Free; `true` = lanzamiento gratis |
+| `PLUS_FEATURES_UNLOCKED` | `true` o `false` | Obligatorio en producción. `true` = lanzamiento gratis |
 | `NOTIFICATION_EMAILS_ENABLED` | `true` | Emails automáticos de notificaciones |
 | `REDIS_URL` | URL Redis | Obligatorio si escalás a 2+ réplicas API |
 | `SENTRY_DSN` | URL Sentry | Opcional — monitoreo de errores |
@@ -73,14 +73,16 @@ La API incluye rate limiting y Helmet por defecto. Solo override si necesitás a
 
 | Variable | Default | Endpoint |
 |----------|---------|----------|
-| `THROTTLE_LOGIN_LIMIT` | 10 | `POST /auth/login` |
-| `THROTTLE_REGISTER_LIMIT` | 5 | `POST /auth/register` |
-| `THROTTLE_UPLOAD_LIMIT` | 15 | `POST /uploads` |
-| `THROTTLE_OFFER_LIMIT` | 30 | `POST /offers` |
-| `THROTTLE_CHAT_LIMIT` | 60 | chat REST + WebSocket `send` |
-| `THROTTLE_SEARCH_LIMIT` | 90 | marketplace `GET /requests`, ratings públicos |
-| `THROTTLE_WRITE_LIMIT` | 10 | crear request, accept/reject, ratings |
-| `THROTTLE_DEFAULT_LIMIT` | 120 | resto de endpoints autenticados |
+| `THROTTLE_LOGIN_LIMIT` | 30 | `POST /auth/login` |
+| `THROTTLE_REGISTER_LIMIT` | 15 | `POST /auth/register` |
+| `THROTTLE_AUTH_EMAIL_LIMIT` | 10 | forgot / resend / reset |
+| `THROTTLE_REFRESH_LIMIT` | 60 | `POST /auth/refresh` y logout |
+| `THROTTLE_UPLOAD_LIMIT` | 30 | `POST /uploads` |
+| `THROTTLE_OFFER_LIMIT` | 40 | `POST /offers` |
+| `THROTTLE_CHAT_LIMIT` | 120 | chat REST + WebSocket `send` |
+| `THROTTLE_SEARCH_LIMIT` | 200 | marketplace / públicos |
+| `THROTTLE_WRITE_LIMIT` | 60 | crear request, accept/reject, ratings |
+| `THROTTLE_DEFAULT_LIMIT` | 400 | resto de endpoints autenticados |
 
 Al superar el límite: HTTP `429` con mensaje `Demasiadas solicitudes. Esperá un momento e intentá de nuevo.`
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, getToken, setAuthTokens } from '@/lib/api';
@@ -12,7 +12,8 @@ import { setStoredLocale, useT } from '@/lib/i18n';
 import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { useAuth } from '@/providers/AuthProvider';
 
-const DEMO_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+const DEMO_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' && process.env.NODE_ENV !== 'production';
 
 const DEMOS = {
   buyer: {
@@ -57,6 +58,12 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const account = new URLSearchParams(window.location.search).get('account');
+    if (account === 'blocked') setError(t('account.blockedMessage'));
+    if (account === 'suspended') setError(t('account.suspendedMessage'));
+  }, [t]);
+
   function fillDemo(type: 'buyer' | 'seller') {
     setEmail(DEMOS[type].email);
     setPassword(DEMOS[type].password);
@@ -69,11 +76,11 @@ function LoginForm() {
     setLoading(true);
     setError('');
     try {
-      const res = await api<{ token: string; refreshToken: string; user: User }>('/auth/login', {
+      const res = await api<{ token: string; user: User }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      setAuthTokens(res.token, res.refreshToken);
+      setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
       setSession(res.user);
       router.replace(getPostLoginPath(res.user));

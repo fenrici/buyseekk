@@ -10,6 +10,7 @@ export default function globalSetup() {
   process.env.EMAIL_PROVIDER = process.env.EMAIL_PROVIDER ?? 'console';
   process.env.LAUNCH_COUNTRY = process.env.LAUNCH_COUNTRY ?? 'US';
   process.env.WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000';
+  process.env.CORS_ORIGIN = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
   process.env.DATABASE_URL =
     process.env.DATABASE_URL ?? 'postgresql://buyseekk:buyseekk@localhost:5432/buyseekk';
 

@@ -5,6 +5,7 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
 import { ThrottleExceptionFilter } from './common/filters/throttle-exception.filter';
 import { MulterExceptionFilter } from './uploads/multer-exception.filter';
 import { STORAGE_PROVIDER } from './storage/storage.interface';
+import { parseCorsOrigins } from './config/cors-origins';
 
 export function configureApp(app: INestApplication) {
   const expressApp = app as NestExpressApplication;
@@ -29,10 +30,7 @@ export function configureApp(app: INestApplication) {
     }),
   );
 
-  const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
-    .split(',')
-    .map((origin) => origin.trim().replace(/\/$/, ''))
-    .filter(Boolean);
+  const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
 
   app.enableCors({
     origin: (

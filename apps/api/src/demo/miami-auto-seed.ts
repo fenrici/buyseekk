@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Country, Currency, Locale, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
@@ -11,12 +12,23 @@ export type MiamiAutoSeedResult = {
   total: number;
 };
 
-export async function seedMiamiAutos(prisma: PrismaClient): Promise<MiamiAutoSeedResult> {
-  const passwordHash = await bcrypt.hash('demo1234', 10);
+export async function seedMiamiAutos(
+  prisma: PrismaClient,
+  options: { allowKnownDemoPassword?: boolean } = {},
+): Promise<MiamiAutoSeedResult> {
+  const allowKnownDemoPassword = options.allowKnownDemoPassword ?? true;
+  const passwordHash = await bcrypt.hash(
+    allowKnownDemoPassword ? 'demo1234' : randomBytes(32).toString('hex'),
+    10,
+  );
 
   const buyerUS = await prisma.user.upsert({
     where: { email: MIAMI_AUTO_DEMO_BUYER_EMAIL },
-    update: { emailVerified: true, emailVerifiedAt: new Date() },
+    update: {
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      ...(allowKnownDemoPassword ? {} : { passwordHash }),
+    },
     create: {
       email: MIAMI_AUTO_DEMO_BUYER_EMAIL,
       passwordHash,

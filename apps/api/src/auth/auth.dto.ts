@@ -1,5 +1,5 @@
 import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
-import { Equals, IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { Equals, IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -13,7 +13,7 @@ export class RegisterDto {
   @MinLength(2)
   name!: string;
 
-  @IsEnum(UserRole)
+  @IsIn([UserRole.BUYER, UserRole.SELLER, UserRole.BOTH])
   role!: UserRole;
 
   @IsBoolean()
@@ -46,12 +46,6 @@ export class LoginDto {
 
   @IsString()
   password!: string;
-}
-
-export class RefreshTokenDto {
-  @IsString()
-  @MinLength(10)
-  refreshToken!: string;
 }
 
 export class VerifyEmailDto {

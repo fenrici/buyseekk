@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, clearToken, getToken } from '@/lib/api';
+import { ApiError, api, clearToken, getToken } from '@/lib/api';
 import { setStoredLocale } from '@/lib/i18n';
 import { User } from '@/lib/types';
 
@@ -43,7 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await api<User>('/auth/me');
       setUser(me);
       setStoredLocale(me.locale);
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && (err.code === 'ACCOUNT_BLOCKED' || err.code === 'ACCOUNT_SUSPENDED')) {
+        clearToken();
+        setUser(null);
+        const account = err.code === 'ACCOUNT_BLOCKED' ? 'blocked' : 'suspended';
+        window.location.replace(`/login?account=${account}`);
+        return;
+      }
       // Solo cerrar sesión si los tokens fueron invalidados (p. ej. refresh falló en api()).
       if (!getToken()) {
         setUser(null);

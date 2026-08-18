@@ -99,6 +99,11 @@ class EnvironmentVariables {
   @IsString()
   NOTIFICATION_EMAILS_ENABLED?: string;
 
+  /** Cookie de refresh: `.buyseek.us` cuando API y web comparten sitio registrable. */
+  @IsOptional()
+  @IsString()
+  AUTH_COOKIE_DOMAIN?: string;
+
   /** Single-country launch: US or AR. When set, API defaults and enforces this market. */
   @IsOptional()
   @IsIn(['AR', 'US'])
@@ -122,12 +127,32 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error('JWT_SECRET no puede usar el valor por defecto en producción');
   }
 
+  if (validated.NODE_ENV === 'production' && validated.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET debe tener al menos 32 caracteres en producción');
+  }
+
+  if (validated.REDIS_URL?.trim()) {
+    const redisUrl = validated.REDIS_URL.trim();
+    if (!redisUrl.startsWith('redis://') && !redisUrl.startsWith('rediss://')) {
+      throw new Error('REDIS_URL debe empezar con redis:// o rediss://');
+    }
+  }
+
   if (validated.NODE_ENV === 'production' && !validated.CORS_ORIGIN?.trim()) {
     throw new Error('CORS_ORIGIN es obligatorio en producción');
   }
 
   if (validated.NODE_ENV === 'production' && !validated.WEB_URL?.trim()) {
     throw new Error('WEB_URL es obligatorio en producción (links en emails de auth y notificaciones)');
+  }
+
+  if (validated.NODE_ENV === 'production') {
+    const plus = validated.PLUS_FEATURES_UNLOCKED?.trim().toLowerCase();
+    if (plus !== 'true' && plus !== 'false' && plus !== '0' && plus !== '1' && plus !== 'yes' && plus !== 'no') {
+      throw new Error(
+        'PLUS_FEATURES_UNLOCKED debe estar definido explícitamente en producción (true para lanzamiento gratuito, false para límites Free)',
+      );
+    }
   }
 
   if (validated.STORAGE_PROVIDER === STORAGE_PROVIDER.R2) {

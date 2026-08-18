@@ -71,7 +71,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api<{ token: string; refreshToken: string; user: User }>('/auth/register', {
+      const res = await api<{ token: string; user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({
           email: form.email,
@@ -83,7 +83,7 @@ export default function RegisterPage() {
           acceptedTerms: form.acceptedTerms,
         }),
       });
-      setAuthTokens(res.token, res.refreshToken);
+      setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
       setSession(res.user);
       finishRegistration(res.user);

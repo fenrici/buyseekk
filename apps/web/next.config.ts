@@ -22,6 +22,9 @@ if (isProductionBuild && process.env.NODE_ENV === 'production') {
   if (!process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
     throw new Error('NEXT_PUBLIC_SITE_URL is required for production builds');
   }
+  if (process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true') {
+    throw new Error('NEXT_PUBLIC_ENABLE_DEMO_LOGIN no puede ser true en un build de producción');
+  }
 }
 
 const nextConfig: NextConfig = {

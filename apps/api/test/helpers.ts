@@ -6,8 +6,11 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { registerMulterErrorHandler } from '../src/uploads/multer-exception.filter';
+import { REFRESH_COOKIE_NAME } from '../src/auth/refresh-cookie';
 import { hashToken } from '../src/auth/token.util';
 import { PrismaService } from '../src/prisma/prisma.service';
+
+export { REFRESH_COOKIE_NAME };
 
 export async function createTestApp(): Promise<INestApplication<App>> {
   const allowAll: CanActivate = { canActivate: () => true };
@@ -17,6 +20,20 @@ export async function createTestApp(): Promise<INestApplication<App>> {
     .overrideProvider(APP_GUARD)
     .useValue(allowAll)
     .compile();
+
+  const app = moduleRef.createNestApplication();
+  configureApp(app);
+  await app.init();
+  registerMulterErrorHandler(app);
+  return app;
+}
+
+/** App con ThrottlerGuard real (para tests de 429). */
+export async function createThrottledTestApp(): Promise<INestApplication<App>> {
+  process.env.ENABLE_THROTTLE_IN_TEST = '1';
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
@@ -49,6 +66,38 @@ type AuthResponse = {
 
 export function authHeader(token: string) {
   return { Authorization: `Bearer ${token}` };
+}
+
+export function getSetCookieHeaders(res: { headers: Record<string, unknown> }): string[] {
+  const raw = res.headers['set-cookie'];
+  if (!raw) return [];
+  return Array.isArray(raw) ? raw.map(String) : [String(raw)];
+}
+
+export function extractRefreshTokenFromResponse(res: { headers: Record<string, unknown> }): string {
+  const line = getSetCookieHeaders(res).find((cookie) => cookie.startsWith(`${REFRESH_COOKIE_NAME}=`));
+  if (!line) {
+    throw new Error('Missing refresh cookie');
+  }
+  const value = line.split(';')[0].slice(REFRESH_COOKIE_NAME.length + 1);
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+export function refreshCookieHeader(token: string) {
+  return { Cookie: `${REFRESH_COOKIE_NAME}=${encodeURIComponent(token)}` };
+}
+
+export function authFromResponse(res: { body: AuthResponse; headers: Record<string, unknown> }): AuthResponse {
+  expect(res.body.refreshToken).toBeUndefined();
+  return {
+    token: res.body.token,
+    user: res.body.user,
+    refreshToken: extractRefreshTokenFromResponse(res),
+  };
 }
 
 export async function verifyUserEmail(prisma: PrismaService, userId: string) {
@@ -94,7 +143,7 @@ export async function registerUser(
     await verifyUserEmail(prisma, res.body.user.id);
   }
 
-  return res.body;
+  return authFromResponse(res);
 }
 
 export async function loginUser(
@@ -106,7 +155,7 @@ export async function loginUser(
     .post('/api/auth/login')
     .send({ email, password })
     .expect(201);
-  return res.body;
+  return authFromResponse(res);
 }
 
 export async function getPasswordResetTokenPlain(
@@ -118,8 +167,6 @@ export async function getPasswordResetTokenPlain(
     orderBy: { createdAt: 'desc' },
   });
   if (!record) return null;
-  // Tests cannot reverse hash; callers should use verify endpoint with token from email logs
-  // or create token via API and read from DB using a known plain token in security tests.
   return record.tokenHash;
 }
 

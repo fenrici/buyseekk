@@ -7,8 +7,11 @@ import { generateSecureToken, hashToken } from '../src/auth/token.util';
 import {
   authHeader,
   createTestApp,
+  extractRefreshTokenFromResponse,
+  getSetCookieHeaders,
   getVerificationToken,
   loginUser,
+  refreshCookieHeader,
   registerUser,
   resetDatabase,
   verifyUserEmail,
@@ -214,25 +217,27 @@ describe('Auth security (e2e)', () => {
 
     const refreshRes = await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .send({ refreshToken: auth.refreshToken })
+      .set(refreshCookieHeader(auth.refreshToken))
       .expect(201);
 
     expect(refreshRes.body.token).toBeDefined();
-    expect(refreshRes.body.refreshToken).not.toBe(auth.refreshToken);
+    expect(refreshRes.body.refreshToken).toBeUndefined();
+    const rotated = extractRefreshTokenFromResponse(refreshRes);
+    expect(rotated).not.toBe(auth.refreshToken);
 
     await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .send({ refreshToken: auth.refreshToken })
+      .set(refreshCookieHeader(auth.refreshToken))
       .expect(401);
 
     await request(app.getHttpServer())
       .post('/api/auth/logout')
-      .send({ refreshToken: refreshRes.body.refreshToken })
+      .set(refreshCookieHeader(rotated))
       .expect(201);
 
     await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .send({ refreshToken: refreshRes.body.refreshToken })
+      .set(refreshCookieHeader(rotated))
       .expect(401);
 
     const logoutLogs = await prisma.securityLog.findMany({
@@ -278,7 +283,7 @@ describe('Auth security (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/refresh')
-      .send({ refreshToken: auth.refreshToken })
+      .set(refreshCookieHeader(auth.refreshToken))
       .expect(401);
 
     const loginRes = await loginUser(app, email, 'newpass123');
@@ -482,4 +487,183 @@ describe('Auth security (e2e)', () => {
     });
     expect(remaining.every((row) => row.tokenHash !== hashToken(auth.refreshToken))).toBe(true);
   });
+
+  it('sets HttpOnly refresh cookie and omits refreshToken from JSON', async () => {
+    const email = `cookie-${runId}@test.buyseekk.com`;
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email,
+        password,
+        name: 'Cookie User',
+        role: 'BUYER',
+        country: 'US',
+        acceptedTerms: true,
+      })
+      .expect(201);
+
+    expect(res.body.refreshToken).toBeUndefined();
+    expect(res.body.token).toBeDefined();
+    const cookie = getSetCookieHeaders(res).find((c) => c.startsWith('buyseek_refresh='));
+    expect(cookie).toBeDefined();
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/Path=\/api\/auth/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
+    expect(cookie).not.toMatch(/Secure/i);
+  });
+
+  it('canonicalizes email case on register, login and forgot-password', async () => {
+    const mixed = `Franco.Case-${runId}@Email.com`;
+    const lower = mixed.trim().toLowerCase();
+    const registered = await registerUser(app, {
+      email: mixed,
+      password,
+      name: 'Case User',
+      role: 'BUYER',
+      country: 'US',
+    });
+    expect(registered.user.email).toBe(lower);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email: lower,
+        password,
+        name: 'Dup',
+        role: 'BUYER',
+        country: 'US',
+        acceptedTerms: true,
+      })
+      .expect(409);
+
+    const login = await loginUser(app, mixed.toUpperCase(), password);
+    expect(login.user.id).toBe(registered.user.id);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/forgot-password')
+      .send({ email: mixed.toUpperCase() })
+      .expect(201);
+
+    const tokens = await prisma.passwordResetToken.findMany({ where: { userId: registered.user.id } });
+    expect(tokens).toHaveLength(1);
+  });
+
+  it('rejects ADMIN role on public register', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email: `admin-try-${runId}@test.buyseekk.com`,
+        password,
+        name: 'Nope',
+        role: 'ADMIN',
+        country: 'US',
+        acceptedTerms: true,
+      })
+      .expect(400);
+  });
+
+  it('rejects refresh without cookie even if body contains a token', async () => {
+    const auth = await registerUser(app, {
+      email: `body-refresh-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Body Refresh',
+      role: 'BUYER',
+      country: 'US',
+    });
+
+    await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .send({ refreshToken: auth.refreshToken })
+      .expect(401);
+  });
+
+  it('logout is idempotent and clears the refresh cookie', async () => {
+    const auth = await registerUser(app, {
+      email: `logout-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Logout User',
+      role: 'BUYER',
+      country: 'US',
+    });
+
+    const first = await request(app.getHttpServer())
+      .post('/api/auth/logout')
+      .set(refreshCookieHeader(auth.refreshToken))
+      .expect(201);
+    expect(first.body).toEqual({ ok: true });
+    const cleared = getSetCookieHeaders(first).find((c) => c.startsWith('buyseek_refresh='));
+    expect(cleared).toBeDefined();
+    expect(cleared).toMatch(/Max-Age=0|Expires=/i);
+
+    const second = await request(app.getHttpServer()).post('/api/auth/logout').expect(201);
+    expect(second.body).toEqual({ ok: true });
+  });
+
+  it('blocked and suspended accounts cannot use me or refresh', async () => {
+    const blocked = await registerUser(app, {
+      email: `blocked-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Blocked',
+      role: 'BUYER',
+      country: 'US',
+    });
+    const suspended = await registerUser(app, {
+      email: `suspended-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Suspended',
+      role: 'BUYER',
+      country: 'US',
+    });
+
+    await prisma.user.update({
+      where: { id: blocked.user.id },
+      data: { blocked: true, blockedReason: 'abuso' },
+    });
+    await prisma.user.update({
+      where: { id: suspended.user.id },
+      data: { suspended: true },
+    });
+
+    const blockedMe = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set(authHeader(blocked.token))
+      .expect(403);
+    expect(blockedMe.body.code).toBe('ACCOUNT_BLOCKED');
+    expect(blockedMe.body.passwordHash).toBeUndefined();
+
+    const suspendedMe = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set(authHeader(suspended.token))
+      .expect(403);
+    expect(suspendedMe.body.code).toBe('ACCOUNT_SUSPENDED');
+
+    const blockedRefresh = await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .set(refreshCookieHeader(blocked.refreshToken))
+      .expect(403);
+    expect(blockedRefresh.body.code).toBe('ACCOUNT_BLOCKED');
+
+    const suspendedRefresh = await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .set(refreshCookieHeader(suspended.refreshToken))
+      .expect(403);
+    expect(suspendedRefresh.body.code).toBe('ACCOUNT_SUSPENDED');
+  });
+
+  it('rejects untrusted Origin on cookie refresh', async () => {
+    const auth = await registerUser(app, {
+      email: `origin-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Origin User',
+      role: 'BUYER',
+      country: 'US',
+    });
+
+    await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .set(refreshCookieHeader(auth.refreshToken))
+      .set('Origin', 'https://evil.example')
+      .expect(403);
+  });
 });
+

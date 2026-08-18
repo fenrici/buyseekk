@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { configureApp } from './bootstrap';
 import { configureWebSocket } from './chats/configure-websocket';
 import { registerMulterErrorHandler } from './uploads/multer-exception.filter';
+import { parseCorsOrigins } from './config/cors-origins';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,10 +21,7 @@ async function bootstrap() {
   await app.init();
   registerMulterErrorHandler(app);
 
-  const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
-    .split(',')
-    .map((origin) => origin.trim().replace(/\/$/, ''))
-    .filter(Boolean);
+  const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
   console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);

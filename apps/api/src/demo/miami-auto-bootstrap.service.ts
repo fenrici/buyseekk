@@ -15,7 +15,7 @@ export class MiamiAutoBootstrapService implements OnModuleInit {
     const existing = await countMiamiAutoDemoRequests(this.prisma);
     if (existing >= MIAMI_AUTO_DEMO_REQUESTS.length) return;
 
-    const result = await seedMiamiAutos(this.prisma);
+    const result = await seedMiamiAutos(this.prisma, { allowKnownDemoPassword: false });
     this.logger.log(
       `Miami autos demo seed: ${result.total} solicitudes (${result.created} nuevas, ${result.updated} actualizadas).`,
     );
