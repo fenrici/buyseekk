@@ -1,6 +1,7 @@
 import {
-  defaultCurrencyForCountry,
+  defaultRegisterMarket,
   parseLaunchCountry,
+  showRegisterMarketSelectors,
   type Country,
 } from '@buyseekk/shared';
 
@@ -14,11 +15,11 @@ export function isSingleCountryLaunch(): boolean {
 }
 
 export function getDefaultRegisterCountry(): Country {
-  return LAUNCH_COUNTRY ?? 'US';
+  return defaultRegisterMarket(LAUNCH_COUNTRY).country;
 }
 
 export function getDefaultRegisterCurrency(): 'ARS' | 'USD' {
-  return defaultCurrencyForCountry(getDefaultRegisterCountry());
+  return defaultRegisterMarket(LAUNCH_COUNTRY).currency;
 }
 
 export function effectiveCountry(userCountry?: Country): Country {
@@ -26,11 +27,11 @@ export function effectiveCountry(userCountry?: Country): Country {
 }
 
 export function showCountrySelectors(): boolean {
-  return !isSingleCountryLaunch();
+  return showRegisterMarketSelectors(LAUNCH_COUNTRY);
 }
 
 export function showCurrencySelectors(): boolean {
-  return !isSingleCountryLaunch();
+  return showRegisterMarketSelectors(LAUNCH_COUNTRY);
 }
 
 export function isUsLaunch(): boolean {

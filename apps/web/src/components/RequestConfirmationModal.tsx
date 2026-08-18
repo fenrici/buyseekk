@@ -70,7 +70,11 @@ export function RequestConfirmationModal({
             <button
               type="button"
               disabled={busy}
-              onClick={() => void onBought()}
+              onClick={() => {
+                if (window.confirm(t('reminder.boughtConfirm'))) {
+                  void onBought();
+                }
+              }}
               className="btn btn-ghost w-full border border-slate-200 py-3 text-sm font-semibold"
             >
               {t('reminder.bought')}

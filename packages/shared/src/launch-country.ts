@@ -1,4 +1,4 @@
-import type { Country } from './types';
+import type { Country, Currency } from './types';
 import { defaultCurrencyForCountry } from './pricing';
 
 const VALID_COUNTRIES: Country[] = ['AR', 'US'];
@@ -31,4 +31,18 @@ export function effectiveCountry(
 
 export function effectiveCurrencyForLaunch(launchCountry: Country | null, fallback: Country): string {
   return defaultCurrencyForCountry(effectiveCountry(launchCountry, fallback));
+}
+
+/** Country/currency pickers only in multi-country mode (`LAUNCH_COUNTRY=MULTI`). */
+export function showRegisterMarketSelectors(launchCountry: Country | null): boolean {
+  return !isSingleCountryLaunch(launchCountry);
+}
+
+/** Market assigned at register from launch config — not a user-editable choice in US launch. */
+export function defaultRegisterMarket(launchCountry: Country | null): {
+  country: Country;
+  currency: Currency;
+} {
+  const country = effectiveCountry(launchCountry, 'US');
+  return { country, currency: defaultCurrencyForCountry(country) };
 }

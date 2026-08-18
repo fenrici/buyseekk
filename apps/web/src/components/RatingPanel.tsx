@@ -149,6 +149,9 @@ export function RatingPanel({ offerId }: { offerId: string }) {
               {t('rating.markNoResponse')}
             </button>
           )}
+          {!ctx.canReview && !ctx.canMarkNoResponse && (
+            <p className="text-xs text-slate-500">{t('rating.notAvailableYet')}</p>
+          )}
         </div>
       )}
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}

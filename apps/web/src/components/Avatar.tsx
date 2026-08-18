@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { getImageUrl } from '@/lib/api';
 
 type AvatarProps = {
@@ -15,7 +16,13 @@ function initialsOf(name: string) {
 }
 
 export function Avatar({ name, url, size = 40, className = '' }: AvatarProps) {
-  const src = getImageUrl(url);
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [url]);
+
+  const src = broken ? undefined : getImageUrl(url);
   const style = { width: size, height: size, fontSize: Math.max(11, size * 0.38) };
 
   if (src) {
@@ -24,6 +31,7 @@ export function Avatar({ name, url, size = 40, className = '' }: AvatarProps) {
         src={src}
         alt={name}
         style={style}
+        onError={() => setBroken(true)}
         className={`shrink-0 rounded-full border border-white/15 object-cover ${className}`}
       />
     );

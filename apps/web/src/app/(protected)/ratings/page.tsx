@@ -6,6 +6,7 @@ import { api, normalizePaginated } from '@/lib/api';
 import { PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
+import { PanelListLoading } from '@/components/PanelListLoading';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
@@ -17,17 +18,21 @@ export default function RatingsPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
+    setError('');
     api<PaginatedResult<PendingRatingItem> | PendingRatingItem[]>(`/ratings/pending?page=${page}`)
       .then((raw) => {
         const res = normalizePaginated(raw);
         setItems(res.items);
         setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
       })
-      .catch((e) => setError(e.message));
-  }, [user, page]);
+      .catch((e) => setError(e instanceof Error ? e.message : t('common.error')))
+      .finally(() => setLoading(false));
+  }, [user, page, t]);
 
   if (!user) return null;
 
@@ -41,13 +46,15 @@ export default function RatingsPage() {
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-4">
-          {items.length === 0 && (
+          <PanelListLoading loading={loading} />
+          {!loading && items.length === 0 && !error && (
             <div className="card empty-state p-8">
               <p className="text-4xl">⭐</p>
               <p className="mt-3">{t('rating.pendingEmpty')}</p>
             </div>
           )}
-          {items.map((item) => (
+          {!loading &&
+            items.map((item) => (
             <article key={item.offerId} className="card p-5">
               <h2 className="font-bold text-white">{item.requestTitle}</h2>
               <div className="mt-4 flex flex-col gap-4 border-t border-slate-700/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -73,13 +80,15 @@ export default function RatingsPage() {
               </div>
             </article>
           ))}
-          <PaginationControls
-            page={meta.page}
-            totalPages={meta.totalPages}
-            total={meta.total}
-            onPageChange={setPage}
-            itemLabel={t('nav.ratings').toLowerCase()}
-          />
+          {!loading && (
+            <PaginationControls
+              page={meta.page}
+              totalPages={meta.totalPages}
+              total={meta.total}
+              onPageChange={setPage}
+              itemLabel={t('nav.ratings').toLowerCase()}
+            />
+          )}
         </div>
       </main>
     </div>

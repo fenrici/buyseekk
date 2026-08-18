@@ -9,6 +9,7 @@ import { ChatThread } from '@/components/ChatThread';
 import { RatingPanel } from '@/components/RatingPanel';
 import { ReportButton } from '@/components/ReportButton';
 import { useChatViewport } from '@/hooks/useChatViewport';
+import { useOfferRatingAvailability } from '@/hooks/useOfferRatingAvailability';
 import { useT } from '@/lib/i18n';
 import type { ChatDetail } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
@@ -22,6 +23,13 @@ export default function ChatDetailPage() {
   const [showRating, setShowRating] = useState(false);
 
   const { keyboardOpen } = useChatViewport(true);
+  const ratingAvailability = useOfferRatingAvailability(offerId);
+  const showRatingControl =
+    !!offerId &&
+    !ratingAvailability.loading &&
+    (ratingAvailability.canReview ||
+      ratingAvailability.canMarkNoResponse ||
+      ratingAvailability.hasRating);
 
   if (!user) return null;
 
@@ -48,7 +56,7 @@ export default function ChatDetailPage() {
             <span className="chat-page__header-name">{t('chat.loading')}</span>
           </div>
         )}
-        {offerId && (
+        {showRatingControl && (
           <button
             type="button"
             className="chat-page__rate-btn"
@@ -61,7 +69,7 @@ export default function ChatDetailPage() {
         )}
       </header>
 
-      {showRating && offerId && (
+      {showRatingControl && showRating && offerId && (
         <div className="chat-page__rating-sheet md:hidden" role="dialog" aria-label={t('rating.showPanel')}>
           <div className="chat-page__rating-sheet-inner">
             <div className="chat-page__rating-sheet-header">
@@ -102,14 +110,18 @@ export default function ChatDetailPage() {
 
         {offerId && (
           <div className="chat-page__rating-desktop max-md:hidden">
-            <button
-              type="button"
-              onClick={() => setShowRating((open) => !open)}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-slate-300 hover:bg-white/10"
-            >
-              {showRating ? t('rating.hidePanel') : t('rating.showPanel')}
-            </button>
-            {showRating && <RatingPanel offerId={offerId} />}
+            {showRatingControl ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowRating((open) => !open)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-slate-300 hover:bg-white/10"
+                >
+                  {showRating ? t('rating.hidePanel') : t('rating.showPanel')}
+                </button>
+                {showRating && <RatingPanel offerId={offerId} />}
+              </>
+            ) : null}
             <div className="mt-3">
               <ReportButton target={{ chatId: id }} />
             </div>

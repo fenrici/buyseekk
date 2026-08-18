@@ -175,7 +175,7 @@ export function getImageUrl(url?: string | null): string | undefined {
   return url;
 }
 
-export async function uploadImage(file: File): Promise<{ url: string }> {
+export async function uploadImage(file: File, retryOnUnauthorized = true): Promise<{ url: string }> {
   const token = getToken();
   const form = new FormData();
   form.append('file', file);
@@ -183,8 +183,25 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}/api/uploads`, { method: 'POST', headers, body: form });
+  const res = await fetch(`${API_URL}/api/uploads`, {
+    method: 'POST',
+    headers,
+    body: form,
+    credentials: 'include',
+  });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+
+  if (res.status === 403 && isAccountDisabledCode(typeof data.code === 'string' ? data.code : undefined)) {
+    clearToken();
+    throwApiError(data, res.status);
+  }
+
+  if (res.status === 401 && retryOnUnauthorized) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      return uploadImage(file, false);
+    }
+  }
 
   if (!res.ok) {
     const msg = data.message ?? data.error ?? 'Error al subir imagen';

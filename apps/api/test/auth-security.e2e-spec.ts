@@ -563,6 +563,43 @@ describe('Auth security (e2e)', () => {
       .expect(400);
   });
 
+  it('forces US/USD on register during US launch', async () => {
+    const email = `us-market-${runId}@test.buyseekk.com`;
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email,
+        password,
+        name: 'US User',
+        role: 'BUYER',
+        country: 'US',
+        currency: 'ARS',
+        acceptedTerms: true,
+      })
+      .expect(201);
+
+    expect(res.body.user.country).toBe('US');
+    expect(res.body.user.currency).toBe('USD');
+
+    const stored = await prisma.user.findUniqueOrThrow({ where: { id: res.body.user.id } });
+    expect(stored.country).toBe('US');
+    expect(stored.currency).toBe('USD');
+  });
+
+  it('rejects register with non-launch country during US launch', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email: `ar-block-${runId}@test.buyseekk.com`,
+        password,
+        name: 'AR User',
+        role: 'BUYER',
+        country: 'AR',
+        acceptedTerms: true,
+      })
+      .expect(400);
+  });
+
   it('rejects refresh without cookie even if body contains a token', async () => {
     const auth = await registerUser(app, {
       email: `body-refresh-${runId}@test.buyseekk.com`,

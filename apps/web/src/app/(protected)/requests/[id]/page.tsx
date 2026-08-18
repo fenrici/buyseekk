@@ -19,7 +19,6 @@ import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusB
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { ReportButton } from '@/components/ReportButton';
 import { useT } from '@/lib/i18n';
-import { showCurrencySelectors } from '@/lib/launch-country';
 import { MoneyInput } from '@/components/MoneyInput';
 import { moneyInputLocale } from '@/lib/money-input';
 
@@ -30,21 +29,28 @@ export default function RequestDetailPage() {
   const { user } = useAuth();
   useRequireActiveMode('seller');
   const [request, setRequest] = useState<RequestItem | null>(null);
+  const [loading, setLoading] = useState(true);
   const [price, setPrice] = useState('');
   const [message, setMessage] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     setCurrency(user.currency);
-    api<RequestItem>(`/requests/${id}`).then(setRequest).catch((e) => setError(e.message));
-  }, [id, user]);
+    setLoading(true);
+    setError('');
+    api<RequestItem>(`/requests/${id}`)
+      .then(setRequest)
+      .catch((e) => setError(e instanceof Error ? e.message : t('request.loadError')))
+      .finally(() => setLoading(false));
+  }, [id, user, t]);
 
   async function sendOffer(e: React.FormEvent) {
     e.preventDefault();
-    if (!request) return;
+    if (!request || submitting) return;
     if (!imageUrls.length) {
       setError(t('request.needPhoto'));
       return;
@@ -60,6 +66,8 @@ export default function RequestDetailPage() {
       setError(t('request.priceMax', { max: budgetMaxLabel(currency as 'USD' | 'ARS', isRent) }));
       return;
     }
+    setSubmitting(true);
+    setError('');
     try {
       await api('/offers', {
         method: 'POST',
@@ -68,12 +76,27 @@ export default function RequestDetailPage() {
       router.push('/seller/offers');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  if (!user || !request) {
-    return <PortalLoadingScreen />;
+  if (!user) return null;
+  if (loading) return <PortalLoadingScreen />;
+  if (error && !request) {
+    return (
+      <div className="panel-dark">
+        <Header variant="dark" />
+        <main className="mx-auto max-w-5xl px-4 py-10">
+          <p className="rounded-lg bg-red-50 p-4 text-sm text-red-600">{error || t('request.notFound')}</p>
+          <Link href="/seller" className="btn btn-primary mt-4 inline-flex">
+            {t('seller.tabBrowse')}
+          </Link>
+        </main>
+      </div>
+    );
   }
+  if (!request) return null;
 
   const canOffer = canSellerOfferOnRequest(request.status, request.myOffer);
 
@@ -174,7 +197,9 @@ export default function RequestDetailPage() {
                 required
                 variant="panel"
               />
-              <button className="btn btn-accent w-full">{t('request.submitOffer')}</button>
+              <button type="submit" className="btn btn-accent w-full" disabled={submitting}>
+                {submitting ? t('common.saving') : t('request.submitOffer')}
+              </button>
             </div>
           </form>
         ) : (

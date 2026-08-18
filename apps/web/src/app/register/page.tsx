@@ -12,12 +12,7 @@ import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
 import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
-import {
-  getDefaultRegisterCountry,
-  getDefaultRegisterCurrency,
-  showCountrySelectors,
-  showCurrencySelectors,
-} from '@/lib/launch-country';
+import { getDefaultRegisterCountry, getDefaultRegisterCurrency } from '@/lib/launch-country';
 
 type Step = 'account' | 'role';
 
@@ -32,8 +27,6 @@ export default function RegisterPage() {
     password: '',
     name: '',
     role: 'BUYER' as 'BUYER' | 'SELLER',
-    country: getDefaultRegisterCountry(),
-    currency: getDefaultRegisterCurrency(),
     acceptedTerms: false,
   });
   const [error, setError] = useState('');
@@ -50,11 +43,7 @@ export default function RegisterPage() {
   }
 
   function update(field: string, value: string | boolean) {
-    setForm((f) => {
-      const next = { ...f, [field]: value };
-      if (field === 'country' && value === 'US') next.currency = 'USD';
-      return next;
-    });
+    setForm((f) => ({ ...f, [field]: value }));
   }
 
   function finishRegistration(user: User) {
@@ -172,40 +161,6 @@ export default function RegisterPage() {
                         required
                       />
                     </div>
-                    {showCountrySelectors() && (
-                      <div className="auth-field-grid auth-field-grid--register">
-                        <div className="auth-field">
-                          <label htmlFor="register-country" className="auth-label">
-                            {t('auth.country')}
-                          </label>
-                          <select
-                            id="register-country"
-                            className="auth-input auth-select"
-                            value={form.country}
-                            onChange={(e) => update('country', e.target.value)}
-                          >
-                            <option value="AR">{t('auth.countryAR')}</option>
-                            <option value="US">{t('auth.countryUS')}</option>
-                          </select>
-                        </div>
-                        {showCurrencySelectors() && (
-                          <div className="auth-field">
-                            <label htmlFor="register-currency" className="auth-label">
-                              {t('auth.currency')}
-                            </label>
-                            <select
-                              id="register-currency"
-                              className="auth-input auth-select"
-                              value={form.currency}
-                              onChange={(e) => update('currency', e.target.value)}
-                            >
-                              <option value="ARS">ARS</option>
-                              <option value="USD">USD</option>
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={goToRoleStep}
