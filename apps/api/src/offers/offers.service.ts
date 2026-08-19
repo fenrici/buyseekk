@@ -13,6 +13,8 @@ import {
   OFFER_HIGHLIGHTS_POOL_LIMIT,
   parsePagination,
   pickOfferHighlights,
+  SELLER_PROFILE_INCOMPLETE_CODE,
+  canSendOffers,
   type OfferForHighlight,
   toPaginatedResult,
 } from '@buyseekk/shared';
@@ -116,6 +118,12 @@ export class OffersService {
     if (!seller) throw new ForbiddenException();
     assertAccountActive(seller);
     assertEmailVerified(seller);
+    if (!canSendOffers(seller)) {
+      throw new BadRequestException({
+        message: 'Completá tu perfil de vendedor para enviar ofertas',
+        code: SELLER_PROFILE_INCOMPLETE_CODE,
+      });
+    }
     if (seller.country !== request.country) {
       throw new ForbiddenException('Solo podés ofertar en solicitudes de tu país');
     }
@@ -205,7 +213,19 @@ export class OffersService {
         take: safeLimit,
         orderBy: { createdAt: 'desc' },
         include: {
-          seller: { select: { id: true, name: true, country: true, avatarUrl: true, sellerType: true, businessName: true } },
+          seller: {
+            select: {
+              id: true,
+              name: true,
+              country: true,
+              avatarUrl: true,
+              sellerType: true,
+              businessName: true,
+              businessType: true,
+              state: true,
+              city: true,
+            },
+          },
           request: { select: { id: true, title: true, imageUrls: true, currency: true, status: true } },
           chat: { select: { id: true } },
         },

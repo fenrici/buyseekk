@@ -128,6 +128,42 @@ export async function getVerificationToken(prisma: PrismaService, userId: string
   return record;
 }
 
+export async function completeSellerProfileForOffers(
+  app: INestApplication<App>,
+  auth: AuthResponse,
+  profile: {
+    sellerType?: 'INDIVIDUAL' | 'COMPANY';
+    sellerCategory?: 'AUTOS' | 'INMOBILIARIA';
+    state?: string;
+    city?: string;
+    businessName?: string;
+    businessType?: 'DEALERSHIP' | 'REAL_ESTATE_AGENCY' | 'OTHER';
+    website?: string;
+  } = {},
+) {
+  const sellerType = profile.sellerType ?? 'INDIVIDUAL';
+  const sellerCategory = profile.sellerCategory ?? 'AUTOS';
+  const state = profile.state ?? 'FL';
+  const city = profile.city ?? 'Miami';
+  await request(app.getHttpServer())
+    .patch('/api/users/me/seller-profile')
+    .set(authHeader(auth.token))
+    .send({
+      sellerType,
+      sellerCategory,
+      state,
+      city,
+      ...(sellerType === 'COMPANY'
+        ? {
+            businessName: profile.businessName ?? 'Test Motors LLC',
+            businessType: profile.businessType ?? 'DEALERSHIP',
+            website: profile.website,
+          }
+        : {}),
+    })
+    .expect(200);
+}
+
 export async function registerUser(
   app: INestApplication<App>,
   payload: {
@@ -136,14 +172,17 @@ export async function registerUser(
     name: string;
     role: 'BUYER' | 'SELLER' | 'BOTH';
     country: 'AR' | 'US';
-    sellerType?: 'PERSONAL' | 'BUSINESS';
+    sellerType?: 'INDIVIDUAL' | 'COMPANY';
     sellerCategory?: 'AUTOS' | 'INMOBILIARIA';
   },
-  options: { verify?: boolean } = { verify: true },
+  options: { verify?: boolean; completeSellerProfile?: boolean } = {
+    verify: true,
+    completeSellerProfile: true,
+  },
 ): Promise<AuthResponse> {
   const body = { acceptedTerms: true, ...payload };
   if (body.role === 'SELLER' || body.role === 'BOTH') {
-    if (!body.sellerType) body.sellerType = 'BUSINESS';
+    if (!body.sellerType) body.sellerType = 'INDIVIDUAL';
     if (!body.sellerCategory) body.sellerCategory = 'AUTOS';
   }
   const res = await request(app.getHttpServer())
@@ -151,12 +190,24 @@ export async function registerUser(
     .send(body)
     .expect(201);
 
+  const auth = authFromResponse(res);
+
   if (options.verify !== false) {
     const prisma = app.get(PrismaService);
     await verifyUserEmail(prisma, res.body.user.id);
   }
 
-  return authFromResponse(res);
+  if (
+    options.completeSellerProfile !== false &&
+    (body.role === 'SELLER' || body.role === 'BOTH')
+  ) {
+    await completeSellerProfileForOffers(app, auth, {
+      sellerType: body.sellerType,
+      sellerCategory: body.sellerCategory,
+    });
+  }
+
+  return auth;
 }
 
 export async function loginUser(

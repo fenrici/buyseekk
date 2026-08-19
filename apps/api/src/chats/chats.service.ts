@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { OfferStatus, Prisma, RequestStatus, UserMode } from '@prisma/client';
-import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
+import { parsePagination, toPaginatedResult, formatSellerBuyerIdentity } from '@buyseekk/shared';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { assertNotAdminForMarketplaceActions } from '../common/utils/assert-not-admin';
@@ -19,6 +19,18 @@ import { MAX_CHAT_MESSAGE_LENGTH, SendMessageDto } from './chats.dto';
 import { ChatGateway } from './chat.gateway';
 
 const EPOCH = new Date(0);
+
+const CHAT_SELLER_SELECT = {
+  id: true,
+  name: true,
+  avatarUrl: true,
+  sellerType: true,
+  businessName: true,
+  businessType: true,
+  state: true,
+  city: true,
+  country: true,
+} as const;
 
 @Injectable()
 export class ChatsService {
@@ -33,17 +45,43 @@ export class ChatsService {
 
   private formatPartner(
     offer: {
-      seller: { id: string; name: string; avatarUrl: string | null };
+      seller: {
+        id: string;
+        name: string;
+        avatarUrl: string | null;
+        sellerType: string | null;
+        businessName: string | null;
+        businessType: string | null;
+        state: string | null;
+        city: string | null;
+        country: string;
+      };
       request: { user: { id: string; name: string; avatarUrl: string | null } };
     },
     myRole: 'buyer' | 'seller',
+    locale: 'ES' | 'EN' = 'ES',
   ) {
     if (myRole === 'buyer') {
+      const identity = formatSellerBuyerIdentity(
+        {
+          role: 'SELLER',
+          sellerType: offer.seller.sellerType,
+          name: offer.seller.name,
+          businessName: offer.seller.businessName,
+          businessType: offer.seller.businessType,
+          state: offer.seller.state,
+          city: offer.seller.city,
+          country: offer.seller.country,
+        },
+        locale,
+      );
       return {
         id: offer.seller.id,
         name: offer.seller.name,
         avatarUrl: offer.seller.avatarUrl,
         role: 'seller' as const,
+        identityTitle: identity.titleLine,
+        identityDetail: identity.detailLine,
       };
     }
     return {
@@ -237,6 +275,11 @@ export class ChatsService {
     const { page: safePage, limit: safeLimit, skip } = parsePagination(page, limit);
 
     const where = this.chatsWhereForMode(userId, activeMode);
+    const viewer = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    const viewerLocale = viewer?.locale ?? 'ES';
 
     const [chats, total] = await Promise.all([
       this.prisma.chat.findMany({
@@ -247,7 +290,7 @@ export class ChatsService {
         include: {
           offer: {
             include: {
-              seller: { select: { id: true, name: true, avatarUrl: true } },
+              seller: { select: CHAT_SELLER_SELECT },
               request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
             },
           },
@@ -280,7 +323,7 @@ export class ChatsService {
         id: chat.id,
         offerId: chat.offerId,
         requestTitle: chat.offer.requestTitle,
-        partner: this.formatPartner(chat.offer, myRole),
+        partner: this.formatPartner(chat.offer, myRole, viewerLocale),
         lastMessage: last
           ? { text: last.text, fromRole: last.fromRole, createdAt: last.createdAt }
           : null,
@@ -298,7 +341,7 @@ export class ChatsService {
       include: {
         offer: {
           include: {
-            seller: { select: { id: true, name: true, avatarUrl: true } },
+            seller: { select: CHAT_SELLER_SELECT },
             request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
           },
         },
@@ -307,6 +350,11 @@ export class ChatsService {
     if (!full) throw new NotFoundException('Chat no encontrado');
 
     const role = this.assertParticipant(full, userId);
+    const viewer = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { locale: true },
+    });
+    const viewerLocale = viewer?.locale ?? 'ES';
     const partnerLastReadAt = await this.getPartnerLastReadAt(full, userId);
 
     const totalMessages = await this.prisma.message.count({ where: { chatId } });
@@ -334,7 +382,7 @@ export class ChatsService {
       offerId: full.offerId,
       requestTitle: full.offer.requestTitle,
       myRole: role,
-      partner: this.formatPartner(full.offer, role),
+      partner: this.formatPartner(full.offer, role, viewerLocale),
       partnerLastReadAt,
       negotiationEndedAt: full.offer.negotiationEndedAt,
       dealCompletedAt: full.offer.dealCompletedAt,

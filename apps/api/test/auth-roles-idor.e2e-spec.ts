@@ -175,7 +175,7 @@ describe('Roles, activeMode and IDOR (e2e)', () => {
     const onboarded = await request(app.getHttpServer())
       .post('/api/users/me/seller-profile')
       .set(authHeader(registerRes.body.token))
-      .send({ sellerType: 'BUSINESS', sellerCategory: 'AUTOS' })
+      .send({ sellerType: 'COMPANY', sellerCategory: 'AUTOS' })
       .expect(201);
 
     expect(onboarded.body.role).toBe('BOTH');

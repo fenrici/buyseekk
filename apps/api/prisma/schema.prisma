@@ -27,8 +27,14 @@ enum SubscriptionPlan {
 }
 
 enum SellerType {
-  PERSONAL
-  BUSINESS
+  INDIVIDUAL
+  COMPANY
+}
+
+enum BusinessType {
+  DEALERSHIP
+  REAL_ESTATE_AGENCY
+  OTHER
 }
 
 enum Country {
@@ -156,8 +162,10 @@ model User {
   avatarUrl       String?
   bio             String?
   businessName    String?
+  businessType    BusinessType?
   phone           String?
   website         String?
+  state           String?
   city            String?
   lastSellerFilters Json?
   emailVerified    Boolean   @default(false)

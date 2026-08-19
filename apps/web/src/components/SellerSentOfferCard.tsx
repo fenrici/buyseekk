@@ -85,7 +85,7 @@ export function SellerSentOfferCard({
       {offer.status === 'ACEPTADA' && offer.chatId && (
         <OfferDecisionBar
           perspective="seller"
-          identityName={buyerName}
+          partnerName={buyerName}
           subtitle={offer.dealCompletedAt ? t('seller.dealCompletedHint') : null}
           offerId={offer.id}
           status={offer.status}

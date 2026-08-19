@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { User } from '@/lib/types';
 
-type SellerType = 'PERSONAL' | 'BUSINESS';
+type SellerType = 'INDIVIDUAL' | 'COMPANY';
 type SellerCategory = 'AUTOS' | 'INMOBILIARIA';
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
 
 export function SellerOnboardingModal({ open, required, onCancel, onComplete }: Props) {
   const t = useT();
-  const [sellerType, setSellerType] = useState<SellerType>('PERSONAL');
+  const [sellerType, setSellerType] = useState<SellerType>('INDIVIDUAL');
   const [sellerCategory, setSellerCategory] = useState<SellerCategory>('AUTOS');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -53,18 +53,18 @@ export function SellerOnboardingModal({ open, required, onCancel, onComplete }: 
             <button
               type="button"
               role="radio"
-              aria-checked={sellerType === 'PERSONAL'}
-              className={`auth-option-btn ${sellerType === 'PERSONAL' ? 'active' : ''}`}
-              onClick={() => setSellerType('PERSONAL')}
+              aria-checked={sellerType === 'INDIVIDUAL'}
+              className={`auth-option-btn ${sellerType === 'INDIVIDUAL' ? 'active' : ''}`}
+              onClick={() => setSellerType('INDIVIDUAL')}
             >
               {t('auth.sellerTypePersonal')}
             </button>
             <button
               type="button"
               role="radio"
-              aria-checked={sellerType === 'BUSINESS'}
-              className={`auth-option-btn ${sellerType === 'BUSINESS' ? 'active' : ''}`}
-              onClick={() => setSellerType('BUSINESS')}
+              aria-checked={sellerType === 'COMPANY'}
+              className={`auth-option-btn ${sellerType === 'COMPANY' ? 'active' : ''}`}
+              onClick={() => setSellerType('COMPANY')}
             >
               {t('auth.sellerTypeBusiness')}
             </button>

@@ -3056,6 +3056,88 @@ button.portal-mobile-link {
   }
 }
 
+.profile-seller-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-seller-section__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.profile-seller-section__hint {
+  margin: -0.35rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.seller-identity {
+  min-width: 0;
+}
+
+.seller-identity__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.seller-identity__detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  word-break: break-word;
+}
+
+.seller-identity--compact .seller-identity__title {
+  font-size: 0.875rem;
+}
+
+.seller-identity--compact .seller-identity__detail {
+  font-size: 0.75rem;
+}
+
+.profile-incomplete-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.profile-incomplete-cta p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #fde68a;
+}
+
+.profile-incomplete-cta__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fbbf24;
+  text-decoration: none;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .profile-prefs,
 .profile-account {
   padding: 1.25rem;

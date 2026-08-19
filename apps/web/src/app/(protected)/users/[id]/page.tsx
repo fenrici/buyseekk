@@ -67,7 +67,7 @@ export default function PublicProfilePage() {
                     {isSeller ? (
                       <>
                         <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600">
-                          {profile.sellerType === 'BUSINESS'
+                          {profile.sellerType === 'COMPANY'
                             ? t('auth.sellerTypeBusiness')
                             : t('auth.sellerTypePersonal')}
                         </span>

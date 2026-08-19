@@ -1,10 +1,4 @@
-import {
-  hasCompletedSellerProfile,
-  isBuyerCapableRole,
-  isSellerCapableRole,
-  resolveNavMode,
-  resolveSessionActiveMode,
-} from '@buyseekk/shared';
+import { canSendOffers, hasCompletedSellerProfile, isBuyerCapableRole, isSellerCapableRole, resolveNavMode, resolveSessionActiveMode } from '@buyseekk/shared';
 import { User } from './types';
 
 export type UserMode = 'BUYER' | 'SELLER';
@@ -39,6 +33,10 @@ export function getAppHomePath(user: Pick<User, 'role' | 'activeMode'> | null | 
 /** Una cuenta ya completó el onboarding de vendedor si tiene capacidad y datos de vendedor. */
 export function hasSellerProfile(user: Pick<User, 'role' | 'sellerType' | 'sellerCategory'>) {
   return hasCompletedSellerProfile(user);
+}
+
+export function canUserSendOffers(user: User) {
+  return canSendOffers(user);
 }
 
 export function getDashboardPath(role: User['role']) {

@@ -13,8 +13,9 @@ export interface User {
   name: string;
   role: 'BUYER' | 'SELLER' | 'BOTH' | 'ADMIN';
   activeMode: 'BUYER' | 'SELLER';
-  sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+  sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
   sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
+  businessType?: 'DEALERSHIP' | 'REAL_ESTATE_AGENCY' | 'OTHER' | null;
   country: 'AR' | 'US';
   locale: 'ES' | 'EN';
   currency: 'ARS' | 'USD';
@@ -23,6 +24,7 @@ export interface User {
   businessName?: string | null;
   phone?: string | null;
   website?: string | null;
+  state?: string | null;
   city?: string | null;
   lastSellerFilters?: Record<string, unknown> | null;
   emailVerified: boolean;
@@ -43,13 +45,15 @@ export interface PublicProfile {
   id: string;
   name: string;
   role: 'BUYER' | 'SELLER' | 'BOTH';
-  sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+  sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
   sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
+  businessType?: 'DEALERSHIP' | 'REAL_ESTATE_AGENCY' | 'OTHER' | null;
   country: 'AR' | 'US';
   avatarUrl?: string | null;
   bio?: string | null;
   businessName?: string | null;
   website?: string | null;
+  state?: string | null;
   city?: string | null;
   createdAt: string;
   rating: UserRatingStats;
@@ -158,6 +162,8 @@ export interface ChatPartner {
   name: string;
   role: 'buyer' | 'seller';
   avatarUrl?: string | null;
+  identityTitle?: string;
+  identityDetail?: string;
 }
 
 export interface ChatPreview {
@@ -263,8 +269,12 @@ export interface OfferItem {
     name: string;
     rating?: UserRatingStats;
     avatarUrl?: string | null;
-    sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+    sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
     businessName?: string | null;
+    businessType?: 'DEALERSHIP' | 'REAL_ESTATE_AGENCY' | 'OTHER' | null;
+    state?: string | null;
+    city?: string | null;
+    country?: 'AR' | 'US';
   };
   request?: {
     id: string;

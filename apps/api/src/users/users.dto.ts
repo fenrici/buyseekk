@@ -1,6 +1,6 @@
-import { IsBoolean, IsEnum, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { IsBoolean, IsEnum, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Locale, RequestCategory, SellerType, UserMode } from '@prisma/client';
+import { BusinessType, Locale, RequestCategory, SellerType, UserMode } from '@prisma/client';
 import { NotificationPreferenceKey } from '@buyseekk/shared';
 
 export class UpdateLanguageDto {
@@ -21,14 +21,43 @@ export class SellerProfileDto {
   sellerCategory!: RequestCategory;
 
   @IsOptional()
+  @ValidateIf((dto: SellerProfileDto) => dto.sellerType === SellerType.COMPANY)
   @IsString()
+  @MinLength(2)
   @MaxLength(80)
   businessName?: string;
+
+  @IsOptional()
+  @ValidateIf((dto: SellerProfileDto) => dto.sellerType === SellerType.COMPANY)
+  @IsEnum(BusinessType)
+  businessType?: BusinessType;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  state?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(80)
   city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  website?: string;
+}
+
+export class UpdateSellerProfileDto extends SellerProfileDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  declare state: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  declare city: string;
 }
 
 export class LastSearchFiltersDto {
@@ -54,9 +83,18 @@ export class UpdateProfileDto {
   businessName?: string;
 
   @IsOptional()
+  @IsEnum(BusinessType)
+  businessType?: BusinessType;
+
+  @IsOptional()
   @IsString()
   @MaxLength(200)
   website?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  state?: string;
 
   @IsOptional()
   @IsString()

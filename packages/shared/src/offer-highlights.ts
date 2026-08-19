@@ -8,7 +8,7 @@ export interface OfferHighlightSeller {
   name: string;
   businessName?: string | null;
   avatarUrl?: string | null;
-  sellerType?: 'PERSONAL' | 'BUSINESS' | null;
+  sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
   rating?: {
     avgStars: number | null;
     reviewCount: number;
@@ -98,7 +98,7 @@ function profileScore(seller?: OfferHighlightSeller | null): number {
   let score = 0;
   if (seller.avatarUrl) score += 4;
   if (seller.businessName?.trim()) score += 5;
-  if (seller.sellerType === 'BUSINESS') score += 3;
+  if (seller.sellerType === 'COMPANY') score += 3;
   return score;
 }
 

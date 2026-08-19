@@ -299,9 +299,18 @@ export function ChatThread({
           <Avatar name={chat.partner.name} url={chat.partner.avatarUrl} size={40} />
         </Link>
         <div className="min-w-0 flex-1">
-          <Link href={`/users/${chat.partner.id}`} className="font-semibold hover:underline">
-            {chat.partner.name}
-          </Link>
+          {chat.partner.identityTitle && chat.myRole === 'buyer' ? (
+            <>
+              <Link href={`/users/${chat.partner.id}`} className="block font-semibold hover:underline">
+                {chat.partner.identityTitle}
+              </Link>
+              <p className="truncate text-xs text-slate-500">{chat.partner.identityDetail}</p>
+            </>
+          ) : (
+            <Link href={`/users/${chat.partner.id}`} className="font-semibold hover:underline">
+              {chat.partner.name}
+            </Link>
+          )}
           <p className="truncate text-xs text-slate-500">{chat.requestTitle}</p>
         </div>
         <span className={`shrink-0 text-xs font-semibold ${live ? 'text-emerald-600' : 'text-slate-400'}`}>

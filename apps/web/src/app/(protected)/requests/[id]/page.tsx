@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
+import { canUserSendOffers } from '@/lib/auth';
+import { SELLER_PROFILE_INCOMPLETE_CODE } from '@buyseekk/shared';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
 import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 import { spamFieldErrors } from '@/lib/spam';
@@ -48,6 +50,8 @@ export default function RequestDetailPage() {
       .finally(() => setLoading(false));
   }, [id, user, t]);
 
+  const profileReady = user ? canUserSendOffers(user) : false;
+
   async function sendOffer(e: React.FormEvent) {
     e.preventDefault();
     if (!request || submitting) return;
@@ -75,7 +79,11 @@ export default function RequestDetailPage() {
       });
       router.push('/seller/offers');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      if (err instanceof ApiError && err.code === SELLER_PROFILE_INCOMPLETE_CODE) {
+        setError(t('profile.completeProfileToOffer'));
+      } else {
+        setError(err instanceof Error ? err.message : t('common.error'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +169,14 @@ export default function RequestDetailPage() {
         {canOffer ? (
           <form onSubmit={sendOffer} className="card offer-form h-fit p-6">
             <h2 className="text-xl font-bold text-white">{t('request.sendOfferTitle')}</h2>
+            {!profileReady && (
+              <div className="profile-incomplete-cta mt-3">
+                <p>{t('profile.completeProfileToOffer')}</p>
+                <Link href="/profile?section=seller" className="profile-incomplete-cta__link">
+                  {t('profile.completeProfileCta')}
+                </Link>
+              </div>
+            )}
             {error && <EmailVerificationErrorAlert message={error} className="mt-3" />}
             <div className="offer-form__fields">
               <div className="offer-form__field">

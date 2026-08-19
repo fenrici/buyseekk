@@ -30,7 +30,6 @@ export function OfferReceivedCard({
   subtitle,
   sellerName,
 }: Props) {
-  const seller = sellerName ?? offer.seller?.businessName ?? offer.seller?.name ?? '—';
   const decisionSubtitle = subtitle ?? <UserRatingBadge stats={offer.seller?.rating} compact />;
 
   return (
@@ -39,7 +38,16 @@ export function OfferReceivedCard({
       <p className="mb-3 text-sm font-semibold text-slate-400">{offer.requestTitle}</p>
       <CompareBlock offer={offer} />
       <OfferDecisionBar
-        identityName={seller}
+        seller={{
+          role: 'SELLER',
+          name: offer.seller?.name ?? sellerName ?? '—',
+          sellerType: offer.seller?.sellerType,
+          businessName: offer.seller?.businessName,
+          businessType: offer.seller?.businessType,
+          state: offer.seller?.state,
+          city: offer.seller?.city,
+          country: offer.seller?.country,
+        }}
         subtitle={decisionSubtitle}
         offerId={offer.id}
         status={offer.status}

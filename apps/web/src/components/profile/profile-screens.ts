@@ -1,6 +1,7 @@
 export type ProfileScreen =
   | 'hub'
   | 'edit'
+  | 'seller'
   | 'preferences'
   | 'notifications'
   | 'plan'

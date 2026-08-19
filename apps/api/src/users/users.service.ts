@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Locale, RatingType, SellerType, UserMode, UserRole } from '@prisma/client';
+import { BusinessType, Locale, RatingType, SellerType, UserMode, UserRole } from '@prisma/client';
 import {
   canEnterMode,
+  canSendOffers,
   hasCompletedSellerProfile,
   mergeNotificationPreferences,
   parseNotificationPreferences,
@@ -13,7 +14,7 @@ import { assertAccountActive } from '../common/utils/assert-not-blocked';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageObjectsService } from '../storage/storage-objects.service';
-import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto, UpdateSellerChatSettingsDto } from './users.dto';
+import { LastSearchFiltersDto, SellerProfileDto, UpdatePreferencesDto, UpdateProfileDto, UpdateSellerChatSettingsDto, UpdateSellerProfileDto } from './users.dto';
 
 const PUBLIC_PROFILE_SELECT = {
   id: true,
@@ -21,11 +22,13 @@ const PUBLIC_PROFILE_SELECT = {
   role: true,
   sellerType: true,
   sellerCategory: true,
+  businessType: true,
   country: true,
   avatarUrl: true,
   bio: true,
   businessName: true,
   website: true,
+  state: true,
   city: true,
   createdAt: true,
 } as const;
@@ -79,6 +82,12 @@ export class UsersService {
     return { ...user, rating, completedDeals, recentReviews };
   }
 
+  private cleanOptional(value?: string) {
+    if (value === undefined) return undefined;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const current = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!current) throw new NotFoundException('Usuario no encontrado');
@@ -89,22 +98,18 @@ export class UsersService {
       assertOwnedImageUrls([dto.avatarUrl.trim()], userId, current.avatarUrl ? [current.avatarUrl] : []);
     }
 
-    const clean = (value?: string) => {
-      if (value === undefined) return undefined;
-      const trimmed = value.trim();
-      return trimmed ? trimmed : null;
-    };
-
-    const isBusiness = current.sellerType === SellerType.BUSINESS;
+    const isCompany = current.sellerType === SellerType.COMPANY;
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         name: dto.name?.trim() || undefined,
-        bio: clean(dto.bio),
-        city: clean(dto.city),
-        avatarUrl: clean(dto.avatarUrl),
-        businessName: isBusiness ? clean(dto.businessName) : undefined,
-        website: isBusiness ? clean(dto.website) : undefined,
+        bio: this.cleanOptional(dto.bio),
+        state: this.cleanOptional(dto.state),
+        city: this.cleanOptional(dto.city),
+        avatarUrl: this.cleanOptional(dto.avatarUrl),
+        businessName: isCompany ? this.cleanOptional(dto.businessName) : undefined,
+        businessType: isCompany && dto.businessType !== undefined ? dto.businessType : undefined,
+        website: isCompany ? this.cleanOptional(dto.website) : undefined,
       },
     });
 
@@ -167,10 +172,6 @@ export class UsersService {
     return this.toSafeUser(updated);
   }
 
-  /**
-   * Cambia el modo de uso activo. No otorga permisos: para entrar en modo vendedor
-   * la cuenta debe tener la capacidad SELLER (role BOTH/SELLER) y un perfil de vendedor.
-   */
   async updateActiveMode(userId: string, activeMode: UserMode) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
@@ -185,7 +186,6 @@ export class UsersService {
       activeMode,
       preferredMode: activeMode,
     };
-    // Cuentas legacy con role SELLER pasan a BOTH al elegir modo comprador (pueden usar ambas interfaces).
     if (activeMode === UserMode.BUYER && user.role === UserRole.SELLER) {
       data.role = UserRole.BOTH;
     }
@@ -197,33 +197,43 @@ export class UsersService {
     return this.toSafeUser(updated);
   }
 
-  /**
-   * Onboarding de vendedor (una sola vez): habilita la capacidad SELLER conservando
-   * la de comprador (role BOTH), guarda tipo y rubro, y activa el modo vendedor.
-   */
+  private sellerProfileData(dto: SellerProfileDto | UpdateSellerProfileDto) {
+    const isCompany = dto.sellerType === SellerType.COMPANY;
+    return {
+      sellerType: dto.sellerType,
+      sellerCategory: dto.sellerCategory,
+      ...(dto.state !== undefined ? { state: dto.state.trim() } : {}),
+      ...(dto.city !== undefined ? { city: dto.city.trim() } : {}),
+      ...(isCompany
+        ? {
+            businessName: dto.businessName?.trim() || null,
+            businessType: dto.businessType ?? null,
+            website: this.cleanOptional(dto.website),
+          }
+        : {}),
+    };
+  }
+
   async createSellerProfile(userId: string, dto: SellerProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     assertAccountActive(user);
 
-    const isBusiness = dto.sellerType === SellerType.BUSINESS;
     const nextRole = roleAfterEnablingSeller(user.role);
+    const profileData = this.sellerProfileData(dto);
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         role: nextRole,
         activeMode: UserMode.SELLER,
-        sellerType: dto.sellerType,
-        sellerCategory: dto.sellerCategory,
-        businessName: isBusiness ? dto.businessName?.trim() || null : null,
-        city: dto.city?.trim() || user.city || null,
+        ...profileData,
       },
     });
     return this.toSafeUser(updated);
   }
 
-  async updateSellerProfile(userId: string, dto: SellerProfileDto) {
+  async updateSellerProfile(userId: string, dto: UpdateSellerProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     assertAccountActive(user);
@@ -231,17 +241,30 @@ export class UsersService {
       throw new BadRequestException('Todavía no tenés un perfil de vendedor');
     }
 
-    const isBusiness = dto.sellerType === SellerType.BUSINESS;
+    const profileData = this.sellerProfileData(dto);
+    if (dto.sellerType === SellerType.COMPANY) {
+      if (!dto.businessName?.trim() || !dto.businessType) {
+        throw new BadRequestException('Completá nombre comercial y tipo de negocio');
+      }
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        sellerType: dto.sellerType,
-        sellerCategory: dto.sellerCategory,
-        businessName: isBusiness ? dto.businessName?.trim() || null : null,
-        city: dto.city?.trim() || user.city || null,
-      },
+      data: profileData,
     });
     return this.toSafeUser(updated);
+  }
+
+  canUserSendOffers(user: {
+    role: UserRole;
+    sellerType: SellerType | null;
+    sellerCategory: string | null;
+    businessName: string | null;
+    businessType: BusinessType | null;
+    state: string | null;
+    city: string | null;
+  }) {
+    return canSendOffers(user);
   }
 
   async updateLastSearchFilters(userId: string, dto: LastSearchFiltersDto) {

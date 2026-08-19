@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { canRemoveOfferFromListing } from '@buyseekk/shared';
+import { SellerIdentityDisplay } from '@/components/SellerIdentityDisplay';
+import type { SellerProfileFields } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 
 type Props = {
-  identityName: string;
+  seller?: SellerProfileFields | null;
+  partnerName?: string;
   subtitle?: ReactNode;
   offerId: string;
   status: string;
@@ -36,7 +39,8 @@ function StatusBadge({ pill }: { pill: StatusPill }) {
 }
 
 export function OfferDecisionBar({
-  identityName,
+  seller,
+  partnerName,
   subtitle,
   offerId,
   status,
@@ -99,7 +103,11 @@ export function OfferDecisionBar({
       <div className="offer-decision-bar__main">
         <div className="offer-decision-bar__top">
           <div className="offer-decision-bar__identity">
-            <p className="offer-decision-bar__seller">{identityName}</p>
+            {isSeller ? (
+              <p className="offer-decision-bar__seller">{partnerName ?? '—'}</p>
+            ) : (
+              <SellerIdentityDisplay seller={seller} compact />
+            )}
             {statusPill && <StatusBadge pill={statusPill} />}
           </div>
           {subtitle ? <div className="offer-decision-bar__subtitle">{subtitle}</div> : null}

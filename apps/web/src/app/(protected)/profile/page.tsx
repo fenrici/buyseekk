@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   MAX_UPLOAD_BYTES,
@@ -28,7 +29,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useModeSwitch } from '@/providers/ModeSwitchProvider';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { logoutSession } from '@/lib/session';
-import { hasSellerProfile } from '@/lib/auth';
+import { ProfileSellerSection } from '@/components/profile/ProfileSellerSection';
+import { hasSellerProfile, canUserSendOffers } from '@/lib/auth';
 
 function profileFormFromUser(user: User): ProfileFormState {
   return {
@@ -45,6 +47,7 @@ export default function ProfilePage() {
   const { user, setSession } = useAuth();
   const { switchMode, switching } = useModeSwitch();
   const t = useT();
+  const searchParams = useSearchParams();
   const [screen, setScreen] = useState<ProfileScreen>('hub');
   const [langSaving, setLangSaving] = useState(false);
   const [prefsSaving, setPrefsSaving] = useState(false);
@@ -61,11 +64,18 @@ export default function ProfilePage() {
     setNotifPrefs(parseNotificationPreferences(user.notificationPreferences));
   }, [user?.id]);
 
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section === 'seller') setScreen('seller');
+  }, [searchParams]);
+
   if (!user) return null;
 
   const account = user;
-  const isBusiness = account.sellerType === 'BUSINESS';
+  const isCompany = account.sellerType === 'COMPANY';
+  const isSellerCapable = account.role === 'SELLER' || account.role === 'BOTH';
   const isSeller = account.activeMode === 'SELLER';
+  const sellerProfileReady = canUserSendOffers(account);
 
   function goHub() {
     setScreen('hub');
@@ -168,7 +178,7 @@ export default function ProfilePage() {
           <ProfileEditForm
             user={account}
             form={form}
-            isBusiness={isBusiness}
+            isBusiness={isCompany}
             uploading={uploading}
             saving={saving}
             saved={saved}
@@ -177,6 +187,20 @@ export default function ProfilePage() {
             onPhoto={handlePhoto}
             onSubmit={handleSubmit}
           />
+        </ProfileSubLayout>
+      );
+      break;
+    case 'seller':
+      content = (
+        <ProfileSubLayout title={t('profile.sellerSectionTitle')} onBack={goHub}>
+          {isSellerCapable && hasSellerProfile(account) && !sellerProfileReady && (
+            <p className="profile-form__alert profile-form__alert--error">{t('profile.sellerIncompleteHint')}</p>
+          )}
+          {isSellerCapable && hasSellerProfile(account) ? (
+            <ProfileSellerSection user={account} onUpdated={setSession} />
+          ) : (
+            <p className="text-sm text-slate-400">{t('profile.sellerSectionUnavailable')}</p>
+          )}
         </ProfileSubLayout>
       );
       break;
@@ -247,7 +271,12 @@ export default function ProfilePage() {
           <div className="profile-page__grid">
             <div className="profile-page__main">
               <ProfileCompactHeader user={account} isSeller={isSeller} onEditProfile={openEdit} />
-              <ProfileHubMenu onNavigate={go} onLogout={logoutSession} onEditProfile={openEdit} />
+              <ProfileHubMenu
+                onNavigate={go}
+                onLogout={logoutSession}
+                onEditProfile={openEdit}
+                showSellerSection={isSellerCapable && hasSellerProfile(account)}
+              />
             </div>
             <aside className="profile-page__sidebar">
               <ProfileAccountSidebar

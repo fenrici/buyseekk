@@ -12,6 +12,7 @@ import {
   UpdatePreferencesDto,
   UpdateProfileDto,
   UpdateSellerChatSettingsDto,
+  UpdateSellerProfileDto,
 } from './users.dto';
 import { UsersService } from './users.service';
 
@@ -64,7 +65,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @SkipThrottle()
   @Patch('me/seller-profile')
-  updateSellerProfile(@CurrentUser() user: AuthUser, @Body() dto: SellerProfileDto) {
+  updateSellerProfile(@CurrentUser() user: AuthUser, @Body() dto: UpdateSellerProfileDto) {
     return this.users.updateSellerProfile(user.id, dto);
   }
 

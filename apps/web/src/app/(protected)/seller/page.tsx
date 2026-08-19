@@ -50,7 +50,7 @@ export default function SellerPage() {
           {user.sellerType && user.sellerCategory && (
             <>
               <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-slate-200">
-                {user.sellerType === 'BUSINESS' ? t('seller.profileBusiness') : t('seller.profilePersonal')}
+                {user.sellerType === 'COMPANY' ? t('seller.profileBusiness') : t('seller.profilePersonal')}
               </span>
               <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-slate-200">
                 {user.sellerCategory === 'AUTOS' ? t('seller.profileAutos') : t('seller.profileRealEstate')}

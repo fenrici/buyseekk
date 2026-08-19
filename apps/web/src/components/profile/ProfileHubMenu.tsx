@@ -8,6 +8,7 @@ type Props = {
   onNavigate: (screen: ProfileScreen) => void;
   onLogout: () => void;
   onEditProfile: () => void;
+  showSellerSection?: boolean;
 };
 
 function IconUser() {
@@ -66,7 +67,7 @@ function IconLogout() {
   );
 }
 
-export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile }: Props) {
+export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile, showSellerSection }: Props) {
   const t = useT();
 
   return (
@@ -78,6 +79,14 @@ export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile }: Props) {
         onClick={onEditProfile}
         className="profile-menu-row--desktop-only"
       />
+      {showSellerSection && (
+        <ProfileMenuRow
+          icon={<IconStore />}
+          title={t('profile.sellerSectionTitle')}
+          description={t('profile.sellerSectionMenuDesc')}
+          onClick={() => onNavigate('seller')}
+        />
+      )}
       <ProfileMenuRow
         icon={<IconSettings />}
         title={t('profile.menuPreferences')}
@@ -124,6 +133,16 @@ export function ProfileHubMenu({ onNavigate, onLogout, onEditProfile }: Props) {
         destructive
       />
     </nav>
+  );
+}
+
+function IconStore() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M3 9l2-6h14l2 6" strokeLinejoin="round" />
+      <path d="M3 9h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" />
+      <path d="M9 22V12h6v10" />
+    </svg>
   );
 }
 

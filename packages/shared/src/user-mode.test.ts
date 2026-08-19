@@ -22,7 +22,7 @@ assert.equal(isSellerCapableRole('BUYER'), false);
 // --- Perfil de vendedor completado ---
 assert.equal(hasCompletedSellerProfile({ role: 'BUYER' }), false);
 assert.equal(
-  hasCompletedSellerProfile({ role: 'BOTH', sellerType: 'PERSONAL', sellerCategory: 'AUTOS' }),
+  hasCompletedSellerProfile({ role: 'BOTH', sellerType: 'INDIVIDUAL', sellerCategory: 'AUTOS' }),
   true,
 );
 assert.equal(
@@ -38,16 +38,16 @@ assert.equal(canEnterMode('SELLER', { role: 'BUYER' }), false);
 assert.equal(canEnterMode('SELLER', { role: 'BOTH', sellerType: null, sellerCategory: null }), false);
 // Cuenta con perfil de vendedor: puede ambos modos.
 assert.equal(
-  canEnterMode('SELLER', { role: 'BOTH', sellerType: 'BUSINESS', sellerCategory: 'AUTOS' }),
+  canEnterMode('SELLER', { role: 'BOTH', sellerType: 'COMPANY', sellerCategory: 'AUTOS' }),
   true,
 );
 assert.equal(
-  canEnterMode('BUYER', { role: 'BOTH', sellerType: 'BUSINESS', sellerCategory: 'AUTOS' }),
+  canEnterMode('BUYER', { role: 'BOTH', sellerType: 'COMPANY', sellerCategory: 'AUTOS' }),
   true,
 );
 // Vendedor legacy (role SELLER): puede cambiar a modo comprador en la UI.
 assert.equal(
-  canEnterMode('BUYER', { role: 'SELLER', sellerType: 'PERSONAL', sellerCategory: 'AUTOS' }),
+  canEnterMode('BUYER', { role: 'SELLER', sellerType: 'INDIVIDUAL', sellerCategory: 'AUTOS' }),
   true,
 );
 
@@ -66,7 +66,7 @@ assert.equal(
     role: 'BOTH',
     activeMode: 'BUYER',
     preferredMode: 'SELLER',
-    sellerType: 'BUSINESS',
+    sellerType: 'COMPANY',
     sellerCategory: 'AUTOS',
   }),
   'SELLER',
@@ -84,7 +84,7 @@ assert.equal(
   hasPendingSellerOnboarding({
     role: 'BOTH',
     preferredMode: 'SELLER',
-    sellerType: 'BUSINESS',
+    sellerType: 'COMPANY',
     sellerCategory: 'AUTOS',
   }),
   false,
