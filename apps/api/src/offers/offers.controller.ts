@@ -61,6 +61,12 @@ export class OffersController {
   }
 
   @Throttle({ default: THROTTLE_LIMITS.write })
+  @Patch(':id/end-negotiation')
+  endNegotiation(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.endNegotiation(id, user.id);
+  }
+
+  @Throttle({ default: THROTTLE_LIMITS.write })
   @Patch(':id/reject')
   @Roles('buyer')
   reject(@CurrentUser() user: AuthUser, @Param('id') id: string) {

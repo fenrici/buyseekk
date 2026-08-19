@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { requestHasActiveNegotiation } from '@buyseekk/shared';
 import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
 import { RequestMeta } from '@/components/RequestMeta';
@@ -85,15 +86,16 @@ export function RequestCard(props: Props) {
     );
   }
 
-  const hasAccepted = (request.offers ?? []).some((o) => o.status === 'ACEPTADA');
+  const hasActiveNegotiation = requestHasActiveNegotiation(request.offers);
   const isClosed = request.status === 'CERRADA';
   const isArchived = request.status === 'ARCHIVADA';
   const isPaused = request.status === 'PAUSADA';
   const isPending = request.status === 'PENDIENTE_DE_CONFIRMACION';
   const isInactive = request.status === 'INACTIVA';
   const isNegotiating = request.status === 'NEGOCIANDO';
-  const canEdit = !hasAccepted && !isClosed && !isArchived && !isNegotiating && !isPaused;
-  const showDealFailedAction = (isNegotiating || (isPaused && hasAccepted)) && !!props.onClose;
+  const canEdit = !hasActiveNegotiation && !isClosed && !isArchived && !isNegotiating && !isPaused;
+  const showDealFailedAction =
+    (isNegotiating || (isPaused && hasActiveNegotiation)) && !!props.onClose;
   const canPause = !isClosed && !isArchived && !isPaused;
   const canRenew = isPaused || isArchived || isInactive;
 

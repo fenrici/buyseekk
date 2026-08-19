@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isActiveNegotiation } from '@buyseekk/shared';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
@@ -15,7 +16,7 @@ type EditMode = 'full' | 'limited' | 'locked';
 
 function resolveEditMode(request: RequestItem): EditMode {
   const offers = request.offers ?? [];
-  if (offers.some((o) => o.status === 'ACEPTADA')) return 'locked';
+  if (offers.some(isActiveNegotiation)) return 'locked';
   if (request.status === 'NEGOCIANDO') return 'locked';
   if (request.pendingOffersCount > 0) return 'limited';
   return 'full';

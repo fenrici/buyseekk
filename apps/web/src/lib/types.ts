@@ -104,7 +104,12 @@ export interface RequestItem {
   hasOffers: boolean;
   hiddenByModeration?: boolean;
   moderationReviewRequired?: boolean;
-  offers?: { id: string; status: string }[];
+  offers?: {
+    id: string;
+    status: string;
+    dealCompletedAt?: string | null;
+    negotiationEndedAt?: string | null;
+  }[];
   isSaved?: boolean;
   savedAt?: string | null;
   myOffer?: { id: string; status: string; chatId?: string | null } | null;
@@ -186,6 +191,9 @@ export interface ChatDetail {
   myRole: 'buyer' | 'seller';
   partner: ChatPartner;
   partnerLastReadAt?: string | null;
+  negotiationEndedAt?: string | null;
+  dealCompletedAt?: string | null;
+  messagingEnabled?: boolean;
   messages: ChatMessage[];
   messagesMeta?: {
     total: number;
@@ -241,6 +249,8 @@ export interface OfferItem {
   imageUrls?: string[];
   status: string;
   dealCompletedAt?: string | null;
+  negotiationEndedAt?: string | null;
+  negotiationEndedBy?: 'BUYER' | 'SELLER' | null;
   hiddenByModeration?: boolean;
   moderationReviewRequired?: boolean;
   requestTitle: string;

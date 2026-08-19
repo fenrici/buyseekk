@@ -224,6 +224,28 @@ export class NotificationsService {
     );
   }
 
+  async notifyNegotiationEnded(
+    recipientId: string,
+    locale: Locale,
+    chatId: string,
+    offerId: string,
+    requestTitle: string,
+    endedBy: 'buyer' | 'seller',
+  ) {
+    return this.bestEffort(
+      { type: NotificationType.NEGOTIATION_ENDED, userId: recipientId, entityId: offerId },
+      async () =>
+        this.create({
+          userId: recipientId,
+          type: NotificationType.NEGOTIATION_ENDED,
+          locale,
+          entityId: chatId,
+          entityType: NotificationEntityType.CHAT,
+          context: { requestTitle, endedBy },
+        }),
+    );
+  }
+
   async notifyNewMessage(
     recipientId: string,
     locale: Locale,

@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus, Locale, Prisma } from '@prisma/client';
+import { OfferStatus, RequestStatus, Locale, Prisma, NegotiationEndedBy } from '@prisma/client';
 import {
   comparePrices,
   defaultAcceptMessageForLocale,
@@ -59,6 +59,38 @@ export class OffersService {
       offer.currency as 'ARS' | 'USD',
     );
     return { ...offer, comparison };
+  }
+
+  private async syncRequestNegotiationStatus(tx: Prisma.TransactionClient, requestId: string) {
+    const req = await tx.request.findUnique({
+      where: { id: requestId },
+      select: { status: true, pausedAt: true, active: true },
+    });
+    if (!req || !req.active || req.status === RequestStatus.CERRADA) return;
+
+    const activeCount = await tx.offer.count({
+      where: {
+        requestId,
+        status: OfferStatus.ACEPTADA,
+        dealCompletedAt: null,
+        negotiationEndedAt: null,
+      },
+    });
+
+    if (activeCount > 0) {
+      await tx.request.updateMany({
+        where: { id: requestId, status: RequestStatus.ACTIVA },
+        data: { status: RequestStatus.NEGOCIANDO },
+      });
+      return;
+    }
+
+    if (req.status === RequestStatus.NEGOCIANDO && !req.pausedAt) {
+      await tx.request.updateMany({
+        where: { id: requestId, status: RequestStatus.NEGOCIANDO },
+        data: { status: RequestStatus.ACTIVA },
+      });
+    }
   }
 
   async create(sellerId: string, dto: CreateOfferDto) {
@@ -468,6 +500,9 @@ export class OffersService {
         requestStatus: offer.request.status,
       };
     }
+    if (offer.negotiationEndedAt) {
+      throw new BadRequestException('La negociación ya fue finalizada');
+    }
 
     const otherCompleted = await this.prisma.offer.findFirst({
       where: {
@@ -496,12 +531,16 @@ export class OffersService {
             id: offerId,
             status: OfferStatus.ACEPTADA,
             dealCompletedAt: null,
+            negotiationEndedAt: null,
           },
           data: { dealCompletedAt: new Date() },
         });
 
         if (completeResult.count === 0) {
           const current = await tx.offer.findUnique({ where: { id: offerId } });
+          if (current?.negotiationEndedAt) {
+            throw new BadRequestException('La negociación ya fue finalizada');
+          }
           if (!current?.dealCompletedAt) {
             throw new BadRequestException('No se pudo concretar la operación');
           }
@@ -557,6 +596,138 @@ export class OffersService {
       chatId,
       requestId: offer.requestId,
       requestStatus: RequestStatus.CERRADA,
+    };
+  }
+
+  /** Finaliza una negociación aceptada sin concretar la operación. */
+  async endNegotiation(offerId: string, userId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: {
+        request: true,
+        chat: { select: { id: true } },
+        seller: { select: { id: true, locale: true } },
+      },
+    });
+    if (!offer) throw new NotFoundException('Oferta no encontrada');
+    if (!offer.request.active) throw new NotFoundException('Oferta no encontrada');
+
+    const isBuyer = offer.request.userId === userId;
+    const isSeller = offer.sellerId === userId;
+    if (!isBuyer && !isSeller) throw new ForbiddenException();
+
+    if (offer.status !== OfferStatus.ACEPTADA) {
+      throw new BadRequestException('Solo podés finalizar una oferta aceptada en negociación');
+    }
+    if (offer.dealCompletedAt) {
+      throw new BadRequestException('La operación ya fue concretada');
+    }
+    if (offer.negotiationEndedAt) {
+      return {
+        ...this.withComparison(offer),
+        chatId: offer.chat?.id ?? null,
+        requestId: offer.requestId,
+        requestStatus: offer.request.status,
+      };
+    }
+
+    const endedBy = isBuyer ? NegotiationEndedBy.BUYER : NegotiationEndedBy.SELLER;
+    const endedByRole = isBuyer ? ('buyer' as const) : ('seller' as const);
+    const systemText =
+      endedBy === NegotiationEndedBy.BUYER
+        ? 'La negociación fue finalizada por el comprador.'
+        : 'La negociación fue finalizada por el vendedor.';
+
+    let didEnd = false;
+    let updated;
+    let chatId = offer.chat?.id ?? null;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const endResult = await tx.offer.updateMany({
+        where: {
+          id: offerId,
+          status: OfferStatus.ACEPTADA,
+          dealCompletedAt: null,
+          negotiationEndedAt: null,
+        },
+        data: {
+          negotiationEndedAt: new Date(),
+          negotiationEndedBy: endedBy,
+        },
+      });
+
+      if (endResult.count === 0) {
+        const current = await tx.offer.findUnique({
+          where: { id: offerId },
+          include: { request: { select: { status: true } }, chat: { select: { id: true } } },
+        });
+        if (!current) throw new NotFoundException('Oferta no encontrada');
+        if (current.dealCompletedAt) {
+          throw new BadRequestException('La operación ya fue concretada');
+        }
+        if (!current.negotiationEndedAt) {
+          throw new BadRequestException('No se pudo finalizar la negociación');
+        }
+        return { updated: current, didEnd: false, chatId: current.chat?.id ?? null };
+      }
+
+      const chat = await tx.chat.upsert({
+        where: { offerId },
+        create: {
+          offerId,
+          messages: { create: { fromRole: 'system', text: systemText } },
+        },
+        update: {
+          messages: { create: { fromRole: 'system', text: systemText } },
+        },
+        select: { id: true },
+      });
+
+      await this.syncRequestNegotiationStatus(tx, offer.requestId);
+
+      const fresh = await tx.offer.findUniqueOrThrow({
+        where: { id: offerId },
+        include: {
+          request: { select: { status: true } },
+          seller: { select: { id: true, locale: true } },
+        },
+      });
+      return { updated: fresh, didEnd: true, chatId: chat.id };
+    });
+
+    updated = result.updated;
+    didEnd = result.didEnd;
+    chatId = result.chatId;
+
+    if (didEnd) {
+      const recipientId = isBuyer ? offer.sellerId : offer.request.userId;
+      let recipientLocale = offer.seller.locale;
+      if (!isBuyer) {
+        const buyer = await this.prisma.user.findUnique({
+          where: { id: offer.request.userId },
+          select: { locale: true },
+        });
+        recipientLocale = buyer?.locale ?? Locale.ES;
+      }
+      if (chatId) {
+        await this.afterCommitNotify(`NEGOTIATION_ENDED offerId=${offer.id}`, () =>
+          this.notifications.notifyNegotiationEnded(
+            recipientId,
+            recipientLocale,
+            chatId,
+            offer.id,
+            offer.requestTitle,
+            endedByRole,
+          ),
+        );
+      }
+    }
+
+    return {
+      ...this.withComparison(updated),
+      chatId,
+      requestId: offer.requestId,
+      requestStatus: updated.request.status,
     };
   }
 

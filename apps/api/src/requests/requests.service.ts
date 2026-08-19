@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Country, Currency, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
+import { Country, Currency, NegotiationEndedBy, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
 import {
   citiesForCountry,
   isValidBrand,
@@ -90,7 +90,30 @@ export class RequestsService {
     private storageObjects: StorageObjectsService,
   ) {}
 
-  private formatRequest(req: Awaited<ReturnType<typeof this.findByIdRaw>>) {
+  private readonly offersForFormatSelect = {
+    id: true,
+    status: true,
+    dealCompletedAt: true,
+    negotiationEndedAt: true,
+    chat: { select: { id: true } },
+  } as const;
+
+  private formatRequest(
+    req:
+      | (Parameters<typeof toLifecycleInput>[0] & {
+          id: string;
+          offers: Array<{
+            id: string;
+            status: OfferStatus;
+            chat?: { id: string } | null;
+            dealCompletedAt?: Date | null;
+            negotiationEndedAt?: Date | null;
+            sellerId?: string;
+            price?: number;
+          }>;
+        })
+      | null,
+  ) {
     if (!req) return null;
     const pendingOffers = req.offers.filter((o) => o.status === OfferStatus.PENDIENTE).length;
     const lifecycle = toLifecycleInput(req);
@@ -194,7 +217,20 @@ export class RequestsService {
   }
 
   async formatManyForSeller(
-    rows: NonNullable<Awaited<ReturnType<typeof this.findByIdRaw>>>[],
+    rows: Array<
+      Parameters<typeof toLifecycleInput>[0] & {
+        id: string;
+        userId: string;
+        user: { id: string; name: string; country: Country; currency: Currency; avatarUrl: string | null };
+        offers: Array<{
+          id: string;
+          status: OfferStatus;
+          chat?: { id: string } | null;
+          dealCompletedAt?: Date | null;
+          negotiationEndedAt?: Date | null;
+        }>;
+      }
+    >,
     sellerId: string,
   ) {
     const ratingMap = await this.ratings.getStatsForUsers(rows.map((r) => r.userId));
@@ -213,7 +249,13 @@ export class RequestsService {
       where: { id },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+        offers: {
+          select: {
+            ...this.offersForFormatSelect,
+            sellerId: true,
+            price: true,
+          },
+        },
       },
     });
   }
@@ -363,7 +405,7 @@ export class RequestsService {
         },
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-          offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+          offers: { select: this.offersForFormatSelect },
         },
       }),
     );
@@ -471,7 +513,7 @@ export class RequestsService {
             where: { id: { in: pageIds } },
             include: {
               user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-              offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+              offers: { select: this.offersForFormatSelect },
             },
           });
 
@@ -681,7 +723,15 @@ export class RequestsService {
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
           offers: {
-            select: { id: true, status: true, sellerId: true, price: true, chat: { select: { id: true } } },
+            select: {
+              id: true,
+              status: true,
+              sellerId: true,
+              price: true,
+              dealCompletedAt: true,
+              negotiationEndedAt: true,
+              chat: { select: { id: true } },
+            },
           },
         },
       }),
@@ -710,7 +760,16 @@ export class RequestsService {
 
     const req = await this.prisma.request.findUnique({
       where: { id },
-      include: { offers: { select: { id: true, status: true } } },
+      include: {
+        offers: {
+          select: {
+            id: true,
+            status: true,
+            dealCompletedAt: true,
+            negotiationEndedAt: true,
+          },
+        },
+      },
     });
     if (!req || !req.active) throw new NotFoundException('Solicitud no encontrada');
     if (req.userId !== userId) throw new ForbiddenException();
@@ -721,9 +780,14 @@ export class RequestsService {
       throw new BadRequestException('No podés editar una solicitud en negociación');
     }
 
-    const hasAccepted = req.offers.some((o) => o.status === OfferStatus.ACEPTADA);
-    if (hasAccepted) {
-      throw new BadRequestException('No podés editar una solicitud con una oferta aceptada');
+    const hasActiveNegotiation = req.offers.some(
+      (o) =>
+        o.status === OfferStatus.ACEPTADA &&
+        o.dealCompletedAt == null &&
+        o.negotiationEndedAt == null,
+    );
+    if (hasActiveNegotiation) {
+      throw new BadRequestException('No podés editar una solicitud con una negociación activa');
     }
 
     const hasPending = req.offers.some((o) => o.status === OfferStatus.PENDIENTE);
@@ -879,7 +943,7 @@ export class RequestsService {
           : req.title);
     }
 
-    const updated = await this.prisma.request.update({
+    await this.prisma.request.update({
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title } : {}),
@@ -905,19 +969,13 @@ export class RequestsService {
         lastBuyerActivityAt: new Date(),
         lastActivityAt: new Date(),
       },
-      include: {
-        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: {
-          select: { id: true, status: true, sellerId: true, price: true, chat: { select: { id: true } } },
-        },
-      },
     });
 
     if (dto.imageUrls !== undefined) {
       await this.storageObjects.deleteRemovedBestEffort(req.imageUrls, dto.imageUrls, userId);
     }
 
-    return this.formatRequest(updated);
+    return this.formatRequest(await this.findByIdRaw(id));
   }
 
   async getOne(
@@ -986,15 +1044,30 @@ export class RequestsService {
       return this.formatRequest(await this.findByIdRaw(id));
     }
 
-    await this.prisma.request.update({
-      where: { id },
-      data: {
-        status: RequestStatus.CERRADA,
-        closedAt: new Date(),
-        lastBuyerActivityAt: new Date(),
-        lastActivityAt: new Date(),
-        pausedAt: null,
-      },
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      await tx.offer.updateMany({
+        where: {
+          requestId: id,
+          status: OfferStatus.ACEPTADA,
+          dealCompletedAt: null,
+          negotiationEndedAt: null,
+        },
+        data: {
+          negotiationEndedAt: now,
+          negotiationEndedBy: NegotiationEndedBy.BUYER,
+        },
+      });
+      await tx.request.update({
+        where: { id },
+        data: {
+          status: RequestStatus.CERRADA,
+          closedAt: now,
+          lastBuyerActivityAt: now,
+          lastActivityAt: now,
+          pausedAt: null,
+        },
+      });
     });
 
     const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { locale: true } });
@@ -1051,7 +1124,16 @@ export class RequestsService {
     const req = await this.prisma.request.findUnique({ where: { id } });
     if (!req) throw new NotFoundException('Solicitud no encontrada');
     if (req.userId !== userId) throw new ForbiddenException();
-    if (req.status === RequestStatus.NEGOCIANDO) {
+
+    const activeNegotiations = await this.prisma.offer.count({
+      where: {
+        requestId: id,
+        status: OfferStatus.ACEPTADA,
+        dealCompletedAt: null,
+        negotiationEndedAt: null,
+      },
+    });
+    if (activeNegotiations > 0 && req.status !== RequestStatus.CERRADA) {
       throw new ConflictException({
         message: REQUEST_HAS_ACTIVE_NEGOTIATIONS_MESSAGE,
         code: REQUEST_HAS_ACTIVE_NEGOTIATIONS_CODE,

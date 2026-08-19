@@ -195,11 +195,18 @@ describe('Chat stability (e2e)', () => {
         .get(`/api/chats/${chatId}`)
         .set(authHeader(seller.token))
         .expect(200);
+
+      const closedChat = await request(app.getHttpServer())
+        .get(`/api/chats/${chatId}`)
+        .set(authHeader(seller.token))
+        .expect(200);
+      expect(closedChat.body.messagingEnabled).toBe(false);
+
       await request(app.getHttpServer())
         .post(`/api/chats/${chatId}/messages`)
         .set(authHeader(seller.token))
         .send({ text: 'Chat sigue con request cerrada.', clientMessageId: 'client-msg-close-01' })
-        .expect(201);
+        .expect(400);
 
       await request(app.getHttpServer())
         .delete(`/api/requests/${requestId}`)
@@ -210,11 +217,12 @@ describe('Chat stability (e2e)', () => {
         .get(`/api/chats/${chatId}`)
         .set(authHeader(buyer.token))
         .expect(200);
+
       await request(app.getHttpServer())
         .post(`/api/chats/${chatId}/messages`)
         .set(authHeader(buyer.token))
         .send({ text: 'Historial intacto tras eliminar.', clientMessageId: 'client-msg-del-01' })
-        .expect(201);
+        .expect(400);
     });
   });
 

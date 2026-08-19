@@ -357,24 +357,30 @@ export function ChatThread({
         </div>
       )}
 
-      <form onSubmit={handleSend} className="chat-thread__composer">
-        <input
-          ref={inputRef}
-          type="text"
-          enterKeyHint="send"
-          autoComplete="off"
-          autoCorrect="on"
-          className="input chat-thread__composer-input"
-          placeholder={t('chat.placeholder')}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onFocus={scrollToBottomAfterFocus}
-          maxLength={2000}
-        />
-        <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary chat-thread__composer-send">
-          {t('chat.send')}
-        </button>
-      </form>
+      {chat.messagingEnabled === false ? (
+        <div className="chat-thread__composer chat-thread__composer--disabled px-4 py-3 text-sm text-slate-400">
+          {t('chat.negotiationEndedBanner')}
+        </div>
+      ) : (
+        <form onSubmit={handleSend} className="chat-thread__composer">
+          <input
+            ref={inputRef}
+            type="text"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="on"
+            className="input chat-thread__composer-input"
+            placeholder={t('chat.placeholder')}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onFocus={scrollToBottomAfterFocus}
+            maxLength={2000}
+          />
+          <button type="submit" disabled={sending || !text.trim()} className="btn btn-primary chat-thread__composer-send">
+            {t('chat.send')}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

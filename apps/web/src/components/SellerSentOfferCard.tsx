@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { isActiveNegotiation, isNegotiationEndedWithoutDeal } from '@buyseekk/shared';
 import { api, formatMoney } from '@/lib/api';
 import { offerStatusLabel, useLocale, useT } from '@/lib/i18n';
 import type { OfferItem } from '@/lib/types';
@@ -16,25 +17,31 @@ const STATUS_CLASS: Record<string, string> = {
 export function SellerSentOfferCard({
   offer,
   onDismissed,
+  onEndNegotiation,
 }: {
   offer: OfferItem;
   onDismissed?: (id: string) => void;
+  onEndNegotiation?: (id: string) => void;
 }) {
   const t = useT();
   const locale = useLocale();
   const [dismissing, setDismissing] = useState(false);
   const statusClass = STATUS_CLASS[offer.status] ?? STATUS_CLASS.PENDIENTE;
   const dealCompleted = !!offer.dealCompletedAt;
+  const negotiationEnded = isNegotiationEndedWithoutDeal(offer);
+  const activeNegotiation = isActiveNegotiation(offer);
   const requestClosedWithoutDeal =
-    offer.status === 'ACEPTADA' && !dealCompleted && offer.request?.status === 'CERRADA';
+    activeNegotiation && offer.request?.status === 'CERRADA';
 
   const acceptedBadge = dealCompleted
     ? t('buyer.offerDealCompleted')
-    : requestClosedWithoutDeal
-      ? t('seller.requestClosed')
-      : offer.status === 'ACEPTADA'
-        ? t('seller.inNegotiation')
-        : offerStatusLabel(locale, offer.status);
+    : negotiationEnded
+      ? t('seller.negotiationEndedLabel')
+      : requestClosedWithoutDeal
+        ? t('seller.requestClosed')
+        : activeNegotiation
+          ? t('seller.inNegotiation')
+          : offerStatusLabel(locale, offer.status);
 
   async function handleDismiss() {
     if (dismissing) return;
@@ -80,13 +87,29 @@ export function SellerSentOfferCard({
           {dealCompleted && (
             <p className="text-sm text-emerald-300">{t('seller.dealCompletedHint')}</p>
           )}
+          {negotiationEnded && (
+            <p className="text-sm text-slate-400">{t('seller.negotiationEndedLabel')}</p>
+          )}
           {requestClosedWithoutDeal && (
             <p className="text-sm text-slate-400">{t('seller.requestClosedHint')}</p>
           )}
-          {!dealCompleted && !requestClosedWithoutDeal && (
+          {activeNegotiation && !requestClosedWithoutDeal && (
             <p className="text-sm text-slate-400">{t('seller.inNegotiation')}</p>
           )}
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {activeNegotiation && onEndNegotiation && (
+              <button
+                type="button"
+                className="btn btn-ghost text-sm text-slate-300"
+                onClick={() => {
+                  if (window.confirm(t('seller.endNegotiationConfirm'))) {
+                    onEndNegotiation(offer.id);
+                  }
+                }}
+              >
+                {t('seller.endNegotiationAction')}
+              </button>
+            )}
             <Link href={`/chats/${offer.chatId}`} className="btn btn-primary text-sm">
               💬 {t('seller.openChat')}
             </Link>

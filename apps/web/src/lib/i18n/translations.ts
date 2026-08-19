@@ -284,6 +284,10 @@ export const es = {
     completeDealAction: 'Operación concretada',
     completeDealConfirm:
       '¿Confirmás que concretaste la operación con este vendedor? La solicitud se cerrará, las demás negociaciones quedarán finalizadas y podrás dejar una valoración.',
+    endNegotiationAction: 'Finalizar negociación',
+    endNegotiationConfirm:
+      '¿Finalizar esta negociación? Se cerrará sin marcar una operación concretada. Tu solicitud seguirá abierta si no tenés otras negociaciones activas.',
+    negotiationEndedLabel: 'Negociación finalizada',
     noRequests: 'Todavía no publicaste ninguna solicitud.',
     scopeOpen: 'En curso',
     scopeClosed: 'Cerradas',
@@ -347,6 +351,10 @@ export const es = {
     noSentAcceptedHint: 'Cuando un comprador quiera negociar con vos, la oferta aparece acá.',
     dealCompletedHint: 'El comprador confirmó que concretó la operación con vos.',
     inNegotiation: 'En negociación',
+    negotiationEndedLabel: 'Negociación finalizada',
+    endNegotiationAction: 'Finalizar negociación',
+    endNegotiationConfirm:
+      '¿Finalizar esta negociación? Se cerrará sin marcar una operación concretada.',
     requestClosed: 'Solicitud cerrada',
     requestClosedHint: 'El comprador cerró la solicitud.',
     pendingWaiting: 'Esperando respuesta del comprador.',
@@ -572,6 +580,7 @@ export const es = {
     pageInfo: 'Página {page} de {totalPages} · {total} conversaciones',
     read: 'Leído',
     unread: '{count} sin leer',
+    negotiationEndedBanner: 'Esta negociación finalizó. Podés ver el historial, pero no enviar mensajes nuevos.',
   },
   rating: {
     title: 'Valoración',
@@ -1208,6 +1217,10 @@ export const en: DeepString<typeof es> = {
     completeDealAction: 'Deal completed',
     completeDealConfirm:
       'Confirm you closed the deal with this seller? The request will close, other negotiations will end, and you can leave a rating.',
+    endNegotiationAction: 'End negotiation',
+    endNegotiationConfirm:
+      'End this negotiation? It will close without marking a deal as completed. Your request stays open if you have no other active negotiations.',
+    negotiationEndedLabel: 'Negotiation ended',
     noRequests: "You haven't posted any requests yet.",
     scopeOpen: 'Open',
     scopeClosed: 'Closed',
@@ -1271,6 +1284,10 @@ export const en: DeepString<typeof es> = {
     noSentAcceptedHint: 'When a buyer wants to negotiate with you, the offer shows up here.',
     dealCompletedHint: 'The buyer confirmed they closed the deal with you.',
     inNegotiation: 'In negotiation',
+    negotiationEndedLabel: 'Negotiation ended',
+    endNegotiationAction: 'End negotiation',
+    endNegotiationConfirm:
+      'End this negotiation? It will close without marking a deal as completed.',
     requestClosed: 'Request closed',
     requestClosedHint: 'The buyer closed the request.',
     pendingWaiting: 'Waiting for the buyer to respond.',
@@ -1496,6 +1513,7 @@ export const en: DeepString<typeof es> = {
     pageInfo: 'Page {page} of {totalPages} · {total} conversations',
     read: 'Read',
     unread: '{count} unread',
+    negotiationEndedBanner: 'This negotiation has ended. You can read the history but cannot send new messages.',
   },
   rating: {
     title: 'Rating',

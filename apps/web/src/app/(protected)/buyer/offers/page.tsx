@@ -113,6 +113,15 @@ export default function BuyerOffersPage() {
     }
   }
 
+  async function endNegotiation(id: string) {
+    try {
+      await api(`/offers/${id}/end-negotiation`, { method: 'PATCH' });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   if (!user) return null;
 
   const highlightIds = new Set(offerHighlights.map((h) => h.offerId));
@@ -192,6 +201,7 @@ export default function BuyerOffersPage() {
                   onAccept={accept}
                   onReject={reject}
                   onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
+                  onEndNegotiation={statusFilter === 'ACEPTADA' ? endNegotiation : undefined}
                 />
               ))}
 

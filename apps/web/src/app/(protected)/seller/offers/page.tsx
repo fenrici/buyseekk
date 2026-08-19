@@ -85,6 +85,25 @@ function SentOffersTab() {
     };
   }, [user?.id, page, statusFilter, t]);
 
+  async function refreshOffers() {
+    const statusQuery = statusFilter === 'all' ? '' : `&status=${statusFilter}`;
+    const raw = await api<PaginatedResult<OfferItem> | OfferItem[]>(
+      `/offers/sent?page=${page}${statusQuery}`,
+    );
+    const data = normalizePaginated(raw);
+    setOffers(data.items);
+    setMeta({ total: data.total, totalPages: data.totalPages, page: data.page });
+  }
+
+  async function endNegotiation(id: string) {
+    try {
+      await api(`/offers/${id}/end-negotiation`, { method: 'PATCH' });
+      await refreshOffers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   const emptyCopy =
     statusFilter === 'PENDIENTE'
       ? { title: t('seller.noSentPending'), hint: t('seller.noSentPendingHint') }
@@ -143,6 +162,7 @@ function SentOffersTab() {
               <SellerSentOfferCard
                 key={o.id}
                 offer={o}
+                onEndNegotiation={statusFilter === 'ACEPTADA' || statusFilter === 'all' ? endNegotiation : undefined}
                 onDismissed={(id) => {
                   setOffers((prev) => prev.filter((x) => x.id !== id));
                   setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));

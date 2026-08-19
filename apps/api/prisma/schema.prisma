@@ -62,6 +62,11 @@ enum OfferStatus {
   RECHAZADA
 }
 
+enum NegotiationEndedBy {
+  BUYER
+  SELLER
+}
+
 enum RatingType {
   REVIEW
   NO_RESPONSE
@@ -113,6 +118,7 @@ enum NotificationType {
   OFFER_ACCEPTED
   OFFER_REJECTED
   DEAL_COMPLETED
+  NEGOTIATION_ENDED
   NEW_MESSAGE
   REQUEST_EXPIRING
   REQUEST_INACTIVE
@@ -388,6 +394,8 @@ model Offer {
   createdAt             DateTime    @default(now())
   acceptedAt            DateTime?
   dealCompletedAt       DateTime?
+  negotiationEndedAt    DateTime?
+  negotiationEndedBy    NegotiationEndedBy?
 
   chat Chat?
 
@@ -396,6 +404,7 @@ model Offer {
   @@index([sellerId, dismissedBySeller, createdAt])
   @@index([requestId, status])
   @@index([requestId, dealCompletedAt])
+  @@index([requestId, status, dealCompletedAt, negotiationEndedAt])
 }
 
 model Chat {

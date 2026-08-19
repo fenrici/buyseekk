@@ -121,6 +121,29 @@ export function notificationCopy(
             title: 'Operación concretada',
             message: `El comprador confirmó que cerró la operación con vos para ${context.requestTitle ?? 'una solicitud'}`,
           };
+    case NotificationType.NEGOTIATION_ENDED: {
+      const title = context.requestTitle ?? (en ? 'a request' : 'una solicitud');
+      if (context.endedBy === 'buyer') {
+        return en
+          ? {
+              title: 'Negotiation ended',
+              message: `The negotiation about "${title}" was ended by the buyer.`,
+            }
+          : {
+              title: 'Negociación finalizada',
+              message: `La negociación sobre "${title}" fue finalizada por el comprador.`,
+            };
+      }
+      return en
+        ? {
+            title: 'Negotiation ended',
+            message: `The negotiation about "${title}" was ended by the seller.`,
+          }
+        : {
+            title: 'Negociación finalizada',
+            message: `La negociación sobre "${title}" fue finalizada por el vendedor.`,
+          };
+    }
     case NotificationType.NEW_MESSAGE:
       return en
         ? {

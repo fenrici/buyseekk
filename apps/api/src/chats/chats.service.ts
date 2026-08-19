@@ -336,6 +336,10 @@ export class ChatsService {
       myRole: role,
       partner: this.formatPartner(full.offer, role),
       partnerLastReadAt,
+      negotiationEndedAt: full.offer.negotiationEndedAt,
+      dealCompletedAt: full.offer.dealCompletedAt,
+      requestStatus: full.offer.request.status,
+      messagingEnabled: !full.offer.negotiationEndedAt,
       messages: messages.map((m) => this.formatOutgoingMessage(m)),
       messagesMeta: {
         total: totalMessages,
@@ -373,7 +377,11 @@ export class ChatsService {
     const chat = await this.prisma.chat.findUnique({
       where: { id: chatId },
       include: {
-        offer: { include: { request: { select: { userId: true } } } },
+        offer: {
+          include: {
+            request: { select: { userId: true, status: true } },
+          },
+        },
       },
     });
     if (!chat) throw new NotFoundException('Chat no encontrado');
@@ -385,6 +393,10 @@ export class ChatsService {
     assertEmailVerified(user);
 
     const role = this.assertParticipant(chat, userId);
+
+    if (chat.offer.negotiationEndedAt) {
+      throw new BadRequestException('La negociación finalizó — el chat quedó como historial');
+    }
 
     if (clientMessageId) {
       const existing = await this.prisma.message.findUnique({

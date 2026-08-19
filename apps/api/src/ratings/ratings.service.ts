@@ -115,6 +115,9 @@ export class RatingsService {
         dto.offerId,
         fromUserId,
       );
+      if (offer.negotiationEndedAt) {
+        throw new BadRequestException('La negociación ya fue finalizada');
+      }
       if (!isSeller) {
         throw new ForbiddenException('Solo el vendedor puede marcar falta de respuesta');
       }
@@ -214,15 +217,17 @@ export class RatingsService {
     const partnerStats = await this.getStats(toUserId);
     const buyerReplied = chat.messages.some((m) => m.fromRole === 'buyer');
     const dealCompleted = offer.dealCompletedAt != null;
+    const negotiationEnded = offer.negotiationEndedAt != null;
 
     return {
       offerId,
       myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
       partner: { ...partner, stats: partnerStats },
       myRating: mine,
-      canMarkNoResponse: !isBuyer && !buyerReplied && !mine && !dealCompleted,
+      canMarkNoResponse: !isBuyer && !buyerReplied && !mine && !dealCompleted && !negotiationEnded,
       canReview: dealCompleted && !mine,
       dealCompleted,
+      negotiationEnded,
     };
   }
 }

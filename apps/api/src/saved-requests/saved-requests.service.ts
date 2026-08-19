@@ -53,7 +53,15 @@ export class SavedRequestsService {
       where: { id: { in: rows.map((r) => r.requestId) } },
       include: {
         user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
-        offers: { select: { id: true, status: true, chat: { select: { id: true } } } },
+        offers: {
+          select: {
+            id: true,
+            status: true,
+            dealCompletedAt: true,
+            negotiationEndedAt: true,
+            chat: { select: { id: true } },
+          },
+        },
       },
     });
 
