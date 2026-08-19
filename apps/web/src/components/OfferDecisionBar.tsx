@@ -68,22 +68,19 @@ export function OfferDecisionBar({
   }
 
   const showNegotiationActions = status === 'ACEPTADA' && !!chatId;
-  const hasSecondaryActions = canCompleteDeal && (!!onComplete || !!onEndNegotiation);
 
   return (
-    <div
-      className={`offer-decision-bar${showNegotiationActions && canCompleteDeal ? ' offer-decision-bar--negotiation' : ''}`}
-    >
+    <div className="offer-decision-bar">
       <div className="offer-decision-bar__top">
-        <div className="offer-decision-bar__info">
+        <div className="offer-decision-bar__identity">
           <p className="offer-decision-bar__seller">{sellerName}</p>
-          <div className="offer-decision-bar__subtitle">{subtitle}</div>
+          {statusPill && <StatusBadge pill={statusPill} />}
         </div>
-        {statusPill && <StatusBadge pill={statusPill} />}
+        <div className="offer-decision-bar__subtitle">{subtitle}</div>
       </div>
 
       {status === 'PENDIENTE' && (
-        <div className="offer-decision-bar__actions offer-decision-bar__actions--pending">
+        <div className="offer-decision-bar__actions">
           <button type="button" onClick={() => onAccept(offerId)} className="offer-action-btn offer-action-btn--success">
             {t('buyer.accept')}
           </button>
@@ -98,9 +95,7 @@ export function OfferDecisionBar({
       )}
 
       {showNegotiationActions && canCompleteDeal && (
-        <div
-          className={`offer-decision-bar__actions offer-decision-bar__actions--negotiation${hasSecondaryActions ? ' offer-decision-bar__actions--has-secondary' : ''}`}
-        >
+        <div className="offer-decision-bar__actions">
           <Link href={`/chats/${chatId}`} className="offer-action-btn offer-action-btn--primary">
             {t('buyer.openChat')}
           </Link>
@@ -134,7 +129,7 @@ export function OfferDecisionBar({
       )}
 
       {showNegotiationActions && !canCompleteDeal && (
-        <div className="offer-decision-bar__actions offer-decision-bar__actions--single">
+        <div className="offer-decision-bar__actions">
           <Link href={`/chats/${chatId}`} className="offer-action-btn offer-action-btn--primary">
             {t('buyer.openChat')}
           </Link>

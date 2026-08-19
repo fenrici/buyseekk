@@ -94,9 +94,7 @@ export function SellerSentOfferCard({
             <p className="offer-decision-bar__hint">{t('seller.requestClosedHint')}</p>
           )}
 
-          <div
-            className={`offer-decision-bar__actions offer-decision-bar__actions--negotiation${!activeNegotiation ? ' offer-decision-bar__actions--single' : ''}`}
-          >
+          <div className="offer-decision-bar__actions">
             <Link href={`/chats/${offer.chatId}`} className="offer-action-btn offer-action-btn--primary">
               {t('seller.openChat')}
             </Link>
