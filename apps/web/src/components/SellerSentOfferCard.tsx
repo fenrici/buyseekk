@@ -83,24 +83,27 @@ export function SellerSentOfferCard({
       )}
 
       {offer.status === 'ACEPTADA' && offer.chatId && (
-        <div className="mt-3 space-y-2">
+        <div className="offer-decision-bar offer-decision-bar--seller">
           {dealCompleted && (
-            <p className="text-sm text-emerald-300">{t('seller.dealCompletedHint')}</p>
+            <p className="offer-decision-bar__hint">{t('seller.dealCompletedHint')}</p>
           )}
           {negotiationEnded && (
-            <p className="text-sm text-slate-400">{t('seller.negotiationEndedLabel')}</p>
+            <p className="offer-decision-bar__hint">{t('seller.negotiationEndedLabel')}</p>
           )}
           {requestClosedWithoutDeal && (
-            <p className="text-sm text-slate-400">{t('seller.requestClosedHint')}</p>
+            <p className="offer-decision-bar__hint">{t('seller.requestClosedHint')}</p>
           )}
-          {activeNegotiation && !requestClosedWithoutDeal && (
-            <p className="text-sm text-slate-400">{t('seller.inNegotiation')}</p>
-          )}
-          <div className="flex flex-wrap justify-end gap-2">
+
+          <div
+            className={`offer-decision-bar__actions offer-decision-bar__actions--negotiation${!activeNegotiation ? ' offer-decision-bar__actions--single' : ''}`}
+          >
+            <Link href={`/chats/${offer.chatId}`} className="offer-action-btn offer-action-btn--primary">
+              {t('seller.openChat')}
+            </Link>
             {activeNegotiation && onEndNegotiation && (
               <button
                 type="button"
-                className="btn btn-ghost text-sm text-slate-300"
+                className="offer-action-btn offer-action-btn--ghost"
                 onClick={() => {
                   if (window.confirm(t('seller.endNegotiationConfirm'))) {
                     onEndNegotiation(offer.id);
@@ -110,9 +113,6 @@ export function SellerSentOfferCard({
                 {t('seller.endNegotiationAction')}
               </button>
             )}
-            <Link href={`/chats/${offer.chatId}`} className="btn btn-primary text-sm">
-              💬 {t('seller.openChat')}
-            </Link>
           </div>
         </div>
       )}
@@ -122,7 +122,7 @@ export function SellerSentOfferCard({
           <p className="text-sm text-slate-400">{t('seller.rejectedNoReoffer')}</p>
           <button
             type="button"
-            className="btn btn-ghost text-sm text-slate-400"
+            className="offer-action-btn offer-action-btn--ghost"
             onClick={handleDismiss}
             disabled={dismissing}
           >

@@ -19,6 +19,19 @@ type Props = {
   onEndNegotiation?: (offerId: string) => void;
 };
 
+type StatusPill = {
+  label: string;
+  tone: 'active' | 'success' | 'muted' | 'rejected';
+};
+
+function StatusBadge({ pill }: { pill: StatusPill }) {
+  return (
+    <span className={`offer-negotiation-status offer-negotiation-status--${pill.tone}`}>
+      {pill.label}
+    </span>
+  );
+}
+
 export function OfferDecisionBar({
   sellerName,
   subtitle,
@@ -41,74 +54,92 @@ export function OfferDecisionBar({
     isActiveNegotiation && requestStatus === 'CERRADA';
   const canCompleteDeal = isActiveNegotiation && !requestClosedWithoutDeal;
 
+  let statusPill: StatusPill | null = null;
+  if (canCompleteDeal) {
+    statusPill = { label: t('buyer.offerAccepted'), tone: 'active' };
+  } else if (status === 'ACEPTADA' && dealCompleted) {
+    statusPill = { label: t('buyer.offerDealCompleted'), tone: 'success' };
+  } else if (negotiationEnded) {
+    statusPill = { label: t('buyer.negotiationEndedLabel'), tone: 'muted' };
+  } else if (requestClosedWithoutDeal) {
+    statusPill = { label: t('buyer.offerRequestClosed'), tone: 'muted' };
+  } else if (status === 'RECHAZADA') {
+    statusPill = { label: t('buyer.offerRejected'), tone: 'rejected' };
+  }
+
+  const showNegotiationActions = status === 'ACEPTADA' && !!chatId;
+  const hasSecondaryActions = canCompleteDeal && (!!onComplete || !!onEndNegotiation);
+
   return (
-    <div className="offer-decision-bar">
-      <div className="offer-decision-bar__info">
-        <p className="offer-decision-bar__seller">{sellerName}</p>
-        <div className="offer-decision-bar__subtitle">{subtitle}</div>
+    <div
+      className={`offer-decision-bar${showNegotiationActions && canCompleteDeal ? ' offer-decision-bar--negotiation' : ''}`}
+    >
+      <div className="offer-decision-bar__top">
+        <div className="offer-decision-bar__info">
+          <p className="offer-decision-bar__seller">{sellerName}</p>
+          <div className="offer-decision-bar__subtitle">{subtitle}</div>
+        </div>
+        {statusPill && <StatusBadge pill={statusPill} />}
       </div>
-      <div className="offer-decision-bar__actions">
-        {status === 'PENDIENTE' && (
-          <>
-            <button type="button" onClick={() => onAccept(offerId)} className="btn btn-accent text-sm">
-              {t('buyer.accept')}
-            </button>
+
+      {status === 'PENDIENTE' && (
+        <div className="offer-decision-bar__actions offer-decision-bar__actions--pending">
+          <button type="button" onClick={() => onAccept(offerId)} className="offer-action-btn offer-action-btn--success">
+            {t('buyer.accept')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onReject(offerId)}
+            className="offer-action-btn offer-action-btn--ghost"
+          >
+            {t('buyer.reject')}
+          </button>
+        </div>
+      )}
+
+      {showNegotiationActions && canCompleteDeal && (
+        <div
+          className={`offer-decision-bar__actions offer-decision-bar__actions--negotiation${hasSecondaryActions ? ' offer-decision-bar__actions--has-secondary' : ''}`}
+        >
+          <Link href={`/chats/${chatId}`} className="offer-action-btn offer-action-btn--primary">
+            {t('buyer.openChat')}
+          </Link>
+          {onComplete && (
             <button
               type="button"
-              onClick={() => onReject(offerId)}
-              className="offer-decision-bar__reject btn btn-ghost text-sm"
+              onClick={() => {
+                if (window.confirm(t('buyer.completeDealConfirm'))) {
+                  onComplete(offerId);
+                }
+              }}
+              className="offer-action-btn offer-action-btn--success"
             >
-              {t('buyer.reject')}
+              {t('buyer.completeDealAction')}
             </button>
-          </>
-        )}
-        {canCompleteDeal && (
-          <p className="text-sm font-medium text-emerald-300">{t('buyer.offerAccepted')}</p>
-        )}
-        {status === 'ACEPTADA' && dealCompleted && (
-          <p className="text-sm font-medium text-emerald-300">{t('buyer.offerDealCompleted')}</p>
-        )}
-        {negotiationEnded && (
-          <p className="text-sm font-medium text-slate-400">{t('buyer.negotiationEndedLabel')}</p>
-        )}
-        {requestClosedWithoutDeal && (
-          <p className="text-sm font-medium text-slate-400">{t('buyer.offerRequestClosed')}</p>
-        )}
-        {status === 'ACEPTADA' && chatId && (
-          <Link href={`/chats/${chatId}`} className="btn btn-primary text-sm">
-            💬 {t('buyer.openChat')}
+          )}
+          {onEndNegotiation && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(t('buyer.endNegotiationConfirm'))) {
+                  onEndNegotiation(offerId);
+                }
+              }}
+              className="offer-action-btn offer-action-btn--ghost"
+            >
+              {t('buyer.endNegotiationAction')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showNegotiationActions && !canCompleteDeal && (
+        <div className="offer-decision-bar__actions offer-decision-bar__actions--single">
+          <Link href={`/chats/${chatId}`} className="offer-action-btn offer-action-btn--primary">
+            {t('buyer.openChat')}
           </Link>
-        )}
-        {canCompleteDeal && onComplete && (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(t('buyer.completeDealConfirm'))) {
-                onComplete(offerId);
-              }
-            }}
-            className="btn btn-accent text-sm"
-          >
-            {t('buyer.completeDealAction')}
-          </button>
-        )}
-        {canCompleteDeal && onEndNegotiation && (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(t('buyer.endNegotiationConfirm'))) {
-                onEndNegotiation(offerId);
-              }
-            }}
-            className="btn btn-ghost text-sm text-slate-300"
-          >
-            {t('buyer.endNegotiationAction')}
-          </button>
-        )}
-        {status === 'RECHAZADA' && (
-          <p className="text-sm font-medium text-slate-400">{t('buyer.offerRejected')}</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
