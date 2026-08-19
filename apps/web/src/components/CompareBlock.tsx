@@ -26,7 +26,8 @@ export function CompareBlock({
   const style = diffStyles[offer.comparison.status];
   const isBuyer = perspective === 'buyer';
   const label = comparisonLabel(locale, offer.comparison.status, offer.comparison.diff, offer.currency);
-  const galleryClass = size === 'sm' ? 'h-36 sm:h-40' : 'h-52 md:h-60';
+  const galleryClass =
+    size === 'sm' ? 'compare-image-gallery compare-image-gallery--sm' : 'compare-image-gallery';
   const sellerLabel = isBuyer
     ? offer.seller?.businessName || offer.seller?.name
     : offer.request?.user?.name ?? '—';

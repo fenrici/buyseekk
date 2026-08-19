@@ -39,7 +39,7 @@ export function OfferReceivedCard({
       <p className="mb-3 text-sm font-semibold text-slate-400">{offer.requestTitle}</p>
       <CompareBlock offer={offer} />
       <OfferDecisionBar
-        sellerName={seller}
+        identityName={seller}
         subtitle={decisionSubtitle}
         offerId={offer.id}
         status={offer.status}

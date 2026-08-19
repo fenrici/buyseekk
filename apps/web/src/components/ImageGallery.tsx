@@ -25,7 +25,7 @@ export function ImageGallery({ urls, alt, className = 'h-48', cover = false }: P
 
   if (images.length === 1) {
     return (
-      <div className={`${frameBase} ${className}`}>
+      <div className={`${frameBase} flex items-center justify-center ${className}`}>
         <img src={images[0]} alt={alt} className={imgClass} />
       </div>
     );

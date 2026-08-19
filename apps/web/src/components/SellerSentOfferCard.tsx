@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { isActiveNegotiation, isNegotiationEndedWithoutDeal, canRemoveOfferFromListing } from '@buyseekk/shared';
+import { canRemoveOfferFromListing } from '@buyseekk/shared';
 import { api, formatMoney } from '@/lib/api';
 import { offerStatusLabel, useLocale, useT } from '@/lib/i18n';
 import type { OfferItem } from '@/lib/types';
 import { CompareBlock } from '@/components/CompareBlock';
+import { OfferDecisionBar } from '@/components/OfferDecisionBar';
 
 const STATUS_CLASS: Record<string, string> = {
   ACEPTADA: 'offer-status-badge--accepted',
@@ -28,36 +28,9 @@ export function SellerSentOfferCard({
   const t = useT();
   const locale = useLocale();
   const [dismissing, setDismissing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const statusClass = STATUS_CLASS[offer.status] ?? STATUS_CLASS.PENDIENTE;
-  const dealCompleted = !!offer.dealCompletedAt;
-  const negotiationEnded = isNegotiationEndedWithoutDeal(offer);
-  const activeNegotiation = isActiveNegotiation(offer);
-  const requestClosedWithoutDeal =
-    activeNegotiation && offer.request?.status === 'CERRADA';
   const canDelete = canRemoveOfferFromListing(offer);
-
-  const acceptedBadge = dealCompleted
-    ? t('buyer.offerDealCompleted')
-    : negotiationEnded
-      ? t('seller.negotiationEndedLabel')
-      : requestClosedWithoutDeal
-        ? t('seller.requestClosed')
-        : activeNegotiation
-          ? t('seller.inNegotiation')
-          : offerStatusLabel(locale, offer.status);
-
-  async function handleDelete() {
-    if (deleting) return;
-    if (!window.confirm(t('seller.deleteOfferConfirm'))) return;
-    setDeleting(true);
-    try {
-      await api(`/offers/${offer.id}`, { method: 'DELETE' });
-      onDeleted?.(offer.id);
-    } catch {
-      setDeleting(false);
-    }
-  }
+  const buyerName = offer.request?.user?.name ?? '—';
 
   async function handleDismiss() {
     if (dismissing) return;
@@ -71,6 +44,15 @@ export function SellerSentOfferCard({
     }
   }
 
+  async function handleDelete(id: string) {
+    try {
+      await api(`/offers/${id}`, { method: 'DELETE' });
+      onDeleted?.(id);
+    } catch {
+      /* OfferDecisionBar has no loading state for delete */
+    }
+  }
+
   return (
     <article className="offer-received-card">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -81,9 +63,11 @@ export function SellerSentOfferCard({
           </p>
           <p className="mt-0.5 text-xs text-slate-500">{t('seller.offeredPrice')}</p>
         </div>
-        <span className={`offer-status-badge ${statusClass}`}>
-          {acceptedBadge}
-        </span>
+        {offer.status !== 'ACEPTADA' && (
+          <span className={`offer-status-badge ${statusClass}`}>
+            {offerStatusLabel(locale, offer.status)}
+          </span>
+        )}
       </div>
 
       {(offer.hiddenByModeration || offer.moderationReviewRequired) && (
@@ -99,46 +83,19 @@ export function SellerSentOfferCard({
       )}
 
       {offer.status === 'ACEPTADA' && offer.chatId && (
-        <div className="offer-decision-bar offer-decision-bar--seller">
-          {dealCompleted && (
-            <p className="offer-decision-bar__hint">{t('seller.dealCompletedHint')}</p>
-          )}
-          {negotiationEnded && (
-            <p className="offer-decision-bar__hint">{t('seller.negotiationEndedLabel')}</p>
-          )}
-          {requestClosedWithoutDeal && (
-            <p className="offer-decision-bar__hint">{t('seller.requestClosedHint')}</p>
-          )}
-
-          <div className="offer-decision-bar__actions">
-            <Link href={`/chats/${offer.chatId}`} className="offer-action-btn offer-action-btn--primary">
-              {t('seller.openChat')}
-            </Link>
-            {activeNegotiation && onEndNegotiation && (
-              <button
-                type="button"
-                className="offer-action-btn offer-action-btn--ghost"
-                onClick={() => {
-                  if (window.confirm(t('seller.endNegotiationConfirm'))) {
-                    onEndNegotiation(offer.id);
-                  }
-                }}
-              >
-                {t('seller.endNegotiationAction')}
-              </button>
-            )}
-            {canDelete && (
-              <button
-                type="button"
-                className="offer-action-btn offer-action-btn--ghost"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {t('seller.deleteOffer')}
-              </button>
-            )}
-          </div>
-        </div>
+        <OfferDecisionBar
+          perspective="seller"
+          identityName={buyerName}
+          subtitle={offer.dealCompletedAt ? t('seller.dealCompletedHint') : null}
+          offerId={offer.id}
+          status={offer.status}
+          dealCompletedAt={offer.dealCompletedAt}
+          negotiationEndedAt={offer.negotiationEndedAt}
+          requestStatus={offer.request?.status}
+          chatId={offer.chatId}
+          onEndNegotiation={onEndNegotiation}
+          onDelete={canDelete ? handleDelete : undefined}
+        />
       )}
 
       {offer.status === 'RECHAZADA' && (
@@ -146,7 +103,7 @@ export function SellerSentOfferCard({
           <p className="text-sm text-slate-400">{t('seller.rejectedNoReoffer')}</p>
           <button
             type="button"
-            className="offer-action-btn offer-action-btn--ghost"
+            className="offer-secondary-action offer-secondary-action--button"
             onClick={handleDismiss}
             disabled={dismissing}
           >

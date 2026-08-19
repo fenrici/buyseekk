@@ -5108,6 +5108,64 @@ a.profile-menu-row {
   background: var(--bg);
 }
 
+.compare-image-gallery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-height: 13rem;
+  background: rgb(241 245 249);
+}
+
+.compare-image-gallery img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.compare-image-gallery--sm {
+  max-height: 10rem;
+}
+
+@media (min-width: 768px) {
+  .compare-image-gallery {
+    max-height: 15rem;
+  }
+
+  .compare-image-gallery--sm {
+    max-height: 11rem;
+  }
+}
+
+.compare-block .compare-image-gallery.flex {
+  overflow-x: auto;
+  justify-content: flex-start;
+  aspect-ratio: auto;
+  max-height: none;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+  gap: 0.5rem;
+  scroll-snap-type: x mandatory;
+}
+
+.compare-block .compare-image-gallery.flex > div {
+  aspect-ratio: 16 / 10;
+  width: 88%;
+  max-height: 13rem;
+  height: auto;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  background: rgb(241 245 249);
+}
+
+@media (min-width: 768px) {
+  .compare-block .compare-image-gallery.flex > div {
+    max-height: 15rem;
+  }
+}
+
 .compare-compact-row {
   display: grid;
   gap: 0.15rem;
@@ -5186,12 +5244,21 @@ a.profile-menu-row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: 0.35rem;
   margin-top: 1rem;
   padding: 0.9rem 1rem;
   border-radius: 0.85rem;
   border: 1px solid rgb(255 255 255 / 0.08);
   background: rgb(15 23 42 / 0.65);
+}
+
+.offer-decision-bar__main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .offer-decision-bar--seller {
@@ -5201,6 +5268,10 @@ a.profile-menu-row {
   border: none;
   border-top: 1px solid rgb(255 255 255 / 0.06);
   background: transparent;
+}
+
+.offer-decision-bar--seller .offer-decision-bar__main {
+  gap: 0.65rem;
 }
 
 .offer-decision-bar__top {
@@ -5232,6 +5303,7 @@ a.profile-menu-row {
   color: rgb(148 163 184);
   font-size: 0.8125rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .offer-decision-bar__hint {
@@ -5344,12 +5416,50 @@ a.profile-menu-row {
   width: 100%;
 }
 
+.offer-decision-bar__secondary {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding-top: 0.1rem;
+}
+
+.offer-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: auto;
+  height: auto;
+  padding: 0.1rem 0;
+  border: none;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgb(100 116 139);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.offer-secondary-action:hover:not(:disabled) {
+  color: rgb(148 163 184);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.offer-secondary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.offer-secondary-action--button {
+  padding: 0.1rem 0.15rem;
+}
+
 .offer-decision-bar--seller .offer-decision-bar__actions {
   flex-direction: column;
 }
 
 @media (min-width: 768px) {
-  .offer-decision-bar {
+  .offer-decision-bar__main {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
@@ -5364,30 +5474,50 @@ a.profile-menu-row {
 
   .offer-decision-bar__actions {
     flex-direction: row;
-    flex-wrap: nowrap;
-    flex: 0 0 auto;
+    flex-wrap: wrap;
+    flex: 0 1 auto;
     width: auto;
+    max-width: 100%;
     gap: 0.5rem;
+    justify-content: flex-end;
   }
 
   .offer-decision-bar__actions .offer-action-btn {
     width: auto;
+    max-width: 100%;
   }
 
-  .offer-decision-bar--seller {
+  .offer-decision-bar--seller .offer-decision-bar__main {
     flex-direction: column;
     align-items: stretch;
   }
 
   .offer-decision-bar--seller .offer-decision-bar__actions {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: flex-end;
     width: 100%;
   }
 
   .offer-decision-bar--seller .offer-decision-bar__actions .offer-action-btn {
     width: auto;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__actions .offer-action-btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 9.5rem;
   }
 }
 
@@ -5629,6 +5759,11 @@ html:has(.panel-dark) body {
 .panel-dark .compare-block {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(10, 16, 34, 0.6);
+}
+
+.panel-dark .compare-image-gallery,
+.panel-dark .compare-block .compare-image-gallery.flex > div {
+  background: rgb(30 41 59 / 0.55);
 }
 
 .panel-dark .chat-bubble-mine {
