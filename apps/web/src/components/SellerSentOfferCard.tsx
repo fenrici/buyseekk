@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { isActiveNegotiation, isNegotiationEndedWithoutDeal } from '@buyseekk/shared';
+import { isActiveNegotiation, isNegotiationEndedWithoutDeal, canRemoveOfferFromListing } from '@buyseekk/shared';
 import { api, formatMoney } from '@/lib/api';
 import { offerStatusLabel, useLocale, useT } from '@/lib/i18n';
 import type { OfferItem } from '@/lib/types';
@@ -17,21 +17,25 @@ const STATUS_CLASS: Record<string, string> = {
 export function SellerSentOfferCard({
   offer,
   onDismissed,
+  onDeleted,
   onEndNegotiation,
 }: {
   offer: OfferItem;
   onDismissed?: (id: string) => void;
+  onDeleted?: (id: string) => void;
   onEndNegotiation?: (id: string) => void;
 }) {
   const t = useT();
   const locale = useLocale();
   const [dismissing, setDismissing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const statusClass = STATUS_CLASS[offer.status] ?? STATUS_CLASS.PENDIENTE;
   const dealCompleted = !!offer.dealCompletedAt;
   const negotiationEnded = isNegotiationEndedWithoutDeal(offer);
   const activeNegotiation = isActiveNegotiation(offer);
   const requestClosedWithoutDeal =
     activeNegotiation && offer.request?.status === 'CERRADA';
+  const canDelete = canRemoveOfferFromListing(offer);
 
   const acceptedBadge = dealCompleted
     ? t('buyer.offerDealCompleted')
@@ -42,6 +46,18 @@ export function SellerSentOfferCard({
         : activeNegotiation
           ? t('seller.inNegotiation')
           : offerStatusLabel(locale, offer.status);
+
+  async function handleDelete() {
+    if (deleting) return;
+    if (!window.confirm(t('seller.deleteOfferConfirm'))) return;
+    setDeleting(true);
+    try {
+      await api(`/offers/${offer.id}`, { method: 'DELETE' });
+      onDeleted?.(offer.id);
+    } catch {
+      setDeleting(false);
+    }
+  }
 
   async function handleDismiss() {
     if (dismissing) return;
@@ -109,6 +125,16 @@ export function SellerSentOfferCard({
                 }}
               >
                 {t('seller.endNegotiationAction')}
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                className="offer-action-btn offer-action-btn--ghost"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {t('seller.deleteOffer')}
               </button>
             )}
           </div>

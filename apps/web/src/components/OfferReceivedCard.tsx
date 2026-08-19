@@ -13,6 +13,7 @@ type Props = {
   onReject: (offerId: string) => void;
   onComplete?: (offerId: string) => void;
   onEndNegotiation?: (offerId: string) => void;
+  onDelete?: (offerId: string) => void;
   header?: ReactNode;
   subtitle?: ReactNode;
   sellerName?: string;
@@ -24,6 +25,7 @@ export function OfferReceivedCard({
   onReject,
   onComplete,
   onEndNegotiation,
+  onDelete,
   header,
   subtitle,
   sellerName,
@@ -49,6 +51,7 @@ export function OfferReceivedCard({
         onReject={onReject}
         onComplete={onComplete}
         onEndNegotiation={onEndNegotiation}
+        onDelete={onDelete}
       />
       <div className="mt-2 flex justify-end">
         <ReportButton target={{ offerId: offer.id }} />

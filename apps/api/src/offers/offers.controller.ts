@@ -75,8 +75,7 @@ export class OffersController {
 
   @Throttle({ default: THROTTLE_LIMITS.write })
   @Delete(':id')
-  @Roles('seller')
-  dismiss(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.offers.dismiss(id, user.id);
+  removeFromListing(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.offers.removeFromListing(id, user.id);
   }
 }

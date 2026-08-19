@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { canRemoveOfferFromListing } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
   onReject: (offerId: string) => void;
   onComplete?: (offerId: string) => void;
   onEndNegotiation?: (offerId: string) => void;
+  onDelete?: (offerId: string) => void;
 };
 
 type StatusPill = {
@@ -45,6 +47,7 @@ export function OfferDecisionBar({
   onReject,
   onComplete,
   onEndNegotiation,
+  onDelete,
 }: Props) {
   const t = useT();
   const dealCompleted = !!dealCompletedAt;
@@ -53,6 +56,13 @@ export function OfferDecisionBar({
   const requestClosedWithoutDeal =
     isActiveNegotiation && requestStatus === 'CERRADA';
   const canCompleteDeal = isActiveNegotiation && !requestClosedWithoutDeal;
+  const canDelete =
+    !!onDelete &&
+    canRemoveOfferFromListing({
+      status,
+      dealCompletedAt: dealCompletedAt ? new Date(dealCompletedAt) : null,
+      negotiationEndedAt: negotiationEndedAt ? new Date(negotiationEndedAt) : null,
+    });
 
   let statusPill: StatusPill | null = null;
   if (canCompleteDeal) {
@@ -133,6 +143,22 @@ export function OfferDecisionBar({
           <Link href={`/chats/${chatId}`} className="offer-action-btn offer-action-btn--primary">
             {t('buyer.openChat')}
           </Link>
+        </div>
+      )}
+
+      {canDelete && (
+        <div className="offer-decision-bar__actions offer-decision-bar__actions--delete">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(t('buyer.deleteOfferConfirm'))) {
+                onDelete!(offerId);
+              }
+            }}
+            className="offer-action-btn offer-action-btn--ghost"
+          >
+            {t('buyer.deleteOffer')}
+          </button>
         </div>
       )}
     </div>

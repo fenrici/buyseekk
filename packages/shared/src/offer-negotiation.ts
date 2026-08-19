@@ -35,3 +35,9 @@ export function requestHasActiveNegotiation(
 ): boolean {
   return (offers ?? []).some(isActiveNegotiation);
 }
+
+/** Oferta terminal que el usuario puede eliminar de su listado (deal o negociación finalizada). */
+export function canRemoveOfferFromListing(offer: OfferNegotiationFields): boolean {
+  if (offer.dealCompletedAt) return true;
+  return isNegotiationEndedWithoutDeal(offer);
+}

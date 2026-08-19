@@ -122,6 +122,16 @@ export default function BuyerOffersPage() {
     }
   }
 
+  async function removeFromListing(id: string) {
+    try {
+      await api(`/offers/${id}`, { method: 'DELETE' });
+      setOffers((prev) => prev.filter((o) => o.id !== id));
+      setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
   if (!user) return null;
 
   const highlightIds = new Set(offerHighlights.map((h) => h.offerId));
@@ -202,6 +212,7 @@ export default function BuyerOffersPage() {
                   onReject={reject}
                   onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
                   onEndNegotiation={statusFilter === 'ACEPTADA' ? endNegotiation : undefined}
+                  onDelete={statusFilter === 'ACEPTADA' ? removeFromListing : undefined}
                 />
               ))}
 

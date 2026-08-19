@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   ACTIVE_NEGOTIATION_FILTER,
+  canRemoveOfferFromListing,
   isActiveNegotiation,
   isNegotiationEndedWithoutDeal,
   requestHasActiveNegotiation,
@@ -54,5 +55,23 @@ assert.equal(
   ]),
   true,
 );
+
+assert.equal(
+  canRemoveOfferFromListing({ status: 'ACEPTADA', dealCompletedAt: new Date(), negotiationEndedAt: null }),
+  true,
+);
+assert.equal(
+  canRemoveOfferFromListing({
+    status: 'ACEPTADA',
+    dealCompletedAt: null,
+    negotiationEndedAt: new Date(),
+  }),
+  true,
+);
+assert.equal(
+  canRemoveOfferFromListing({ status: 'ACEPTADA', dealCompletedAt: null, negotiationEndedAt: null }),
+  false,
+);
+assert.equal(canRemoveOfferFromListing({ status: 'PENDIENTE' }), false);
 
 console.log('offer-negotiation: all assertions passed');

@@ -288,6 +288,9 @@ export const es = {
     endNegotiationConfirm:
       '¿Finalizar esta negociación? Se cerrará sin marcar una operación concretada. Tu solicitud seguirá abierta si no tenés otras negociaciones activas.',
     negotiationEndedLabel: 'Negociación finalizada',
+    deleteOffer: 'Eliminar oferta',
+    deleteOfferConfirm:
+      '¿Eliminar esta oferta de tu listado? No se puede deshacer y no afecta al vendedor.',
     noRequests: 'Todavía no publicaste ninguna solicitud.',
     scopeOpen: 'En curso',
     scopeClosed: 'Cerradas',
@@ -352,6 +355,9 @@ export const es = {
     dealCompletedHint: 'El comprador confirmó que concretó la operación con vos.',
     inNegotiation: 'En negociación',
     negotiationEndedLabel: 'Negociación finalizada',
+    deleteOffer: 'Eliminar oferta',
+    deleteOfferConfirm:
+      '¿Eliminar esta oferta de tu listado? No se puede deshacer y no afecta al comprador.',
     endNegotiationAction: 'Finalizar negociación',
     endNegotiationConfirm:
       '¿Finalizar esta negociación? Se cerrará sin marcar una operación concretada.',
@@ -1221,6 +1227,9 @@ export const en: DeepString<typeof es> = {
     endNegotiationConfirm:
       'End this negotiation? It will close without marking a deal as completed. Your request stays open if you have no other active negotiations.',
     negotiationEndedLabel: 'Negotiation ended',
+    deleteOffer: 'Delete offer',
+    deleteOfferConfirm:
+      'Remove this offer from your list? This cannot be undone and does not affect the seller.',
     noRequests: "You haven't posted any requests yet.",
     scopeOpen: 'Open',
     scopeClosed: 'Closed',
@@ -1285,6 +1294,9 @@ export const en: DeepString<typeof es> = {
     dealCompletedHint: 'The buyer confirmed they closed the deal with you.',
     inNegotiation: 'In negotiation',
     negotiationEndedLabel: 'Negotiation ended',
+    deleteOffer: 'Delete offer',
+    deleteOfferConfirm:
+      'Remove this offer from your list? This cannot be undone and does not affect the buyer.',
     endNegotiationAction: 'End negotiation',
     endNegotiationConfirm:
       'End this negotiation? It will close without marking a deal as completed.',

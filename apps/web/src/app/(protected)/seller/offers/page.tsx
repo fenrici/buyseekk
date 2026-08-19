@@ -167,6 +167,10 @@ function SentOffersTab() {
                   setOffers((prev) => prev.filter((x) => x.id !== id));
                   setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
                 }}
+                onDeleted={(id) => {
+                  setOffers((prev) => prev.filter((x) => x.id !== id));
+                  setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
+                }}
               />
             ))}
             {offers.length > 0 && (

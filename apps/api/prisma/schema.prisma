@@ -396,6 +396,8 @@ model Offer {
   dealCompletedAt       DateTime?
   negotiationEndedAt    DateTime?
   negotiationEndedBy    NegotiationEndedBy?
+  buyerDeletedAt        DateTime?
+  sellerDeletedAt       DateTime?
 
   chat Chat?
 

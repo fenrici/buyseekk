@@ -194,6 +194,7 @@ export class OffersService {
     const where = {
       status: status ?? OfferStatus.PENDIENTE,
       hiddenByModeration: false,
+      buyerDeletedAt: null,
       request: { userId, active: true },
     };
 
@@ -283,6 +284,7 @@ export class OffersService {
     const where = {
       sellerId,
       dismissedBySeller: false,
+      sellerDeletedAt: null,
       ...(status ? { status } : {}),
     };
 
@@ -729,6 +731,59 @@ export class OffersService {
       requestId: offer.requestId,
       requestStatus: updated.request.status,
     };
+  }
+
+  /** Elimina una oferta del listado del comprador o vendedor (soft-delete por parte). */
+  async removeFromListing(offerId: string, userId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: { request: { select: { userId: true } }, chat: { select: { id: true } } },
+    });
+    if (!offer) throw new NotFoundException('Oferta no encontrada');
+
+    const isBuyer = offer.request.userId === userId;
+    const isSeller = offer.sellerId === userId;
+    if (!isBuyer && !isSeller) throw new ForbiddenException();
+
+    if (offer.status === OfferStatus.RECHAZADA && isSeller) {
+      return this.dismiss(offerId, userId);
+    }
+
+    if (offer.status === OfferStatus.PENDIENTE) {
+      throw new BadRequestException('No podés eliminar una oferta pendiente');
+    }
+
+    if (
+      offer.status === OfferStatus.ACEPTADA &&
+      !offer.dealCompletedAt &&
+      !offer.negotiationEndedAt
+    ) {
+      throw new BadRequestException('No podés eliminar una negociación activa');
+    }
+
+    const removable =
+      offer.dealCompletedAt != null ||
+      (offer.negotiationEndedAt != null && offer.dealCompletedAt == null);
+
+    if (!removable) {
+      throw new BadRequestException('Solo podés eliminar ofertas con operación concretada o negociación finalizada');
+    }
+
+    if (isBuyer) {
+      if (offer.buyerDeletedAt) return { ok: true };
+      await this.prisma.offer.update({
+        where: { id: offerId },
+        data: { buyerDeletedAt: new Date() },
+      });
+      return { ok: true };
+    }
+
+    if (offer.sellerDeletedAt) return { ok: true };
+    await this.prisma.offer.update({
+      where: { id: offerId },
+      data: { sellerDeletedAt: new Date() },
+    });
+    return { ok: true };
   }
 
   /** El vendedor descarta de su lista una oferta rechazada (soft-dismiss). */
