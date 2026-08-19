@@ -18,4 +18,7 @@ export function getChatSocket(): Socket {
 export function disconnectChatSocket() {
   socket?.disconnect();
   socket = null;
+  void import('./chat-unread-socket')
+    .then((mod) => mod.resetChatUnreadSocketBridge())
+    .catch(() => {});
 }

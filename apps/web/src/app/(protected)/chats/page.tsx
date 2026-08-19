@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api, normalizePaginated } from '@/lib/api';
+import {
+  chatInboxFetchKey,
+  isChatInboxBackgroundRefresh,
+  shouldShowChatInboxInitialLoader,
+  shouldShowChatInboxList,
+} from '@/lib/chat-inbox';
 import { ChatPreview, PaginatedResult } from '@/lib/types';
 import { Avatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
@@ -32,7 +38,10 @@ export default function ChatsPage() {
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const { byChatId, inboxVersion } = useChatUnread(user);
+  const lastFetchKeyRef = useRef<string | null>(null);
+  const chatsRef = useRef<ChatPreview[]>([]);
+  chatsRef.current = chats;
+  const { byChatId, inboxVersion } = useChatUnread(user, { trackInbox: true });
 
   useEffect(() => {
     setPage(1);
@@ -40,14 +49,24 @@ export default function ChatsPage() {
 
   useEffect(() => {
     if (!user) return;
+
+    const fetchKey = chatInboxFetchKey(user.id, user.activeMode, page);
+    const background = isChatInboxBackgroundRefresh(
+      lastFetchKeyRef.current,
+      fetchKey,
+      chatsRef.current.length,
+    );
+
     let cancelled = false;
-    setLoading(true);
+    if (!background) setLoading(true);
+
     api<PaginatedResult<ChatPreview> | ChatPreview[]>(`/chats?page=${page}`)
       .then((raw) => {
         if (cancelled) return;
         const res = normalizePaginated(raw);
         setChats(res.items);
         setMeta({ total: res.total, totalPages: res.totalPages, page: res.page });
+        lastFetchKeyRef.current = fetchKey;
       })
       .catch((e) => {
         if (!cancelled) setError(e.message);
@@ -55,12 +74,16 @@ export default function ChatsPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [user?.id, user?.activeMode, page, inboxVersion]);
 
   if (!user) return null;
+
+  const showList = shouldShowChatInboxList(loading, chats.length);
+  const showInitialLoader = shouldShowChatInboxInitialLoader(loading, chats.length);
 
   return (
     <div className="panel-dark">
@@ -72,8 +95,8 @@ export default function ChatsPage() {
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-3">
-          <PanelListLoading loading={loading} />
-          {!loading && (
+          <PanelListLoading loading={showInitialLoader} />
+          {showList && (
             <>
               {chats.length === 0 && (
                 <div className="card empty-state p-8">

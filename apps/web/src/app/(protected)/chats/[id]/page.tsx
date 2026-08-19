@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Avatar } from '@/components/Avatar';
@@ -21,6 +21,11 @@ export default function ChatDetailPage() {
   const [chat, setChat] = useState<ChatDetail | null>(null);
   const [offerId, setOfferId] = useState<string | null>(null);
   const [showRating, setShowRating] = useState(false);
+
+  const handleChatLoaded = useCallback((c: ChatDetail) => {
+    setChat(c);
+    setOfferId(c.offerId);
+  }, []);
 
   const { keyboardOpen } = useChatViewport(true);
   const ratingAvailability = useOfferRatingAvailability(offerId);
@@ -101,10 +106,7 @@ export default function ChatDetailPage() {
             chatId={id}
             keyboardOpen={keyboardOpen}
             hideHeaderOnMobile
-            onLoaded={(c) => {
-              setChat(c);
-              setOfferId(c.offerId);
-            }}
+            onLoaded={handleChatLoaded}
           />
         </div>
 
