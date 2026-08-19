@@ -53,6 +53,18 @@ export function resolveNavMode(input: { role: AppUserRole; activeMode: AppUserMo
   return 'SELLER';
 }
 
+/** Modo activo de sesión: preferencia guardada si es válida; si no, el modo persistido acotado a capacidades. */
+export function resolveSessionActiveMode(input: {
+  role: AppUserRole;
+  activeMode: AppUserMode;
+  preferredMode?: AppUserMode | null;
+}): AppUserMode {
+  const preferred = input.preferredMode ?? input.activeMode;
+  if (canEnterMode(preferred, input)) return preferred;
+  if (canEnterMode(input.activeMode, input)) return input.activeMode;
+  return 'BUYER';
+}
+
 /** Rol resultante al habilitar la capacidad de vendedor conservando la de comprador. */
 export function roleAfterEnablingSeller(currentRole: AppUserRole): AppUserRole {
   return currentRole === 'SELLER' ? 'SELLER' : 'BOTH';

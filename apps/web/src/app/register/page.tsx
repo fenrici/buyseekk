@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, setAuthTokens } from '@/lib/api';
 import { User } from '@/lib/types';
-import { getDashboardPathForMode, hasSellerProfile } from '@/lib/auth';
+import { getPostLoginPath, hasSellerProfile } from '@/lib/auth';
 import { PublicHeader } from '@/components/PublicHeader';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
@@ -51,7 +52,7 @@ export default function RegisterPage() {
       setSellerOnboarding(true);
       return;
     }
-    router.replace(getDashboardPathForMode(user.activeMode));
+    router.replace(getPostLoginPath(user));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -74,7 +75,9 @@ export default function RegisterPage() {
       });
       setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
-      setSession(res.user);
+      flushSync(() => {
+        setSession(res.user);
+      });
       finishRegistration(res.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
@@ -84,9 +87,11 @@ export default function RegisterPage() {
   }
 
   function handleOnboardingComplete(user: User) {
-    setSession(user);
+    flushSync(() => {
+      setSession(user);
+    });
     setSellerOnboarding(false);
-    router.replace(getDashboardPathForMode(user.activeMode));
+    router.replace(getPostLoginPath(user));
   }
 
   if (!guestReady) {

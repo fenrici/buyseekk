@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { SplashVisual } from '@/components/SplashScreen';
 import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
@@ -47,7 +48,9 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
             method: 'PATCH',
             body: JSON.stringify({ activeMode: target }),
           }));
-        setSession(next);
+        flushSync(() => {
+          setSession(next);
+        });
         const elapsed = Date.now() - started;
         if (elapsed < MIN_TRANSITION_MS) await sleep(MIN_TRANSITION_MS - elapsed);
         router.replace(getDashboardPathForMode(next.activeMode));

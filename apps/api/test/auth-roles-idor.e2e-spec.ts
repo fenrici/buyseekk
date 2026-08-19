@@ -119,6 +119,69 @@ describe('Roles, activeMode and IDOR (e2e)', () => {
     expect(ownRequest.body.id).toBeDefined();
   });
 
+  it('restores preferredMode on login and toggles active mode for BOTH accounts', async () => {
+    const both = await registerUser(app, {
+      email: `mode-switch-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Mode Switch',
+      role: 'BOTH',
+      country: 'US',
+    });
+
+    await prisma.user.update({
+      where: { id: both.user.id },
+      data: { activeMode: 'BUYER', preferredMode: 'SELLER' },
+    });
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: `mode-switch-${runId}@test.buyseekk.com`, password })
+      .expect(201);
+    expect(loginRes.body.user.activeMode).toBe('SELLER');
+
+    const buyerMode = await request(app.getHttpServer())
+      .patch('/api/users/me/active-mode')
+      .set(authHeader(both.token))
+      .send({ activeMode: 'BUYER' })
+      .expect(200);
+    expect(buyerMode.body.activeMode).toBe('BUYER');
+
+    const sellerMode = await request(app.getHttpServer())
+      .patch('/api/users/me/active-mode')
+      .set(authHeader(both.token))
+      .send({ activeMode: 'SELLER' })
+      .expect(200);
+    expect(sellerMode.body.activeMode).toBe('SELLER');
+  });
+
+  it('registers seller intent without profile then enables seller mode via onboarding', async () => {
+    const email = `seller-intent-${runId}@test.buyseekk.com`;
+    const registerRes = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        email,
+        password,
+        name: 'Seller Intent',
+        role: 'SELLER',
+        country: 'US',
+        acceptedTerms: true,
+      })
+      .expect(201);
+
+    expect(registerRes.body.user.role).toBe('BUYER');
+    expect(registerRes.body.user.activeMode).toBe('BUYER');
+    expect(registerRes.body.user.preferredMode).toBe('SELLER');
+
+    const onboarded = await request(app.getHttpServer())
+      .post('/api/users/me/seller-profile')
+      .set(authHeader(registerRes.body.token))
+      .send({ sellerType: 'BUSINESS', sellerCategory: 'AUTOS' })
+      .expect(201);
+
+    expect(onboarded.body.role).toBe('BOTH');
+    expect(onboarded.body.activeMode).toBe('SELLER');
+  });
+
   it('keeps admin out of marketplace chat participation', async () => {
     const admin = await registerUser(app, {
       email: `admin-role-${runId}@test.buyseekk.com`,

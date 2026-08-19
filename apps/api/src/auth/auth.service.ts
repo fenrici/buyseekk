@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Country, Currency, Locale, SecurityEvent, User, UserMode, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { defaultLocaleForCountry, canEnterMode } from '@buyseekk/shared';
+import { defaultLocaleForCountry, resolveSessionActiveMode } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ForgotPasswordDto,
@@ -223,7 +223,7 @@ export class AuthService {
     });
 
     let sessionUser = user;
-    const activeMode = canEnterMode(user.activeMode, user) ? user.activeMode : UserMode.BUYER;
+    const activeMode = resolveSessionActiveMode(user);
     if (user.activeMode !== activeMode) {
       sessionUser = await this.prisma.user.update({
         where: { id: user.id },

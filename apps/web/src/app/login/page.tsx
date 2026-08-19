@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, getToken, setAuthTokens } from '@/lib/api';
@@ -82,7 +83,9 @@ function LoginForm() {
       });
       setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
-      setSession(res.user);
+      flushSync(() => {
+        setSession(res.user);
+      });
       router.replace(getPostLoginPath(res.user));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));

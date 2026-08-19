@@ -6,6 +6,7 @@ import {
   isSellerCapableRole,
   resolveInitialLocale,
   resolveNavMode,
+  resolveSessionActiveMode,
   roleAfterEnablingSeller,
 } from './user-mode';
 
@@ -57,6 +58,26 @@ assert.equal(resolveNavMode({ role: 'BOTH', activeMode: 'BUYER' }), 'BUYER');
 // activeMode incoherente con la capacidad → cae a un modo válido (no expone UI sin permiso).
 assert.equal(resolveNavMode({ role: 'BUYER', activeMode: 'SELLER' }), 'BUYER');
 assert.equal(resolveNavMode({ role: 'SELLER', activeMode: 'BUYER' }), 'BUYER');
+
+// --- Modo de sesión al iniciar (preferencia válida > modo persistido) ---
+assert.equal(
+  resolveSessionActiveMode({
+    role: 'BOTH',
+    activeMode: 'BUYER',
+    preferredMode: 'SELLER',
+    sellerType: 'BUSINESS',
+    sellerCategory: 'AUTOS',
+  }),
+  'SELLER',
+);
+assert.equal(
+  resolveSessionActiveMode({
+    role: 'BUYER',
+    activeMode: 'BUYER',
+    preferredMode: 'SELLER',
+  }),
+  'BUYER',
+);
 
 // --- Habilitar vendedor conserva capacidad de comprador ---
 assert.equal(roleAfterEnablingSeller('BUYER'), 'BOTH');
