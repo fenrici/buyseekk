@@ -65,21 +65,14 @@ function LoginForm() {
     if (account === 'suspended') setError(t('account.suspendedMessage'));
   }, [t]);
 
-  function fillDemo(type: 'buyer' | 'seller') {
-    setEmail(DEMOS[type].email);
-    setPassword(DEMOS[type].password);
-    setError('');
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function loginWithCredentials(demoEmail: string, demoPassword: string) {
     if (loading) return;
     setLoading(true);
     setError('');
     try {
       const res = await api<{ token: string; user: User }>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: demoEmail, password: demoPassword }),
       });
       setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
@@ -92,6 +85,19 @@ function LoginForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function fillDemo(type: 'buyer' | 'seller') {
+    const demo = DEMOS[type];
+    setEmail(demo.email);
+    setPassword(demo.password);
+    setError('');
+    void loginWithCredentials(demo.email, demo.password);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await loginWithCredentials(email, password);
   }
 
   if (!guestReady) {

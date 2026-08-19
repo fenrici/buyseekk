@@ -70,6 +70,16 @@ export function roleAfterEnablingSeller(currentRole: AppUserRole): AppUserRole {
   return currentRole === 'SELLER' ? 'SELLER' : 'BOTH';
 }
 
+/** Registro con intención vendedor pero sin onboarding completado todavía. */
+export function hasPendingSellerOnboarding(input: {
+  role: AppUserRole;
+  preferredMode?: AppUserMode | null;
+  sellerType?: string | null;
+  sellerCategory?: string | null;
+}): boolean {
+  return input.preferredMode === 'SELLER' && !hasCompletedSellerProfile(input);
+}
+
 /**
  * Idioma inicial: la preferencia manual guardada tiene prioridad; si no hay,
  * se detecta del navegador/dispositivo; por defecto, español.

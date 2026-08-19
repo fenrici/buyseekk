@@ -190,6 +190,15 @@ export class AuthService {
     return { user: this.toPublicUser(user), ...tokens };
   }
 
+  private async normalizeSessionUser(user: User): Promise<User> {
+    const activeMode = resolveSessionActiveMode(user);
+    if (user.activeMode === activeMode) return user;
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: { activeMode },
+    });
+  }
+
   async login(dto: LoginDto, ctx: SecurityContext = {}) {
     const email = canonicalizeEmail(dto.email);
     const user = await this.findUserByEmail(email);
@@ -222,14 +231,7 @@ export class AuthService {
       userAgent: ctx.userAgent,
     });
 
-    let sessionUser = user;
-    const activeMode = resolveSessionActiveMode(user);
-    if (user.activeMode !== activeMode) {
-      sessionUser = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { activeMode },
-      });
-    }
+    const sessionUser = await this.normalizeSessionUser(user);
 
     const tokens = await this.issueTokens(sessionUser);
     return { user: this.toPublicUser(sessionUser), ...tokens };
@@ -257,8 +259,9 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    const tokens = await this.issueTokens(stored.user);
-    return { user: this.toPublicUser(stored.user), ...tokens };
+    const sessionUser = await this.normalizeSessionUser(stored.user);
+    const tokens = await this.issueTokens(sessionUser);
+    return { user: this.toPublicUser(sessionUser), ...tokens };
   }
 
   async logout(plainToken: string | undefined, ctx: SecurityContext = {}) {
@@ -411,6 +414,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
-    return this.toPublicUser(user);
+    const sessionUser = await this.normalizeSessionUser(user);
+    return this.toPublicUser(sessionUser);
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { hasPendingSellerOnboarding } from '@buyseekk/shared';
 import { SplashVisual } from '@/components/SplashScreen';
 import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
 import { api } from '@/lib/api';
@@ -28,6 +29,8 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
   const { user, setSession } = useAuth();
   const [switching, setSwitching] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingRequired, setOnboardingRequired] = useState(false);
+  const promptedSellerOnboardingRef = useRef<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const busyRef = useRef(false);
 
@@ -35,6 +38,15 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
     setToast({ type, text });
     window.setTimeout(() => setToast(null), 2600);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!hasPendingSellerOnboarding(user)) return;
+    if (promptedSellerOnboardingRef.current === user.id) return;
+    promptedSellerOnboardingRef.current = user.id;
+    setOnboardingRequired(true);
+    setOnboardingOpen(true);
+  }, [user]);
 
   // Transición visual a pantalla completa: splash → backend → refresca user → redirige.
   const runTransition = useCallback(
@@ -80,6 +92,7 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
 
       if (target === 'SELLER' && !hasSellerProfile(user)) {
         busyRef.current = false;
+        setOnboardingRequired(false);
         setOnboardingOpen(true);
         return;
       }
@@ -92,10 +105,16 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
   const handleOnboardingComplete = useCallback(
     (updated: User) => {
       setOnboardingOpen(false);
+      setOnboardingRequired(false);
       void runTransition('SELLER', updated);
     },
     [runTransition],
   );
+
+  const handleOnboardingCancel = useCallback(() => {
+    setOnboardingOpen(false);
+    setOnboardingRequired(false);
+  }, []);
 
   const value = useMemo(() => ({ switching, switchMode }), [switching, switchMode]);
 
@@ -104,7 +123,8 @@ export function ModeSwitchProvider({ children }: { children: React.ReactNode }) 
       {children}
       <SellerOnboardingModal
         open={onboardingOpen}
-        onCancel={() => setOnboardingOpen(false)}
+        required={onboardingRequired}
+        onCancel={handleOnboardingCancel}
         onComplete={handleOnboardingComplete}
       />
       {switching && <SplashVisual />}

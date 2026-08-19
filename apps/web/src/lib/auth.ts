@@ -3,6 +3,7 @@ import {
   isBuyerCapableRole,
   isSellerCapableRole,
   resolveNavMode,
+  resolveSessionActiveMode,
 } from '@buyseekk/shared';
 import { User } from './types';
 
@@ -21,10 +22,12 @@ export function isAdminRole(role: User['role']) {
 }
 
 /** Ruta de inicio tras login: los admin van al panel admin; el resto a su dashboard. */
-export function getPostLoginPath(user: Pick<User, 'role' | 'activeMode'>) {
+export function getPostLoginPath(
+  user: Pick<User, 'role' | 'activeMode' | 'preferredMode' | 'sellerType' | 'sellerCategory'>,
+) {
   if (isAdminRole(user.role)) return '/admin';
-  const navMode = resolveNavMode({ role: user.role, activeMode: user.activeMode });
-  return getDashboardPathForMode(navMode);
+  const mode = resolveSessionActiveMode(user);
+  return getDashboardPathForMode(mode);
 }
 
 /** Home de la app: dashboard si hay sesión, landing pública si no. */

@@ -20,7 +20,8 @@ type Step = 'account' | 'role';
 export default function RegisterPage() {
   const router = useRouter();
   const { setSession } = useAuth();
-  const { ready: guestReady } = useGuestOnlyRoute();
+  const [sellerOnboarding, setSellerOnboarding] = useState(false);
+  const { ready: guestReady } = useGuestOnlyRoute({ blockRedirect: sellerOnboarding });
   const t = useT();
   const [step, setStep] = useState<Step>('account');
   const [form, setForm] = useState({
@@ -32,7 +33,6 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sellerOnboarding, setSellerOnboarding] = useState(false);
 
   function goToRoleStep() {
     if (!form.name.trim() || !form.email.trim() || form.password.length < 6) {
@@ -47,11 +47,8 @@ export default function RegisterPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function finishRegistration(user: User) {
-    if (form.role === 'SELLER' && !hasSellerProfile(user)) {
-      setSellerOnboarding(true);
-      return;
-    }
+  function finishRegistration(user: User, pendingSellerOnboarding: boolean) {
+    if (pendingSellerOnboarding) return;
     router.replace(getPostLoginPath(user));
   }
 
@@ -75,10 +72,16 @@ export default function RegisterPage() {
       });
       setAuthTokens(res.token);
       setStoredLocale(res.user.locale);
+      const pendingSellerOnboarding = form.role === 'SELLER' && !hasSellerProfile(res.user);
+      if (pendingSellerOnboarding) {
+        flushSync(() => {
+          setSellerOnboarding(true);
+        });
+      }
       flushSync(() => {
         setSession(res.user);
       });
-      finishRegistration(res.user);
+      finishRegistration(res.user, pendingSellerOnboarding);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {

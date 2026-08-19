@@ -6,6 +6,7 @@ import {
   isSellerCapableRole,
   resolveInitialLocale,
   resolveNavMode,
+  hasPendingSellerOnboarding,
   resolveSessionActiveMode,
   roleAfterEnablingSeller,
 } from './user-mode';
@@ -77,6 +78,16 @@ assert.equal(
     preferredMode: 'SELLER',
   }),
   'BUYER',
+);
+assert.equal(hasPendingSellerOnboarding({ role: 'BUYER', preferredMode: 'SELLER' }), true);
+assert.equal(
+  hasPendingSellerOnboarding({
+    role: 'BOTH',
+    preferredMode: 'SELLER',
+    sellerType: 'BUSINESS',
+    sellerCategory: 'AUTOS',
+  }),
+  false,
 );
 
 // --- Habilitar vendedor conserva capacidad de comprador ---
