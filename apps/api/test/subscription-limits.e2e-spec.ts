@@ -9,7 +9,7 @@ describe('Subscription plan limits (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
   let previousUnlock: string | undefined;
 
   const bmwMiamiFilters = {
@@ -61,11 +61,25 @@ describe('Subscription plan limits (e2e)', () => {
     expect(me.body.subscriptionPlan).toBe('FREE');
   });
 
-  function startOfUtcDay(now = new Date()) {
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  /** Reloj fijo para tests de límite diario: evita colisión con MAX_OFFERS_PER_HOUR al seedear en UTC midnight. */
+  const OFFER_LIMIT_TEST_NOW = new Date('2026-06-15T18:00:00.000Z');
+
+  /** Mismo día UTC que OFFER_LIMIT_TEST_NOW, pero fuera de la ventana horaria de spam. */
+  function dailyLimitSeedCreatedAt() {
+    return new Date(OFFER_LIMIT_TEST_NOW.getTime() - 2 * 60 * 60 * 1000);
+  }
+
+  async function withOfferLimitTestClock<T>(fn: () => Promise<T>): Promise<T> {
+    jest.useFakeTimers({ now: OFFER_LIMIT_TEST_NOW, doNotFake: ['nextTick', 'setImmediate'] });
+    try {
+      return await fn();
+    } finally {
+      jest.useRealTimers();
+    }
   }
 
   it('blocks FREE user after daily offer limit', async () => {
+    await withOfferLimitTestClock(async () => {
     const buyer = await registerUser(app, {
       email: `plan-buyer-offers-${runId}@test.buyseekk.com`,
       password,
@@ -105,7 +119,7 @@ describe('Subscription plan limits (e2e)', () => {
       requestIds.push(req.id);
     }
 
-    const dayStart = startOfUtcDay();
+    const seedCreatedAt = dailyLimitSeedCreatedAt();
     for (let i = 0; i < FREE_DAILY_OFFER_LIMIT; i++) {
       await prisma.offer.create({
         data: {
@@ -119,7 +133,7 @@ describe('Subscription plan limits (e2e)', () => {
           requestBudget: 30000 + i,
           requestRequirements: `Busco auto variante ${i}`,
           requestLocation: 'Miami, FL',
-          createdAt: dayStart,
+          createdAt: seedCreatedAt,
         },
       });
     }
@@ -137,6 +151,7 @@ describe('Subscription plan limits (e2e)', () => {
       .expect(400);
 
     expect(blocked.body.message).toBe(SUBSCRIPTION_LIMIT_MESSAGES.dailyOffers);
+    });
   });
 
   it('blocks FREE user after smart alert limit', async () => {
@@ -170,6 +185,7 @@ describe('Subscription plan limits (e2e)', () => {
   });
 
   it('allows PLUS user beyond FREE limits', async () => {
+    await withOfferLimitTestClock(async () => {
     const buyer = await registerUser(app, {
       email: `plan-buyer-plus-${runId}@test.buyseekk.com`,
       password,
@@ -226,7 +242,7 @@ describe('Subscription plan limits (e2e)', () => {
       requestIds.push(req.id);
     }
 
-    const dayStart = startOfUtcDay();
+    const seedCreatedAt = dailyLimitSeedCreatedAt();
     for (let i = 0; i < FREE_DAILY_OFFER_LIMIT; i++) {
       await prisma.offer.create({
         data: {
@@ -240,7 +256,7 @@ describe('Subscription plan limits (e2e)', () => {
           requestBudget: 40000 + i,
           requestRequirements: `Plus busca auto ${i}`,
           requestLocation: 'Miami, FL',
-          createdAt: dayStart,
+          createdAt: seedCreatedAt,
         },
       });
     }
@@ -256,5 +272,6 @@ describe('Subscription plan limits (e2e)', () => {
         imageUrls: [ownedTestImageUrl(seller.user.id)],
       })
       .expect(201);
+    });
   });
 });
