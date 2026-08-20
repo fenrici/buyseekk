@@ -3613,7 +3613,7 @@ button.portal-mobile-link {
 .profile-hub {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .profile-compact {
@@ -3762,6 +3762,35 @@ button.portal-mobile-link {
   padding: 0.9rem 1.1rem;
 }
 
+.profile-plan-teaser__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.profile-plan-teaser__name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.profile-plan-teaser__status {
+  display: inline-flex;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(129, 140, 248, 0.24);
+}
+
 .profile-plan-teaser__label {
   margin: 0;
   font-size: 0.72rem;
@@ -3802,7 +3831,7 @@ button.portal-mobile-link {
 
 .profile-plan-teaser__upgrade {
   width: 100%;
-  min-height: 2.6rem;
+  min-height: 2.75rem;
   border-radius: 0.6rem;
   border: 1px solid rgba(99, 102, 241, 0.4);
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.2));
@@ -4062,9 +4091,9 @@ a.profile-menu-row {
 
 .pricing-current__identity {
   display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 
 .pricing-current__plan {
@@ -4332,7 +4361,7 @@ a.profile-menu-row {
 
   .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.25rem;
     align-items: stretch;
   }
@@ -4581,17 +4610,8 @@ a.profile-menu-row {
   font-size: 0.78rem;
 }
 
-.profile-side-card .profile-plan-teaser__label--plan {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #e2e8f0;
-}
-
 .profile-side-card .profile-plan-teaser__limits {
-  margin: 0 0 0.75rem;
+  margin: 0.65rem 0 0.75rem;
 }
 
 .profile-side-card .profile-plan-teaser__upgrade {

@@ -35,6 +35,7 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
   const t = useT();
   const currentPlan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
   const hasPlus = currentPlan === 'PLUS' || currentPlan === 'ENTERPRISE';
+  const upgradePlans = PRICING_PLANS.filter((plan) => plan !== currentPlan);
 
   const [offersToday, setOffersToday] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
@@ -76,7 +77,7 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
     <div className="pricing-page">
       <section className="pricing-current" aria-labelledby="pricing-current-title">
         <p id="pricing-current-title" className="pricing-current__eyebrow">
-          {t('profile.billingCurrent')}
+          {t('profile.planSectionLabel')}
         </p>
         <div className="pricing-current__main">
           <div className="pricing-current__identity">
@@ -110,16 +111,18 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
         )}
       </section>
 
-      <section className="pricing-grid" aria-label={t('subscription.compareTitle')}>
-        {PRICING_PLANS.map((plan) => (
-          <ProfilePricingCard
-            key={plan}
-            plan={plan}
-            currentPlan={currentPlan}
-            highlighted={plan === 'PLUS'}
-          />
-        ))}
-      </section>
+      {upgradePlans.length > 0 && (
+        <section className="pricing-grid" aria-label={t('subscription.compareTitle')}>
+          {upgradePlans.map((plan) => (
+            <ProfilePricingCard
+              key={plan}
+              plan={plan}
+              currentPlan={currentPlan}
+              highlighted={plan === 'PLUS'}
+            />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
