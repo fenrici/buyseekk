@@ -21,6 +21,8 @@ export interface User {
   country: 'AR' | 'US';
   locale: 'ES' | 'EN';
   currency: 'ARS' | 'USD';
+  buyerAvatarUrl?: string | null;
+  sellerAvatarUrl?: string | null;
   avatarUrl?: string | null;
   bio?: string | null;
   businessName?: string | null;
@@ -51,6 +53,8 @@ export interface PublicProfile {
   sellerCategory?: 'AUTOS' | 'INMOBILIARIA' | null;
   businessType?: 'DEALERSHIP' | 'REAL_ESTATE_AGENCY' | 'OTHER' | null;
   country: 'AR' | 'US';
+  buyerAvatarUrl?: string | null;
+  sellerAvatarUrl?: string | null;
   avatarUrl?: string | null;
   bio?: string | null;
   businessName?: string | null;

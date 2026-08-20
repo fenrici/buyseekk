@@ -24,6 +24,7 @@ import {
   isValidAutoMileagePreference,
   isValidMileageValue,
 } from '@buyseekk/shared';
+import { REQUEST_BUYER_SELECT, withBuyerAvatar } from '../common/utils/account-avatars';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
@@ -121,6 +122,7 @@ export class RequestsService {
     const lifecycle = toLifecycleInput(req);
     return {
       ...req,
+      user: 'user' in req && req.user ? withBuyerAvatar(req.user) : undefined,
       status: effectiveRequestStatus(lifecycle),
       lastBuyerActivityAt: req.lastBuyerActivityAt,
       lastActivityAt: req.lastBuyerActivityAt,
@@ -223,7 +225,7 @@ export class RequestsService {
       Parameters<typeof toLifecycleInput>[0] & {
         id: string;
         userId: string;
-        user: { id: string; name: string; country: Country; currency: Currency; avatarUrl: string | null };
+        user: { id: string; name: string; country: Country; currency: Currency; buyerAvatarUrl: string | null };
         offers: Array<{
           id: string;
           status: OfferStatus;
@@ -239,7 +241,7 @@ export class RequestsService {
     const formatted = rows.map((r) => ({
       ...this.formatRequest(r)!,
       user: {
-        ...r.user,
+        ...withBuyerAvatar(r.user),
         rating: ratingMap[r.userId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
       },
     }));
@@ -250,7 +252,7 @@ export class RequestsService {
     return this.prisma.request.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+        user: { select: REQUEST_BUYER_SELECT },
         offers: {
           select: {
             ...this.offersForFormatSelect,
@@ -413,7 +415,7 @@ export class RequestsService {
           maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage ?? null : null,
         },
         include: {
-          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+          user: { select: REQUEST_BUYER_SELECT },
           offers: { select: this.offersForFormatSelect },
         },
       }),
@@ -538,7 +540,7 @@ export class RequestsService {
         : await this.prisma.request.findMany({
             where: { id: { in: pageIds } },
             include: {
-              user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+              user: { select: REQUEST_BUYER_SELECT },
               offers: { select: this.offersForFormatSelect },
             },
           });
@@ -551,7 +553,7 @@ export class RequestsService {
     const enriched = items.map((r) => ({
       ...this.formatRequest(r)!,
       user: {
-        ...r.user,
+        ...withBuyerAvatar(r.user),
         rating: ratingMap[r.userId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
       },
     }));
@@ -748,7 +750,7 @@ export class RequestsService {
         take: limit,
         orderBy: { lastBuyerActivityAt: 'desc' },
         include: {
-          user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+          user: { select: REQUEST_BUYER_SELECT },
           offers: {
             select: {
               id: true,

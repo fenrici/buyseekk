@@ -92,6 +92,7 @@ describe('Notifications (e2e)', () => {
       .set(authHeader(buyer.token))
       .expect(200);
     expect(listRes.body[0].type).toBe('NEW_OFFER');
+    expect(listRes.body[0].targetMode).toBe('BUYER');
 
     await request(app.getHttpServer())
       .patch('/api/notifications/read-all')
@@ -173,10 +174,10 @@ describe('notification copy locale', () => {
     const acceptedEn = notificationCopy(NotificationType.OFFER_ACCEPTED, 'EN', {
       requestTitle: 'Ferrari 488',
     });
-    expect(acceptedEs.title).toBe('El comprador quiere negociar');
+    expect(acceptedEs.title).toBe('Tu oferta fue aceptada');
     expect(acceptedEs.message).toContain('avanzar');
     expect(acceptedEs.message.toLowerCase()).not.toContain('concretada');
-    expect(acceptedEn.title).toBe('The buyer wants to negotiate');
+    expect(acceptedEn.title).toBe('Your offer was accepted');
     expect(acceptedEn.message.toLowerCase()).not.toContain('completed');
 
     const dealEs = notificationCopy(NotificationType.DEAL_COMPLETED, 'ES', {

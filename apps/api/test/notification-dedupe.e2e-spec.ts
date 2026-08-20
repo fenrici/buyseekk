@@ -40,8 +40,8 @@ describe('Notification dedupe (e2e)', () => {
       },
     });
 
-    await notifications.notifyNewMessage(user.id, 'ES', 'chat-1', 'Alice');
-    await notifications.notifyNewMessage(user.id, 'ES', 'chat-1', 'Alice');
+    await notifications.notifyNewMessage(user.id, 'ES', 'chat-1', 'Alice', 'buyer');
+    await notifications.notifyNewMessage(user.id, 'ES', 'chat-1', 'Alice', 'buyer');
 
     const rows = await prisma.notification.findMany({
       where: { userId: user.id, type: NotificationType.NEW_MESSAGE, entityId: 'chat-1' },

@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { sortSavedRequestsForSeller, MAX_SAVED_REQUESTS_LIST } from '@buyseekk/shared';
 import { isSellerCapable, type AuthUser } from '../common/types/auth-user';
+import { REQUEST_BUYER_SELECT } from '../common/utils/account-avatars';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestsService } from '../requests/requests.service';
 import { isVisibleToSellers, toLifecycleInput } from '../requests/request-status';
@@ -52,7 +53,7 @@ export class SavedRequestsService {
     const requests = await this.prisma.request.findMany({
       where: { id: { in: rows.map((r) => r.requestId) } },
       include: {
-        user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
+        user: { select: REQUEST_BUYER_SELECT },
         offers: {
           select: {
             id: true,

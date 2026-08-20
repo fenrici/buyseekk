@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { formatUsAreaLocation, parseUsAreaLocation, type AppBusinessType, type UsStateCode } from '@buyseekk/shared';
-import { api } from '@/lib/api';
+import { useRef, useState } from 'react';
+import { formatUsAreaLocation, MAX_UPLOAD_BYTES, parseUsAreaLocation, type AppBusinessType, type UsStateCode } from '@buyseekk/shared';
+import { api, uploadImage } from '@/lib/api';
+import { Avatar } from '@/components/Avatar';
 import { isUsLaunch } from '@/lib/launch-country';
 import { useT } from '@/lib/i18n';
 import type { User } from '@/lib/types';
@@ -18,6 +19,7 @@ type FormState = {
   website: string;
   state: string;
   city: string;
+  sellerAvatarUrl: string;
 };
 
 function formFromUser(user: User): FormState {
@@ -37,6 +39,7 @@ function formFromUser(user: User): FormState {
     website: user.website ?? '',
     state,
     city: cityForFields,
+    sellerAvatarUrl: user.sellerAvatarUrl ?? '',
   };
 }
 
@@ -56,8 +59,10 @@ export function ProfileSellerSection({
   onUpdated: (user: User) => void;
 }) {
   const t = useT();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<FormState>(() => formFromUser(user));
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,6 +71,25 @@ export function ProfileSellerSection({
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setSaved(false);
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handlePhoto(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    setError('');
+    if (file.size > MAX_UPLOAD_BYTES || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError(t('images.maxHint', { max: '1', mb: String(MAX_UPLOAD_BYTES / (1024 * 1024)) }));
+      return;
+    }
+    setUploading(true);
+    try {
+      const { url } = await uploadImage(file);
+      update('sellerAvatarUrl', url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -81,6 +105,7 @@ export function ProfileSellerSection({
         sellerCategory: form.sellerCategory,
         state: location.state,
         city: location.city,
+        sellerAvatarUrl: form.sellerAvatarUrl,
         ...(isCompany
           ? {
               businessName: form.businessName.trim(),
@@ -110,6 +135,42 @@ export function ProfileSellerSection({
 
       {error && <p className="profile-form__alert profile-form__alert--error">{error}</p>}
       {saved && <p className="profile-form__alert profile-form__alert--success">{t('profile.saved')}</p>}
+
+      <div className="profile-form__photo">
+        <p className="profile-form__photo-label">
+          {isCompany ? t('profile.sellerLogoLabel') : t('profile.sellerPhotoLabel')}
+        </p>
+        <div className="profile-form__photo-row">
+          <Avatar name={user.name} url={form.sellerAvatarUrl || null} size={72} />
+          <div className="profile-form__photo-actions">
+            <button
+              type="button"
+              className="profile-form__photo-btn"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              {uploading ? t('profile.uploading') : t('profile.changeSellerPhoto')}
+            </button>
+            {form.sellerAvatarUrl && (
+              <button
+                type="button"
+                className="profile-form__photo-btn profile-form__photo-btn--danger"
+                disabled={uploading}
+                onClick={() => update('sellerAvatarUrl', '')}
+              >
+                {t('profile.removePhoto')}
+              </button>
+            )}
+          </div>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => handlePhoto(e.target.files)}
+        />
+      </div>
 
       <div className="profile-field">
         <span className="profile-field__label">{t('profile.sellerTypeLabel')}</span>
@@ -226,7 +287,7 @@ export function ProfileSellerSection({
       )}
 
       <div className="profile-form__footer">
-        <button type="submit" disabled={saving} className="profile-form__save">
+        <button type="submit" disabled={saving || uploading} className="profile-form__save">
           {saving ? t('common.saving') : t('profile.save')}
         </button>
       </div>

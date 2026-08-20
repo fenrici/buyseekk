@@ -23,7 +23,7 @@ const EPOCH = new Date(0);
 const CHAT_SELLER_SELECT = {
   id: true,
   name: true,
-  avatarUrl: true,
+  sellerAvatarUrl: true,
   sellerType: true,
   businessName: true,
   businessType: true,
@@ -48,7 +48,7 @@ export class ChatsService {
       seller: {
         id: string;
         name: string;
-        avatarUrl: string | null;
+        sellerAvatarUrl: string | null;
         sellerType: string | null;
         businessName: string | null;
         businessType: string | null;
@@ -56,7 +56,7 @@ export class ChatsService {
         city: string | null;
         country: string;
       };
-      request: { user: { id: string; name: string; avatarUrl: string | null } };
+      request: { user: { id: string; name: string; buyerAvatarUrl: string | null } };
     },
     myRole: 'buyer' | 'seller',
     locale: 'ES' | 'EN' = 'ES',
@@ -78,7 +78,7 @@ export class ChatsService {
       return {
         id: offer.seller.id,
         name: offer.seller.name,
-        avatarUrl: offer.seller.avatarUrl,
+        avatarUrl: offer.seller.sellerAvatarUrl,
         role: 'seller' as const,
         identityTitle: identity.titleLine,
         identityDetail: identity.detailLine,
@@ -87,7 +87,7 @@ export class ChatsService {
     return {
       id: offer.request.user.id,
       name: offer.request.user.name,
-      avatarUrl: offer.request.user.avatarUrl,
+      avatarUrl: offer.request.user.buyerAvatarUrl,
       role: 'buyer' as const,
     };
   }
@@ -291,7 +291,7 @@ export class ChatsService {
           offer: {
             include: {
               seller: { select: CHAT_SELLER_SELECT },
-              request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+              request: { include: { user: { select: { id: true, name: true, buyerAvatarUrl: true } } } },
             },
           },
           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
@@ -342,7 +342,7 @@ export class ChatsService {
         offer: {
           include: {
             seller: { select: CHAT_SELLER_SELECT },
-            request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+            request: { include: { user: { select: { id: true, name: true, buyerAvatarUrl: true } } } },
           },
         },
       },
@@ -541,6 +541,7 @@ export class ChatsService {
       recipient.locale,
       chatId,
       recipient.senderName,
+      senderRole === 'buyer' ? 'seller' : 'buyer',
     );
   }
 }

@@ -3013,6 +3013,15 @@ button.portal-mobile-link {
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
+.profile-form__photo-label {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
 .profile-form__photo-row {
   display: flex;
   align-items: center;
@@ -3667,7 +3676,14 @@ button.portal-mobile-link {
   font-size: 0.8rem;
   font-weight: 600;
   color: #cbd5e1;
-  letter-spacing: 0.01em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-compact__location {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
 }
 
 .profile-compact__meta span[aria-hidden] {

@@ -168,8 +168,8 @@ export class RatingsService {
       },
       include: {
         chat: { select: { id: true } },
-        seller: { select: { id: true, name: true, avatarUrl: true } },
-        request: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+        seller: { select: { id: true, name: true, sellerAvatarUrl: true } },
+        request: { include: { user: { select: { id: true, name: true, buyerAvatarUrl: true } } } },
       },
       orderBy: { dealCompletedAt: 'desc' },
     });
@@ -189,8 +189,8 @@ export class RatingsService {
           requestTitle: o.requestTitle,
           chatId: o.chat?.id,
           partner: isBuyer
-            ? { id: o.seller.id, name: o.seller.name, avatarUrl: o.seller.avatarUrl, role: 'seller' as const }
-            : { id: o.request.user.id, name: o.request.user.name, avatarUrl: o.request.user.avatarUrl, role: 'buyer' as const },
+            ? { id: o.seller.id, name: o.seller.name, avatarUrl: o.seller.sellerAvatarUrl, role: 'seller' as const }
+            : { id: o.request.user.id, name: o.request.user.name, avatarUrl: o.request.user.buyerAvatarUrl, role: 'buyer' as const },
           myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
         };
       });
@@ -207,7 +207,7 @@ export class RatingsService {
     );
     const partner = await this.prisma.user.findUnique({
       where: { id: toUserId },
-      select: { id: true, name: true, avatarUrl: true },
+      select: { id: true, name: true, buyerAvatarUrl: true, sellerAvatarUrl: true },
     });
     if (!partner) throw new NotFoundException();
 
@@ -222,7 +222,12 @@ export class RatingsService {
     return {
       offerId,
       myRole: isBuyer ? ('buyer' as const) : ('seller' as const),
-      partner: { ...partner, stats: partnerStats },
+      partner: {
+        id: partner.id,
+        name: partner.name,
+        avatarUrl: isBuyer ? partner.sellerAvatarUrl : partner.buyerAvatarUrl,
+        stats: partnerStats,
+      },
       myRating: mine,
       canMarkNoResponse: !isBuyer && !buyerReplied && !mine && !dealCompleted && !negotiationEnded,
       canReview: dealCompleted && !mine,

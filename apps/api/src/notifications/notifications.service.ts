@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Locale, Notification, NotificationEntityType, NotificationType, Prisma, UserRole } from '@prisma/client';
-import { effectiveRequestStatus, parseSellerFiltersJson, requestMatchesSellerFilters, type MatchableRequest, parseNotificationPreferences, isGatedNotificationType, isNotificationTypeEnabled } from '@buyseekk/shared';
+import { Locale, Notification, NotificationEntityType, NotificationType, Prisma, UserMode, UserRole } from '@prisma/client';
+import { effectiveRequestStatus, parseSellerFiltersJson, requestMatchesSellerFilters, type MatchableRequest, parseNotificationPreferences, isGatedNotificationType, isNotificationTypeEnabled, notificationTargetMode } from '@buyseekk/shared';
 import { parsePagination, toPaginatedResult } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationGateway } from './notification.gateway';
@@ -41,6 +41,7 @@ type CreateInput = {
   message?: string;
   dedupeKey?: string | null;
   lastBuyerActivityAt?: Date;
+  targetMode?: UserMode;
 };
 
 @Injectable()
@@ -64,6 +65,7 @@ export class NotificationsService {
       message: row.message,
       entityId: row.entityId,
       entityType: row.entityType,
+      targetMode: row.targetMode,
       read: row.read,
       createdAt: row.createdAt.toISOString(),
     };
@@ -117,6 +119,9 @@ export class NotificationsService {
     }
 
     const copy = notificationCopy(input.type, input.locale, input.context ?? {});
+    const targetMode =
+      input.targetMode ??
+      UserMode[notificationTargetMode(input.type) as 'BUYER' | 'SELLER'];
     const dedupeKey =
       input.dedupeKey !== undefined
         ? input.dedupeKey
@@ -136,6 +141,7 @@ export class NotificationsService {
           message: input.message ?? copy.message,
           entityId: input.entityId,
           entityType: input.entityType,
+          targetMode,
           dedupeKey,
         },
       });
@@ -242,6 +248,7 @@ export class NotificationsService {
           entityId: chatId,
           entityType: NotificationEntityType.CHAT,
           context: { requestTitle, endedBy },
+          targetMode: endedBy === 'buyer' ? UserMode.SELLER : UserMode.BUYER,
         }),
     );
   }
@@ -251,6 +258,7 @@ export class NotificationsService {
     locale: Locale,
     chatId: string,
     senderName: string,
+    recipientRole: 'buyer' | 'seller',
   ) {
     return this.bestEffort(
       { type: NotificationType.NEW_MESSAGE, userId: recipientId, entityId: chatId },
@@ -262,6 +270,7 @@ export class NotificationsService {
           entityId: chatId,
           entityType: NotificationEntityType.CHAT,
           context: { senderName },
+          targetMode: recipientRole === 'seller' ? UserMode.SELLER : UserMode.BUYER,
         });
       },
     );

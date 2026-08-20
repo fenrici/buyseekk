@@ -21,7 +21,9 @@ export class StorageObjectsService {
 
   async isStorageUrlReferenced(url: string): Promise<boolean> {
     const [userCount, requestCount, offerCount] = await Promise.all([
-      this.prisma.user.count({ where: { avatarUrl: url } }),
+      this.prisma.user.count({
+        where: { OR: [{ buyerAvatarUrl: url }, { sellerAvatarUrl: url }] },
+      }),
       this.prisma.request.count({ where: { imageUrls: { has: url } } }),
       this.prisma.offer.count({ where: { imageUrls: { has: url } } }),
     ]);

@@ -23,6 +23,7 @@ import { assertCleanPublicText, assertOfferSpamLimits } from '../common/utils/sp
 import { assertValidImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
 import { assertEmailVerified } from '../common/utils/assert-email-verified';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
+import { withBuyerAvatar, withSellerAvatar } from '../common/utils/account-avatars';
 import { RatingsService } from '../ratings/ratings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -60,7 +61,19 @@ export class OffersService {
       offer.price,
       offer.currency as 'ARS' | 'USD',
     );
-    return { ...offer, comparison };
+    const mapped = { ...offer, comparison } as T & { comparison: ReturnType<typeof comparePrices> } & {
+      seller?: Record<string, unknown>;
+      request?: Record<string, unknown>;
+    };
+    const seller = (offer as { seller?: { sellerAvatarUrl?: string | null } }).seller;
+    if (seller && 'sellerAvatarUrl' in seller) {
+      mapped.seller = withSellerAvatar(seller) as Record<string, unknown>;
+    }
+    const request = (offer as { request?: { user?: { buyerAvatarUrl?: string | null } } }).request;
+    if (request?.user && 'buyerAvatarUrl' in request.user) {
+      mapped.request = { ...request, user: withBuyerAvatar(request.user) } as Record<string, unknown>;
+    }
+    return mapped;
   }
 
   private async syncRequestNegotiationStatus(tx: Prisma.TransactionClient, requestId: string) {
@@ -218,7 +231,7 @@ export class OffersService {
               id: true,
               name: true,
               country: true,
-              avatarUrl: true,
+              sellerAvatarUrl: true,
               sellerType: true,
               businessName: true,
               businessType: true,
@@ -235,14 +248,17 @@ export class OffersService {
 
     const ratingMap = await this.ratings.getStatsForUsers(offers.map((o) => o.sellerId));
 
-    const items = offers.map((o) => ({
-      ...this.withComparison(o),
-      chatId: o.chat?.id ?? null,
-      seller: {
-        ...o.seller,
-        rating: ratingMap[o.sellerId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
-      },
-    }));
+    const items = offers.map((o) => {
+      const mapped = this.withComparison(o);
+      return {
+        ...mapped,
+        chatId: o.chat?.id ?? null,
+        seller: {
+          ...mapped.seller,
+          rating: ratingMap[o.sellerId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
+        },
+      };
+    });
 
     return toPaginatedResult(items, total, safePage, safeLimit);
   }
@@ -261,7 +277,7 @@ export class OffersService {
           select: {
             id: true,
             name: true,
-            avatarUrl: true,
+            sellerAvatarUrl: true,
             sellerType: true,
             businessName: true,
           },
@@ -289,7 +305,7 @@ export class OffersService {
       seller: {
         name: o.seller.name,
         businessName: o.seller.businessName,
-        avatarUrl: o.seller.avatarUrl,
+        avatarUrl: o.seller.sellerAvatarUrl,
         sellerType: o.seller.sellerType,
         rating: ratingMap[o.sellerId] ?? { avgStars: null, reviewCount: 0, noResponseCount: 0 },
       },
@@ -322,7 +338,7 @@ export class OffersService {
               title: true,
               imageUrls: true,
               status: true,
-              user: { select: { id: true, name: true, avatarUrl: true } },
+              user: { select: { id: true, name: true, buyerAvatarUrl: true } },
             },
           },
           chat: { select: { id: true } },

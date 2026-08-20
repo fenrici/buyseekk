@@ -8,6 +8,7 @@ export type NotificationPayload = {
   message: string;
   entityId: string | null;
   entityType: NotificationEntityType | null;
+  targetMode: 'BUYER' | 'SELLER';
   read: boolean;
   createdAt: string;
 };

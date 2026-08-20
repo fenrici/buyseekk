@@ -163,7 +163,8 @@ model User {
   country         Country
   locale          Locale
   currency        Currency
-  avatarUrl       String?
+  buyerAvatarUrl  String?
+  sellerAvatarUrl String?
   bio             String?
   businessName    String?
   businessType    BusinessType?
@@ -247,6 +248,7 @@ model Notification {
   message    String
   entityId   String?
   entityType NotificationEntityType?
+  targetMode UserMode                @default(BUYER)
   dedupeKey  String?
   read       Boolean                 @default(false)
   createdAt  DateTime                @default(now())

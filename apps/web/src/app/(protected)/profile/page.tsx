@@ -39,7 +39,7 @@ function profileFormFromUser(user: User): ProfileFormState {
     city: user.city ?? '',
     businessName: user.businessName ?? '',
     website: user.website ?? '',
-    avatarUrl: user.avatarUrl ?? '',
+    avatarUrl: user.buyerAvatarUrl ?? user.avatarUrl ?? '',
   };
 }
 
@@ -152,7 +152,17 @@ export default function ProfilePage() {
     setError('');
     setSaved(false);
     try {
-      const updated = await api<User>('/users/me', { method: 'PATCH', body: JSON.stringify(form) });
+      const updated = await api<User>('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: form.name,
+          bio: form.bio,
+          city: form.city,
+          businessName: form.businessName,
+          website: form.website,
+          buyerAvatarUrl: form.avatarUrl,
+        }),
+      });
       setSession(updated);
       setSaved(true);
     } catch (err) {

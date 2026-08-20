@@ -12,6 +12,7 @@ import { Country, Currency, Locale, SecurityEvent, User, UserMode, UserRole } fr
 import * as bcrypt from 'bcrypt';
 import { defaultLocaleForCountry, resolveSessionActiveMode } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { toAccountUser } from '../common/utils/account-avatars';
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -52,8 +53,7 @@ export class AuthService {
   ) {}
 
   private toPublicUser(user: User) {
-    const { passwordHash: _, ...safe } = user;
-    return safe;
+    return toAccountUser(user);
   }
 
   private getAccessExpiresIn(): JwtSignOptions['expiresIn'] {

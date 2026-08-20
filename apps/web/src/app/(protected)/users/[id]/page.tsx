@@ -12,6 +12,7 @@ import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { ReportButton } from '@/components/ReportButton';
 import { useAuth } from '@/providers/AuthProvider';
 import { useLocale, useT } from '@/lib/i18n';
+import { avatarUrlForMode, formatSellerBuyerIdentity } from '@buyseekk/shared';
 import { formatProfileLocation } from '@/lib/profile-location';
 import { safeExternalHttpUrl } from '@/lib/safe-url';
 
@@ -34,7 +35,27 @@ export default function PublicProfilePage() {
   }, [params?.id]);
 
   const isSeller = profile && (profile.role === 'SELLER' || profile.role === 'BOTH');
-  const displayName = profile?.businessName || profile?.name || '';
+  const sellerIdentity =
+    profile && isSeller
+      ? formatSellerBuyerIdentity(
+          {
+            role: profile.role,
+            sellerType: profile.sellerType,
+            name: profile.name,
+            businessName: profile.businessName,
+            businessType: profile.businessType,
+            state: profile.state,
+            city: profile.city,
+            country: profile.country,
+          },
+          locale,
+        )
+      : null;
+  const publicAvatar = profile
+    ? isSeller
+      ? avatarUrlForMode(profile, 'SELLER')
+      : avatarUrlForMode(profile, 'BUYER')
+    : null;
   const websiteHref = safeExternalHttpUrl(profile?.website);
   const memberSince = profile
     ? new Date(profile.createdAt).toLocaleDateString(locale === 'EN' ? 'en-US' : 'es-AR', {
@@ -56,11 +77,14 @@ export default function PublicProfilePage() {
           <>
             <section className="card p-6">
               <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-                <Avatar name={displayName} url={profile.avatarUrl} size={96} />
+                <Avatar name={profile.name} url={publicAvatar} size={96} />
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-2xl font-bold text-white">{displayName}</h1>
-                  {profile.businessName && (
-                    <p className="text-sm text-slate-500">{profile.name}</p>
+                  <h1 className="text-2xl font-bold text-white">{profile.name}</h1>
+                  {sellerIdentity && (
+                    <>
+                      <p className="mt-1 text-sm font-medium text-slate-300">{sellerIdentity.titleLine}</p>
+                      <p className="text-sm text-slate-500">{sellerIdentity.detailLine}</p>
+                    </>
                   )}
 
                   <div className="mt-2 flex flex-wrap justify-center gap-1.5 sm:justify-start">

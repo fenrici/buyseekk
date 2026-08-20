@@ -94,11 +94,11 @@ export function notificationCopy(
     case NotificationType.OFFER_ACCEPTED:
       return en
         ? {
-            title: 'The buyer wants to negotiate',
+            title: 'Your offer was accepted',
             message: `The buyer wants to move forward with your offer for ${context.requestTitle ?? 'a request'}`,
           }
         : {
-            title: 'El comprador quiere negociar',
+            title: 'Tu oferta fue aceptada',
             message: `El comprador quiere avanzar con tu oferta para ${context.requestTitle ?? 'una solicitud'}`,
           };
     case NotificationType.OFFER_REJECTED:

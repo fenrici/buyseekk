@@ -11,6 +11,7 @@ import {
 } from '@buyseekk/shared';
 import { validateImageUrls, assertOwnedImageUrls } from '../common/utils/image-urls';
 import { assertAccountActive } from '../common/utils/assert-not-blocked';
+import { toAccountUser } from '../common/utils/account-avatars';
 import { RatingsService } from '../ratings/ratings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageObjectsService } from '../storage/storage-objects.service';
@@ -24,7 +25,8 @@ const PUBLIC_PROFILE_SELECT = {
   sellerCategory: true,
   businessType: true,
   country: true,
-  avatarUrl: true,
+  buyerAvatarUrl: true,
+  sellerAvatarUrl: true,
   bio: true,
   businessName: true,
   website: true,
@@ -74,12 +76,25 @@ export class UsersService {
           stars: true,
           comment: true,
           createdAt: true,
-          fromUser: { select: { id: true, name: true, avatarUrl: true } },
+          fromUser: { select: { id: true, name: true, buyerAvatarUrl: true } },
         },
       }),
     ]);
 
-    return { ...user, rating, completedDeals, recentReviews };
+    return {
+      ...user,
+      rating,
+      completedDeals,
+      avatarUrl: user.sellerAvatarUrl ?? user.buyerAvatarUrl ?? null,
+      recentReviews: recentReviews.map((review) => ({
+        ...review,
+        fromUser: {
+          id: review.fromUser.id,
+          name: review.fromUser.name,
+          avatarUrl: review.fromUser.buyerAvatarUrl,
+        },
+      })),
+    };
   }
 
   private cleanOptional(value?: string) {
@@ -93,12 +108,19 @@ export class UsersService {
     if (!current) throw new NotFoundException('Usuario no encontrado');
     assertAccountActive(current);
 
-    if (dto.avatarUrl?.trim()) {
-      validateImageUrls([dto.avatarUrl.trim()]);
-      assertOwnedImageUrls([dto.avatarUrl.trim()], userId, current.avatarUrl ? [current.avatarUrl] : []);
+    if (dto.buyerAvatarUrl?.trim() || dto.avatarUrl?.trim()) {
+      const nextBuyer = (dto.buyerAvatarUrl ?? dto.avatarUrl)!.trim();
+      validateImageUrls([nextBuyer]);
+      assertOwnedImageUrls([nextBuyer], userId, current.buyerAvatarUrl ? [current.buyerAvatarUrl] : []);
     }
 
     const isCompany = current.sellerType === SellerType.COMPANY;
+    const nextBuyerAvatar =
+      dto.buyerAvatarUrl !== undefined
+        ? this.cleanOptional(dto.buyerAvatarUrl)
+        : dto.avatarUrl !== undefined
+          ? this.cleanOptional(dto.avatarUrl)
+          : undefined;
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -106,25 +128,23 @@ export class UsersService {
         bio: this.cleanOptional(dto.bio),
         state: this.cleanOptional(dto.state),
         city: this.cleanOptional(dto.city),
-        avatarUrl: this.cleanOptional(dto.avatarUrl),
+        buyerAvatarUrl: nextBuyerAvatar,
         businessName: isCompany ? this.cleanOptional(dto.businessName) : undefined,
         businessType: isCompany && dto.businessType !== undefined ? dto.businessType : undefined,
         website: isCompany ? this.cleanOptional(dto.website) : undefined,
       },
     });
 
-    const { passwordHash: _, ...safe } = updated;
     await this.storageObjects.deleteRemovedBestEffort(
-      [current.avatarUrl],
-      [updated.avatarUrl],
+      [current.buyerAvatarUrl],
+      [updated.buyerAvatarUrl],
       userId,
     );
-    return safe;
+    return this.toSafeUser(updated);
   }
 
-  private toSafeUser<T extends { passwordHash: string }>(user: T) {
-    const { passwordHash: _drop, ...safe } = user;
-    return safe;
+  private toSafeUser<T extends { passwordHash: string; buyerAvatarUrl?: string | null }>(user: T) {
+    return toAccountUser(user);
   }
 
   async getSettings(userId: string) {
@@ -204,6 +224,7 @@ export class UsersService {
       sellerCategory: dto.sellerCategory,
       ...(dto.state !== undefined ? { state: dto.state.trim() } : {}),
       ...(dto.city !== undefined ? { city: dto.city.trim() } : {}),
+      ...(dto.sellerAvatarUrl !== undefined ? { sellerAvatarUrl: this.cleanOptional(dto.sellerAvatarUrl) } : {}),
       ...(isCompany
         ? {
             businessName: dto.businessName?.trim() || null,
@@ -219,6 +240,15 @@ export class UsersService {
     if (!user) throw new NotFoundException('Usuario no encontrado');
     assertAccountActive(user);
 
+    if (dto.sellerAvatarUrl?.trim()) {
+      validateImageUrls([dto.sellerAvatarUrl.trim()]);
+      assertOwnedImageUrls(
+        [dto.sellerAvatarUrl.trim()],
+        userId,
+        user.sellerAvatarUrl ? [user.sellerAvatarUrl] : [],
+      );
+    }
+
     const nextRole = roleAfterEnablingSeller(user.role);
     const profileData = this.sellerProfileData(dto);
 
@@ -230,6 +260,11 @@ export class UsersService {
         ...profileData,
       },
     });
+    await this.storageObjects.deleteRemovedBestEffort(
+      [user.sellerAvatarUrl],
+      [updated.sellerAvatarUrl],
+      userId,
+    );
     return this.toSafeUser(updated);
   }
 
@@ -239,6 +274,15 @@ export class UsersService {
     assertAccountActive(user);
     if (!hasCompletedSellerProfile(user)) {
       throw new BadRequestException('Todavía no tenés un perfil de vendedor');
+    }
+
+    if (dto.sellerAvatarUrl?.trim()) {
+      validateImageUrls([dto.sellerAvatarUrl.trim()]);
+      assertOwnedImageUrls(
+        [dto.sellerAvatarUrl.trim()],
+        userId,
+        user.sellerAvatarUrl ? [user.sellerAvatarUrl] : [],
+      );
     }
 
     const profileData = this.sellerProfileData(dto);
@@ -252,6 +296,11 @@ export class UsersService {
       where: { id: userId },
       data: profileData,
     });
+    await this.storageObjects.deleteRemovedBestEffort(
+      [user.sellerAvatarUrl],
+      [updated.sellerAvatarUrl],
+      userId,
+    );
     return this.toSafeUser(updated);
   }
 

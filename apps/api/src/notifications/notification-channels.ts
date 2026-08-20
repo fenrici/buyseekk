@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationType } from '@prisma/client';
+import { notificationDeepLinkPath } from '@buyseekk/shared';
 import { EmailService } from '../auth/email.service';
 import { escapeHtml } from '../common/utils/escape-html';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,31 +38,8 @@ const EMAIL_TYPES = new Set<NotificationType>([
 /** Ventana para no reenviar email de NEW_MESSAGE en un chat activo. */
 export const NEW_MESSAGE_EMAIL_WINDOW_MS = 10 * 60 * 1000;
 
-/** Rutas web existentes por tipo. Buyers no usan `/requests/:id` (pantalla seller). */
 export function notificationEmailPath(type: NotificationType, entityId: string | null): string {
-  switch (type) {
-    case NotificationType.NEW_OFFER:
-      return '/buyer/offers';
-    case NotificationType.OFFER_ACCEPTED:
-    case NotificationType.OFFER_REJECTED:
-      return '/seller/offers';
-    case NotificationType.DEAL_COMPLETED:
-      return entityId ? `/chats/${entityId}` : '/seller/offers';
-    case NotificationType.NEGOTIATION_ENDED:
-      return entityId ? `/chats/${entityId}` : '/chats';
-    case NotificationType.NEW_MESSAGE:
-      return entityId ? `/chats/${entityId}` : '/chats';
-    case NotificationType.NEW_MATCHING_REQUEST:
-      return entityId ? `/requests/${entityId}` : '/seller';
-    case NotificationType.REQUEST_EXPIRING:
-    case NotificationType.REQUEST_INACTIVE:
-    case NotificationType.REQUEST_CLOSED:
-      return '/buyer?tab=mine';
-    case NotificationType.EMAIL_VERIFIED:
-      return '/profile';
-    default:
-      return '/profile';
-  }
+  return notificationDeepLinkPath(type, entityId);
 }
 
 @Injectable()

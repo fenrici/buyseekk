@@ -459,7 +459,7 @@ describe('Storage and uploads (e2e)', () => {
 
       expect(res.body.avatarUrl).toBe(second);
       const stored = await prisma.user.findUnique({ where: { id: user.user.id } });
-      expect(stored?.avatarUrl).toBe(second);
+      expect(stored?.buyerAvatarUrl).toBe(second);
     });
 
     it('removes replaced request images best-effort and keeps offer history images', async () => {

@@ -50,11 +50,12 @@ export function ProfileEditForm({
       {saved && <p className="profile-form__alert profile-form__alert--success">{t('profile.saved')}</p>}
 
       <div className="profile-form__photo">
+        <p className="profile-form__photo-label">{t('profile.buyerPhotoLabel')}</p>
         <div className="profile-form__photo-row">
           <Avatar name={form.name || user.name} url={form.avatarUrl || null} size={72} />
           <div className="profile-form__photo-actions">
             <button type="button" className="profile-form__photo-btn" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              {uploading ? t('profile.uploading') : t('profile.changePhoto')}
+              {uploading ? t('profile.uploading') : t('profile.changeBuyerPhoto')}
             </button>
             {form.avatarUrl && (
               <button type="button" className="profile-form__photo-btn profile-form__photo-btn--danger" disabled={uploading} onClick={() => onUpdate('avatarUrl', '')}>

@@ -46,6 +46,11 @@ export class SellerProfileDto {
   @IsString()
   @MaxLength(200)
   website?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  sellerAvatarUrl?: string;
 }
 
 export class UpdateSellerProfileDto extends SellerProfileDto {
@@ -105,6 +110,11 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(500)
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  buyerAvatarUrl?: string;
 }
 
 class NotificationPreferencesPatchDto {
