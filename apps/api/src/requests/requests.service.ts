@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Country, Currency, NegotiationEndedBy, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
+import { CarCondition, Country, Currency, NegotiationEndedBy, OfferStatus, OperationType, RequestCategory, RequestStatus, UserRole } from '@prisma/client';
 import {
   citiesForCountry,
   isValidBrand,
@@ -20,6 +20,9 @@ import {
   isValidUsAreaLocation,
   isValidUsRequestArea,
   parseUsAreaLocation,
+  CAR_COLOR_NO_PREFERENCE,
+  isValidAutoMileagePreference,
+  isValidMileageValue,
 } from '@buyseekk/shared';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
 import { assertValidMoneyAmount } from '../common/utils/money-limits';
@@ -71,6 +74,7 @@ const STRUCTURAL_FIELDS = new Set([
   'carModel',
   'carColor',
   'carYearMin',
+  'carCondition',
   'maxMileage',
   'bedrooms',
   'minSqm',
@@ -311,8 +315,8 @@ export class RequestsService {
     }
 
     if (dto.category === RequestCategory.AUTOS) {
-      if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.carYearMin == null || dto.maxMileage == null) {
-        throw new BadRequestException('Marca, modelo, color, año y millaje son obligatorios para autos');
+      if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.carYearMin == null) {
+        throw new BadRequestException('Marca, modelo, color y año son obligatorios para autos');
       }
       if (user.country !== Country.US) {
         if (!dto.zone) throw new BadRequestException('Zona obligatoria para autos');
@@ -325,7 +329,10 @@ export class RequestsService {
       if (!isValidModel(dto.carBrand, dto.carModel)) throw new BadRequestException('Modelo no válido');
       if (!isValidColor(dto.carColor)) throw new BadRequestException('Color no válido');
       if (!isValidCarYear(dto.carYearMin)) throw new BadRequestException('Año no válido');
-      if (dto.maxMileage < 0 || dto.maxMileage > 500000) {
+      if (!isValidAutoMileagePreference(dto.carCondition ?? null, dto.maxMileage ?? null)) {
+        throw new BadRequestException('Preferencia de millaje no válida');
+      }
+      if (dto.maxMileage != null && !isValidMileageValue(dto.maxMileage)) {
         throw new BadRequestException('Millaje no válido');
       }
     } else if (dto.category === RequestCategory.INMOBILIARIA) {
@@ -349,7 +356,7 @@ export class RequestsService {
       if (dto.minSqm != null && dto.maxSqm != null && dto.minSqm > dto.maxSqm) {
         throw new BadRequestException('El mínimo de m² no puede superar el máximo');
       }
-      if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.maxMileage != null) {
+      if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.carCondition != null || dto.maxMileage != null) {
         throw new BadRequestException('Los campos de auto solo aplican a solicitudes de autos');
       }
     } else {
@@ -399,7 +406,11 @@ export class RequestsService {
           carModel: dto.category === RequestCategory.AUTOS ? dto.carModel : null,
           carColor: dto.category === RequestCategory.AUTOS ? dto.carColor! : null,
           carYearMin: dto.category === RequestCategory.AUTOS ? dto.carYearMin! : null,
-          maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage! : null,
+          carCondition:
+            dto.category === RequestCategory.AUTOS && dto.carCondition === CarCondition.NEW
+              ? CarCondition.NEW
+              : null,
+          maxMileage: dto.category === RequestCategory.AUTOS ? dto.maxMileage ?? null : null,
         },
         include: {
           user: { select: { id: true, name: true, country: true, currency: true, avatarUrl: true } },
@@ -433,6 +444,7 @@ export class RequestsService {
       filters.carModel ||
       filters.carColor ||
       filters.carYearMin != null ||
+      filters.carCondition ||
       filters.maxMileage
     );
     const hasEstateFilter = !!(
@@ -478,7 +490,11 @@ export class RequestsService {
     if (filters.bedrooms) where.bedrooms = filters.bedrooms;
     if (filters.carBrand) where.carBrand = filters.carBrand;
     if (filters.carModel) where.carModel = filters.carModel;
-    if (filters.carColor) where.carColor = filters.carColor;
+    if (filters.carColor) {
+      extraFilters.push({
+        OR: [{ carColor: filters.carColor }, { carColor: CAR_COLOR_NO_PREFERENCE }],
+      });
+    }
 
     const rangeFilters: Record<string, unknown>[] = [];
     if (filters.carYearMin != null) {
@@ -486,8 +502,17 @@ export class RequestsService {
         OR: [{ carYearMin: null }, { carYearMin: { lte: filters.carYearMin } }],
       });
     }
+    if (filters.carCondition) {
+      extraFilters.push({ carCondition: filters.carCondition });
+    }
     if (filters.maxMileage != null) {
-      rangeFilters.push({ OR: [{ maxMileage: null }, { maxMileage: { lte: filters.maxMileage } }] });
+      rangeFilters.push({
+        OR: [
+          { AND: [{ maxMileage: null }, { carCondition: null }] },
+          { carCondition: CarCondition.NEW },
+          { maxMileage: { lte: filters.maxMileage } },
+        ],
+      });
     }
     if (filters.minSqm != null) {
       rangeFilters.push({ OR: [{ minSqm: null }, { minSqm: { lte: filters.minSqm } }] });
@@ -862,7 +887,8 @@ export class RequestsService {
       const carModel = dto.carModel ?? req.carModel;
       const carColor = dto.carColor ?? req.carColor;
       const carYearMin = dto.carYearMin ?? req.carYearMin;
-      const maxMileage = dto.maxMileage ?? req.maxMileage;
+      const carCondition = dto.carCondition !== undefined ? dto.carCondition : req.carCondition;
+      const maxMileage = dto.maxMileage !== undefined ? dto.maxMileage : req.maxMileage;
       const zone = dto.zone ?? req.zone;
       const usAuto = user.country === Country.US;
 
@@ -879,7 +905,13 @@ export class RequestsService {
         if (dto.carYearMin !== undefined && !isValidCarYear(dto.carYearMin)) {
           throw new BadRequestException('Año no válido');
         }
-        if (dto.maxMileage !== undefined && (dto.maxMileage < 0 || dto.maxMileage > 500000)) {
+        if (
+          (dto.carCondition !== undefined || dto.maxMileage !== undefined) &&
+          !isValidAutoMileagePreference(carCondition, maxMileage)
+        ) {
+          throw new BadRequestException('Preferencia de millaje no válida');
+        }
+        if (dto.maxMileage !== undefined && dto.maxMileage != null && !isValidMileageValue(dto.maxMileage)) {
           throw new BadRequestException('Millaje no válido');
         }
         if (!usAuto && dto.zone !== undefined) {
@@ -890,7 +922,7 @@ export class RequestsService {
         }
       }
 
-      if (!carBrand || !carModel || !carColor || carYearMin == null || maxMileage == null) {
+      if (!carBrand || !carModel || !carColor || carYearMin == null) {
         throw new BadRequestException('Datos de auto incompletos');
       }
       if (!usAuto && !zone) {
@@ -923,7 +955,7 @@ export class RequestsService {
         if (minSqm != null && maxSqm != null && minSqm > maxSqm) {
           throw new BadRequestException('El mínimo de m² no puede superar el máximo');
         }
-        if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.maxMileage != null) {
+        if (dto.carBrand || dto.carModel || dto.carColor || dto.carYearMin != null || dto.carCondition != null || dto.maxMileage != null) {
           throw new BadRequestException('Los campos de auto solo aplican a solicitudes de autos');
         }
       }
@@ -972,7 +1004,18 @@ export class RequestsService {
         ...(dto.carModel !== undefined ? { carModel: dto.carModel } : {}),
         ...(dto.carColor !== undefined ? { carColor: dto.carColor } : {}),
         ...(dto.carYearMin !== undefined ? { carYearMin: dto.carYearMin } : {}),
-        ...(dto.maxMileage !== undefined ? { maxMileage: dto.maxMileage } : {}),
+        ...(dto.carCondition !== undefined
+          ? {
+              carCondition: dto.carCondition === CarCondition.NEW ? CarCondition.NEW : null,
+              ...(dto.carCondition === CarCondition.NEW ? { maxMileage: null } : {}),
+            }
+          : {}),
+        ...(dto.maxMileage !== undefined
+          ? {
+              maxMileage: dto.maxMileage,
+              ...(dto.maxMileage != null ? { carCondition: null } : {}),
+            }
+          : {}),
         lastBuyerActivityAt: new Date(),
         lastActivityAt: new Date(),
       },

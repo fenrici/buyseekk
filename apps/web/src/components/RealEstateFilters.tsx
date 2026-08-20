@@ -57,7 +57,7 @@ export function RealEstateFilters({
             <option value="">{t('seller.anySqm')}</option>
             {SQM_PRESETS.map((n) => (
               <option key={n} value={String(n)}>
-                ≥ {n} m²
+                {t('request.sqmFrom', { n: String(n) })}
               </option>
             ))}
           </select>
@@ -73,7 +73,7 @@ export function RealEstateFilters({
             <option value="">{t('seller.anySqm')}</option>
             {SQM_PRESETS.map((n) => (
               <option key={n} value={String(n)}>
-                ≤ {n} m²
+                {t('request.sqmUpTo', { n: String(n) })}
               </option>
             ))}
           </select>

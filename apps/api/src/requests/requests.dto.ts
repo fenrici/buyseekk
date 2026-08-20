@@ -1,4 +1,4 @@
-import { Country, Currency, OperationType, RequestCategory } from '@prisma/client';
+import { CarCondition, Country, Currency, OperationType, RequestCategory } from '@prisma/client';
 import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
 
@@ -89,7 +89,11 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsInt()
-  @Min(0)
-  @Max(500000)
+  @Min(5000)
+  @Max(100000)
   maxMileage?: number;
+
+  @IsOptional()
+  @IsEnum(CarCondition)
+  carCondition?: CarCondition;
 }

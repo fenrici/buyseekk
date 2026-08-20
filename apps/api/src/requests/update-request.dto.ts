@@ -1,4 +1,4 @@
-import { Currency, OperationType } from '@prisma/client';
+import { CarCondition, Currency, OperationType } from '@prisma/client';
 import {
   ArrayMaxSize,
   IsArray,
@@ -97,7 +97,11 @@ export class UpdateRequestDto {
 
   @IsOptional()
   @IsInt()
-  @Min(0)
-  @Max(500000)
+  @Min(5000)
+  @Max(100000)
   maxMileage?: number;
+
+  @IsOptional()
+  @IsEnum(CarCondition)
+  carCondition?: CarCondition;
 }

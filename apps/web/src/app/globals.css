@@ -6559,6 +6559,74 @@ html:has(.panel-dark) body {
   }
 }
 
+.seller-request-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.seller-request-card__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.seller-request-card__operation {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.seller-request-card__title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #fff;
+  word-break: break-word;
+}
+
+.seller-request-card__spec,
+.seller-request-card__detail {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(203, 213, 225, 0.95);
+}
+
+.seller-request-card__budget {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--accent, #34d399);
+  line-height: 1.2;
+}
+
+.seller-request-card__location {
+  font-size: 0.8125rem;
+  color: rgba(148, 163, 184, 0.95);
+  line-height: 1.35;
+}
+
+.seller-request-card__description {
+  margin: 0.125rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(148, 163, 184, 0.92);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .seller-request-card__title {
+    font-size: 1.25rem;
+  }
+}
+
 .seller-filter-label {
   display: block;
   margin-bottom: 0.5rem;

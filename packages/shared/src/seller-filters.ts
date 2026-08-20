@@ -1,4 +1,6 @@
 /** Estado de filtros del panel vendedor (Explorar solicitudes). */
+import { CAR_CONDITION_NEW, isCarColorNoPreference, isCarConditionNew } from './car-catalog';
+import type { CarCondition } from './types';
 import { requestMatchesUsLocationFilter } from './request-location';
 
 export type SellerFilterState = {
@@ -14,6 +16,7 @@ export type SellerFilterState = {
   carModel: string;
   carColor: string;
   carYearMin: string;
+  carCondition: string;
   maxMileage: string;
 };
 
@@ -30,6 +33,7 @@ export const EMPTY_SELLER_FILTERS: SellerFilterState = {
   carModel: '',
   carColor: '',
   carYearMin: '',
+  carCondition: '',
   maxMileage: '',
 };
 
@@ -64,6 +68,7 @@ export function countActiveSellerFilters(
     if (state.carModel) n++;
     if (state.carColor) n++;
     if (state.carYearMin) n++;
+    if (state.carCondition) n++;
     if (state.maxMileage) n++;
   }
   return n;
@@ -112,6 +117,7 @@ export function sellerFiltersToSearchParams(
     if (state.carModel) params.set('carModel', state.carModel);
     if (state.carColor) params.set('carColor', state.carColor);
     if (state.carYearMin) params.set('carYearMin', state.carYearMin);
+    if (state.carCondition) params.set('carCondition', state.carCondition);
     if (state.maxMileage) params.set('maxMileage', state.maxMileage);
   }
   return params;
@@ -144,6 +150,7 @@ export type MatchableRequest = {
   carModel: string | null;
   carColor: string | null;
   carYearMin: number | null;
+  carCondition: CarCondition | null;
   maxMileage: number | null;
 };
 
@@ -184,7 +191,13 @@ export function requestMatchesSellerFilters(
   if (cat !== 'INMOBILIARIA' && request.category === 'AUTOS') {
     if (filters.carBrand && request.carBrand !== filters.carBrand) return false;
     if (filters.carModel && request.carModel !== filters.carModel) return false;
-    if (filters.carColor && request.carColor !== filters.carColor) return false;
+    if (filters.carColor && request.carColor !== filters.carColor && !isCarColorNoPreference(request.carColor)) {
+      return false;
+    }
+
+    if (filters.carCondition) {
+      if (request.carCondition !== CAR_CONDITION_NEW) return false;
+    }
 
     if (filters.carYearMin) {
       const year = parseInt(filters.carYearMin, 10);
@@ -192,7 +205,14 @@ export function requestMatchesSellerFilters(
     }
     if (filters.maxMileage) {
       const mileage = parseInt(filters.maxMileage, 10);
-      if (!isNaN(mileage) && request.maxMileage != null && request.maxMileage > mileage) return false;
+      if (
+        !isNaN(mileage) &&
+        !isCarConditionNew(request.carCondition) &&
+        request.maxMileage != null &&
+        request.maxMileage > mileage
+      ) {
+        return false;
+      }
     }
   }
 

@@ -1,3 +1,5 @@
+import type { CarCondition } from './types';
+
 export const CAR_COLORS = [
   'Negro',
   'Blanco',
@@ -14,6 +16,91 @@ export const CAR_COLORS = [
   'Otro',
 ] as const;
 
+/** Buyer accepts any color — does not restrict seller matching. */
+export const CAR_COLOR_NO_PREFERENCE = 'Sin preferencia';
+
+/** Stored enum value for new-car preference (distinct from max mileage). */
+export const CAR_CONDITION_NEW = 'NEW' as const;
+
+/** Stored when buyer has no max mileage preference. */
+export const MILEAGE_NO_PREFERENCE = null;
+
+export const MILEAGE_PRESETS = [5_000, 10_000, 25_000, 50_000, 75_000, 100_000] as const;
+
+export function carColorOptions(): readonly string[] {
+  return [CAR_COLOR_NO_PREFERENCE, ...CAR_COLORS];
+}
+
+export function isCarColorNoPreference(color: string | null | undefined): boolean {
+  return color === CAR_COLOR_NO_PREFERENCE;
+}
+
+export function isCarConditionNew(carCondition: CarCondition | string | null | undefined): boolean {
+  return carCondition === CAR_CONDITION_NEW;
+}
+
+export function isMileageNoPreference(maxMileage: number | null | undefined): boolean {
+  return maxMileage == null;
+}
+
+export function isValidMileagePreset(maxMileage: number): boolean {
+  return (MILEAGE_PRESETS as readonly number[]).includes(maxMileage);
+}
+
+export function isValidMileageValue(maxMileage: number): boolean {
+  return Number.isInteger(maxMileage) && maxMileage >= 5_000 && maxMileage <= 100_000;
+}
+
+export function mileagePresetLabel(
+  value: number,
+  locale: 'ES' | 'EN' = 'ES',
+): string {
+  const prefix = locale === 'EN' ? 'Up to' : 'Hasta';
+  return `${prefix} ${value.toLocaleString(locale === 'EN' ? 'en-US' : 'es-AR')} mi`;
+}
+
+export function formatCarConditionLabel(locale: 'ES' | 'EN' = 'ES'): string {
+  return locale === 'EN' ? 'New' : 'Nuevo';
+}
+
+/** Unified create/filter value: NUEVO | preset mileage | empty (sin preferencia). */
+export function carMileagePreferenceValue(
+  carCondition: CarCondition | string | null | undefined,
+  maxMileage: number | null | undefined,
+): string {
+  if (isCarConditionNew(carCondition)) return CAR_CONDITION_NEW;
+  if (maxMileage != null) return String(maxMileage);
+  return '';
+}
+
+export function parseCarMileagePreference(value: string): {
+  carCondition: CarCondition | null;
+  maxMileage: number | null;
+} {
+  if (value === CAR_CONDITION_NEW) {
+    return { carCondition: CAR_CONDITION_NEW, maxMileage: null };
+  }
+  if (!value.trim()) {
+    return { carCondition: null, maxMileage: null };
+  }
+  const maxMileage = parseInt(value, 10);
+  if (Number.isNaN(maxMileage) || !isValidMileagePreset(maxMileage)) {
+    return { carCondition: null, maxMileage: null };
+  }
+  return { carCondition: null, maxMileage };
+}
+
+export function isValidAutoMileagePreference(
+  carCondition: CarCondition | string | null | undefined,
+  maxMileage: number | null | undefined,
+): boolean {
+  const wantsNew = isCarConditionNew(carCondition);
+  const hasMileage = maxMileage != null;
+  if (wantsNew && hasMileage) return false;
+  if (carCondition != null && !wantsNew) return false;
+  if (hasMileage && !isValidMileageValue(maxMileage!)) return false;
+  return true;
+}
 export const CAR_BRANDS: Record<string, string[]> = {
   Ferrari: [
     '296 GTB', '296 GTS', '308', '328', '348', '360 Modena', '430', '458 Italia', '458 Speciale',
@@ -147,7 +234,6 @@ export const CAR_BRANDS: Record<string, string[]> = {
 
 export const CAR_BRAND_LIST = Object.keys(CAR_BRANDS).sort();
 
-export const MILEAGE_PRESETS = [10000, 20000, 30000, 50000, 75000, 100000, 150000];
 
 export const CAR_YEAR_MIN = 1990;
 
@@ -174,5 +260,5 @@ export function isValidModel(brand: string, model: string) {
 }
 
 export function isValidColor(color: string) {
-  return (CAR_COLORS as readonly string[]).includes(color);
+  return carColorOptions().includes(color);
 }

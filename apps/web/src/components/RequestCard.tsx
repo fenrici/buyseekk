@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { requestHasActiveNegotiation } from '@buyseekk/shared';
 import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
-import { RequestLocationText } from '@/components/RequestLocationText';
 import { RequestMeta } from '@/components/RequestMeta';
+import { RequestLocationText } from '@/components/RequestLocationText';
+import { SellerMarketplaceRequestCard } from '@/components/SellerMarketplaceRequestCard';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
@@ -44,17 +45,7 @@ export function RequestCard(props: Props) {
           <div className="absolute right-3 top-3 z-10">
             <SaveRequestButton requestId={request.id} initialSaved={request.isSaved} />
           </div>
-          <div className="mb-2 pr-10">
-            <RequestStatusBadge status={request.status} />
-          </div>
-          <RequestMeta request={request} locale={locale} size="sm" />
-          <RequestLocationText
-            className="mt-2 text-xs text-slate-400"
-            location={request.location}
-            zone={request.zone}
-            country={request.country}
-            locale={locale}
-          />
+          <SellerMarketplaceRequestCard request={request} locale={locale} className="pr-8" />
           <RequestActivity
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}

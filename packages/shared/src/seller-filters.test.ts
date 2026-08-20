@@ -48,6 +48,7 @@ const bmwMiamiRequest = {
   carModel: 'Serie 3',
   carColor: 'Negro',
   carYearMin: 2019,
+  carCondition: null,
   maxMileage: 40000,
 };
 

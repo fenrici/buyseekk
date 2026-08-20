@@ -650,4 +650,52 @@ describe('Request lifecycle (e2e)', () => {
       expect(expiring).toHaveLength(1);
     });
   });
+
+  describe('auto mileage preference', () => {
+    it('rejects NEW together with maxMileage', async () => {
+      const buyer = await createBuyer();
+      await request(app.getHttpServer())
+        .post('/api/requests')
+        .set(authHeader(buyer.token))
+        .send({
+          category: 'AUTOS',
+          requirements: 'Busco auto nuevo sin mezclar millaje en el payload.',
+          budget: 120000,
+          currency: 'USD',
+          location: 'Miami, FL',
+          country: 'US',
+          carBrand: 'Porsche',
+          carModel: '911 Carrera',
+          carColor: 'Negro',
+          carYearMin: 2024,
+          carCondition: 'NEW',
+          maxMileage: 5000,
+        })
+        .expect(400);
+    });
+
+    it('accepts NEW with null maxMileage', async () => {
+      const buyer = await createBuyer();
+      const res = await request(app.getHttpServer())
+        .post('/api/requests')
+        .set(authHeader(buyer.token))
+        .send({
+          category: 'AUTOS',
+          requirements: 'Busco auto nuevo de concesionario en Miami.',
+          budget: 120000,
+          currency: 'USD',
+          location: 'Miami, FL',
+          country: 'US',
+          carBrand: 'Porsche',
+          carModel: '911 Carrera',
+          carColor: 'Negro',
+          carYearMin: 2024,
+          carCondition: 'NEW',
+          maxMileage: null,
+        })
+        .expect(201);
+      expect(res.body.carCondition).toBe('NEW');
+      expect(res.body.maxMileage).toBeNull();
+    });
+  });
 });

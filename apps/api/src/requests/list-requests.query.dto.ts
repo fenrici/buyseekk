@@ -1,4 +1,4 @@
-import { OperationType, RequestCategory } from '@prisma/client';
+import { CarCondition, OperationType, RequestCategory } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { PaginationQueryDto } from '../common/dto/pagination.query.dto';
@@ -67,7 +67,11 @@ export class ListRequestsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
-  @Max(500000)
+  @Min(5000)
+  @Max(100000)
   maxMileage?: number;
+
+  @IsOptional()
+  @IsEnum(CarCondition)
+  carCondition?: CarCondition;
 }

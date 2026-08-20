@@ -62,6 +62,10 @@ enum OperationType {
   ALQUILER
 }
 
+enum CarCondition {
+  NEW
+}
+
 enum OfferStatus {
   PENDIENTE
   ACEPTADA
@@ -357,6 +361,7 @@ model Request {
   carModel     String?
   carColor     String?
   carYearMin   Int?
+  carCondition CarCondition?
   maxMileage   Int?
   active       Boolean         @default(true)
   hiddenByModeration       Boolean @default(false)

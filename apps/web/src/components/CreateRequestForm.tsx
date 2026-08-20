@@ -5,12 +5,18 @@ import { api, formatMoney } from '@/lib/api';
 import {
   BEDROOM_OPTIONS,
   CAR_BRAND_LIST,
-  CAR_COLORS,
+  CAR_COLOR_NO_PREFERENCE,
+  carColorOptions,
   carYearPresets,
   citiesForCountry,
   formatRequestLocationDisplay,
+  formatAutoSpecLine,
+  CAR_CONDITION_NEW,
+  formatCarConditionLabel,
   MILEAGE_PRESETS,
+  mileagePresetLabel,
   modelsForBrand,
+  parseCarMileagePreference,
   neighborhoodsForUsArea,
   parseUsAreaLocation,
   SQM_PRESETS,
@@ -47,7 +53,7 @@ type FormState = {
   carModel: string;
   carColor: string;
   carYearMin: string;
-  maxMileage: string;
+  mileagePreference: string;
   zone: string;
   bedrooms: string;
   minSqm: string;
@@ -175,9 +181,9 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
     operation: 'COMPRA',
     carBrand: defaultBrand,
     carModel: modelsForBrand(defaultBrand)[0] ?? '',
-    carColor: CAR_COLORS[0],
+    carColor: CAR_COLOR_NO_PREFERENCE,
     carYearMin: String(carYearPresets()[3] ?? new Date().getFullYear() - 3),
-    maxMileage: String(MILEAGE_PRESETS[2] ?? 30000),
+    mileagePreference: '',
     zone: useUsLocations ? '' : zonesForCountryAndCity(user.country, cities[0] ?? '')[0] ?? '',
     bedrooms: '2',
     minSqm: '',
@@ -202,7 +208,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         next.carModel = '';
         next.carColor = '';
         next.carYearMin = '';
-        next.maxMileage = '';
+        next.mileagePreference = '';
         next.zone = useUsLocations ? '' : zonesForCountryAndCity(next.country, next.location)[0] ?? '';
       }
       if (field === 'category' && value === 'AUTOS') {
@@ -210,9 +216,9 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         const brand = CAR_BRAND_LIST[0] ?? '';
         next.carBrand = brand;
         next.carModel = modelsForBrand(brand)[0] ?? '';
-        next.carColor = CAR_COLORS[0];
+        next.carColor = CAR_COLOR_NO_PREFERENCE;
         next.carYearMin = String(carYearPresets()[3] ?? new Date().getFullYear() - 3);
-        next.maxMileage = String(MILEAGE_PRESETS[2] ?? 30000);
+        next.mileagePreference = '';
         next.zone = useUsLocations ? '' : zonesForCountryAndCity(next.country, next.location)[0] ?? '';
         next.bedrooms = '2';
         next.minSqm = '';
@@ -243,7 +249,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
     if (targetStep >= 1) {
       if (!useUsLocations && !form.zone) return t('request.zoneRequired');
       if (isAuto) {
-        if (!form.carBrand || !form.carModel || !form.carColor || !form.carYearMin || !form.maxMileage) {
+        if (!form.carBrand || !form.carModel || !form.carColor || !form.carYearMin) {
           return t('request.autoRequired');
         }
       } else {
@@ -314,7 +320,9 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         payload.carModel = form.carModel;
         payload.carColor = form.carColor;
         payload.carYearMin = parseInt(form.carYearMin, 10);
-        payload.maxMileage = parseInt(form.maxMileage, 10);
+        const mileagePref = parseCarMileagePreference(form.mileagePreference);
+        payload.carCondition = mileagePref.carCondition;
+        payload.maxMileage = mileagePref.maxMileage;
         payload.zone = form.zone || null;
         payload.title = form.title.trim() || t('request.autoTitle', { brand: form.carBrand, model: form.carModel });
       } else {
@@ -407,7 +415,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
                 <select className="input mt-1 w-full" value={form.minSqm} onChange={(e) => updateField('minSqm', e.target.value)}>
                   <option value="">{t('request.noMinSqm')}</option>
                   {SQM_PRESETS.map((n) => (
-                    <option key={n} value={String(n)}>≥ {n} m²</option>
+                    <option key={n} value={String(n)}>{t('request.sqmFrom', { n: String(n) })}</option>
                   ))}
                 </select>
               </label>
@@ -416,7 +424,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
                 <select className="input mt-1 w-full" value={form.maxSqm} onChange={(e) => updateField('maxSqm', e.target.value)}>
                   <option value="">{t('request.noMaxSqm')}</option>
                   {SQM_PRESETS.map((n) => (
-                    <option key={n} value={String(n)}>≤ {n} m²</option>
+                    <option key={n} value={String(n)}>{t('request.sqmUpTo', { n: String(n) })}</option>
                   ))}
                 </select>
               </label>
@@ -447,8 +455,10 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
                 <label className="block">
                   <span className="text-xs font-semibold text-slate-600">{t('request.carColor')} *</span>
                   <select className="input mt-1 w-full" value={form.carColor} onChange={(e) => updateField('carColor', e.target.value)}>
-                    {CAR_COLORS.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    {carColorOptions().map((c) => (
+                      <option key={c} value={c}>
+                        {c === CAR_COLOR_NO_PREFERENCE ? t('request.noColorPreference') : c}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -456,18 +466,24 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
                   <span className="text-xs font-semibold text-slate-600">{t('request.carYear')} *</span>
                   <select className="input mt-1 w-full" value={form.carYearMin} onChange={(e) => updateField('carYearMin', e.target.value)}>
                     {carYearPresets().map((y) => (
-                      <option key={y} value={String(y)}>≥ {y}</option>
+                      <option key={y} value={String(y)}>{t('request.yearOrNewer', { year: String(y) })}</option>
                     ))}
                   </select>
                 </label>
                 <label className="block sm:col-span-2">
                   <span className="text-xs font-semibold text-slate-600">{t('request.selectMileage')} *</span>
-                  <select className="input mt-1 w-full" value={form.maxMileage} onChange={(e) => updateField('maxMileage', e.target.value)}>
+                  <select
+                    className="input mt-1 w-full"
+                    value={form.mileagePreference}
+                    onChange={(e) => updateField('mileagePreference', e.target.value)}
+                  >
+                    <option value={CAR_CONDITION_NEW}>{formatCarConditionLabel(user.locale)}</option>
                     {MILEAGE_PRESETS.map((m) => (
                       <option key={m} value={String(m)}>
-                        ≤ {m.toLocaleString()} {t('seller.miles')}
+                        {mileagePresetLabel(m, user.locale)}
                       </option>
                     ))}
+                    <option value="">{t('request.noMileagePreference')}</option>
                   </select>
                 </label>
               </div>
@@ -566,7 +582,19 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
             <p className="mt-2 font-semibold text-slate-200">{summaryTitle}</p>
             <p className="mt-1 text-sm text-slate-400">
               {formatRequestLocationDisplay({ location: form.location, zone: form.zone, country: form.country }, user.locale)}
-              {isAuto && ` · ${form.carBrand} ${form.carModel} · ≥ ${form.carYearMin}`}
+              {isAuto &&
+                (() => {
+                  const pref = parseCarMileagePreference(form.mileagePreference);
+                  const spec = formatAutoSpecLine(
+                    {
+                      carYearMin: parseInt(form.carYearMin, 10) || null,
+                      carCondition: pref.carCondition,
+                      maxMileage: pref.maxMileage,
+                    },
+                    user.locale,
+                  );
+                  return spec ? ` · ${form.carBrand} ${form.carModel} · ${spec}` : ` · ${form.carBrand} ${form.carModel}`;
+                })()}
             </p>
             <p className="mt-1 text-sm font-medium text-indigo-300">
               {budgetLabel}

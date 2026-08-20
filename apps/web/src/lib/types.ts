@@ -1,3 +1,5 @@
+import type { CarCondition } from '@buyseekk/shared';
+
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
@@ -103,6 +105,7 @@ export interface RequestItem {
   carModel?: string | null;
   carColor?: string | null;
   carYearMin?: number | null;
+  carCondition?: CarCondition | null;
   maxMileage?: number | null;
   offersCount: number;
   pendingOffersCount: number;
@@ -152,6 +155,7 @@ export interface PublicRequestItem {
   carModel?: string | null;
   carColor?: string | null;
   carYearMin?: number | null;
+  carCondition?: CarCondition | null;
   maxMileage?: number | null;
   imageUrls?: string[];
   createdAt: string;

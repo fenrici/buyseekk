@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
-import { RequestLocationText } from '@/components/RequestLocationText';
-import { RequestMeta } from '@/components/RequestMeta';
-import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
+import { SellerMarketplaceRequestCard } from '@/components/SellerMarketplaceRequestCard';
+import { RequestActivity } from '@/components/RequestStatusBadge';
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
 import { UserRatingBadge } from '@/components/UserRatingBadge';
 import { useT } from '@/lib/i18n';
@@ -33,17 +32,7 @@ export function SellerSavedRequestCard({ request, locale, onUnsaved }: Props) {
           />
         </div>
 
-        <div className="mb-2 pr-10">
-          <RequestStatusBadge status={request.status} />
-        </div>
-        <RequestMeta request={request} locale={locale} size="sm" />
-        <RequestLocationText
-          className="mt-2 text-xs text-slate-400"
-          location={request.location}
-          zone={request.zone}
-          country={request.country}
-          locale={locale}
-        />
+        <SellerMarketplaceRequestCard request={request} locale={locale} className="pr-8" />
         <RequestActivity
           offersCount={request.offersCount}
           conversationsCount={request.conversationsCount}

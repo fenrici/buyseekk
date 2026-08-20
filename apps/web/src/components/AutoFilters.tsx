@@ -1,13 +1,26 @@
 'use client';
 
-import { CAR_BRAND_LIST, CAR_COLORS, carYearPresets, MILEAGE_PRESETS, modelsForBrand } from '@buyseekk/shared';
-import { useT } from '@/lib/i18n';
+import {
+  CAR_BRAND_LIST,
+  CAR_COLOR_NO_PREFERENCE,
+  CAR_CONDITION_NEW,
+  carColorOptions,
+  carMileagePreferenceValue,
+  carYearPresets,
+  formatCarConditionLabel,
+  MILEAGE_PRESETS,
+  mileagePresetLabel,
+  modelsForBrand,
+  parseCarMileagePreference,
+} from '@buyseekk/shared';
+import { useLocale, useT } from '@/lib/i18n';
 
 export type AutoFilterValues = {
   carBrand: string;
   carModel: string;
   carColor: string;
   carYearMin: string;
+  carCondition: string;
   maxMileage: string;
 };
 
@@ -23,14 +36,25 @@ export function AutoFilters({
   compact?: boolean;
 }) {
   const t = useT();
+  const locale = useLocale();
   if (!visible) return null;
 
   const models = values.carBrand ? modelsForBrand(values.carBrand) : [];
+  const mileagePreference = carMileagePreferenceValue(values.carCondition, values.maxMileage ? parseInt(values.maxMileage, 10) : null);
 
   function set(field: keyof AutoFilterValues, value: string) {
     const next = { ...values, [field]: value };
     if (field === 'carBrand') next.carModel = '';
     onChange(next);
+  }
+
+  function setMileagePreference(value: string) {
+    const parsed = parseCarMileagePreference(value);
+    onChange({
+      ...values,
+      carCondition: parsed.carCondition ?? '',
+      maxMileage: parsed.maxMileage != null ? String(parsed.maxMileage) : '',
+    });
   }
 
   return (
@@ -74,9 +98,11 @@ export function AutoFilters({
             onChange={(e) => set('carColor', e.target.value)}
           >
             <option value="">{t('seller.allColors')}</option>
-            {CAR_COLORS.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+            {carColorOptions()
+              .filter((c) => c !== CAR_COLOR_NO_PREFERENCE)
+              .map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
           </select>
         </label>
 
@@ -89,7 +115,7 @@ export function AutoFilters({
           >
             <option value="">{t('seller.anyYear')}</option>
             {carYearPresets().map((y) => (
-              <option key={y} value={String(y)}>{y}</option>
+              <option key={y} value={String(y)}>{t('request.yearOrNewer', { year: String(y) })}</option>
             ))}
           </select>
         </label>
@@ -98,13 +124,14 @@ export function AutoFilters({
           <span className="text-xs font-semibold text-slate-500">{t('seller.maxMileage')}</span>
           <select
             className="input mt-1 w-full"
-            value={values.maxMileage}
-            onChange={(e) => set('maxMileage', e.target.value)}
+            value={mileagePreference}
+            onChange={(e) => setMileagePreference(e.target.value)}
           >
             <option value="">{t('seller.anyMileage')}</option>
+            <option value={CAR_CONDITION_NEW}>{formatCarConditionLabel(locale)}</option>
             {MILEAGE_PRESETS.map((m) => (
               <option key={m} value={String(m)}>
-                ≤ {m.toLocaleString()} {t('seller.miles')}
+                {mileagePresetLabel(m, locale)}
               </option>
             ))}
           </select>

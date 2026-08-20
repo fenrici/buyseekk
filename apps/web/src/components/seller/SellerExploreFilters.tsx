@@ -96,7 +96,7 @@ export function SellerExploreFilters({ explore }: Props) {
   const [saveError, setSaveError] = useState('');
   const [toast, setToast] = useState('');
 
-  const chips = buildSellerFilterChips(filters, lockedCategory, t);
+  const chips = buildSellerFilterChips(filters, lockedCategory, t, user.locale);
   const cities = citiesForCountry(user.country);
   const showCategoryFilter = !lockedCategory;
   const desktopCategory = lockedCategory || filters.category;
@@ -373,7 +373,7 @@ export function SellerExploreFilters({ explore }: Props) {
               maxLength={80}
             />
             <ul className="seller-save-summary mt-3">
-              {summarizeSellerFilters(filters, lockedCategory, t).map((line) => (
+              {summarizeSellerFilters(filters, lockedCategory, t, user.locale).map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>

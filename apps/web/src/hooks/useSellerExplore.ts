@@ -28,6 +28,7 @@ function toAutoFilters(state: SellerFilterState) {
     carModel: state.carModel,
     carColor: state.carColor,
     carYearMin: state.carYearMin,
+    carCondition: state.carCondition,
     maxMileage: state.maxMileage,
   };
 }
