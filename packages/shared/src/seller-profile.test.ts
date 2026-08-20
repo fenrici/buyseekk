@@ -146,6 +146,20 @@ assert.equal(companyEn.detailLine, 'Miami, FL');
 assert.ok(!companyEn.titleLine.startsWith('BMW Miami'));
 assert.ok(!companyEn.detailLine.includes('Dealership'));
 
+const companyAsNameBug = formatSellerBuyerIdentity(
+  {
+    role: 'SELLER',
+    sellerType: 'INDIVIDUAL',
+    name: 'BMW Miami',
+    businessName: 'BMW Miami',
+    state: 'FL',
+    city: 'Miami',
+    country: 'US',
+  },
+  'ES',
+);
+assert.notEqual(companyEn.titleLine, companyAsNameBug.titleLine);
+
 assert.equal(
   formatSellerLocation({ city: 'Miami, FL', state: 'FL', country: 'US' }),
   'Miami, FL',

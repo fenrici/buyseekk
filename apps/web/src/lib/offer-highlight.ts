@@ -18,6 +18,13 @@ export function highlightToOfferItem(h: OfferHighlight): OfferItem {
     seller: {
       id: '',
       name: h.sellerName,
+      sellerType: h.sellerType,
+      businessName: h.businessName,
+      state: h.sellerState,
+      city: h.sellerCity,
+      country:
+        h.sellerCountry === 'AR' || h.sellerCountry === 'US' ? h.sellerCountry : undefined,
+      avatarUrl: h.sellerAvatarUrl,
       rating: h.sellerRating
         ? {
             avgStars: h.sellerRating.avgStars,

@@ -275,6 +275,49 @@ describe('Seller profile & offer gating (e2e)', () => {
     expect(restored.body.businessName).toBe('BMW Miami');
   });
 
+  it('exposes seller identity fields so buyer never sees businessName as personal name', async () => {
+    const buyer = await createBuyer();
+    const seller = await createSeller({ sellerType: 'COMPANY' });
+    await completeSellerProfileForOffers(app, seller, {
+      sellerType: 'COMPANY',
+      businessName: 'BMW Miami',
+      state: 'FL',
+      city: 'Miami',
+    });
+    const created = await createRequest(buyer.token);
+
+    await request(app.getHttpServer())
+      .post('/api/offers')
+      .set(authHeader(seller.token))
+      .send(offerPayload(created.id, seller.user.id))
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/offers/received?status=PENDIENTE')
+      .set(authHeader(buyer.token))
+      .expect(200);
+
+    const items = Array.isArray(res.body) ? res.body : res.body.items;
+    expect(items[0].seller.name).toBe('Franco Enrici');
+    expect(items[0].seller.businessName).toBe('BMW Miami');
+    expect(items[0].seller.sellerType).toBe('COMPANY');
+    expect(items[0].seller.state).toBe('FL');
+    expect(items[0].seller.city).toBe('Miami');
+    expect(items[0].seller.name).not.toBe(items[0].seller.businessName);
+
+    const highlights = await request(app.getHttpServer())
+      .get('/api/offers/received/highlights')
+      .set(authHeader(buyer.token))
+      .expect(200);
+
+    const h = highlights.body.highlights[0];
+    expect(h.sellerName).toBe('Franco Enrici');
+    expect(h.businessName).toBe('BMW Miami');
+    expect(h.sellerType).toBe('COMPANY');
+    expect(h.sellerCity).toBe('Miami');
+    expect(h.sellerState).toBe('FL');
+  });
+
   it('exposes formatted seller identity to buyer in received offers', async () => {
     const buyer = await createBuyer();
     const seller = await createSeller({ sellerType: 'COMPANY' });

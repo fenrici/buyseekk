@@ -252,7 +252,14 @@ export interface OfferHighlight {
   price: number;
   currency: string;
   requestTitle: string;
+  /** Always personal User.name — never businessName. */
   sellerName: string;
+  sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
+  businessName?: string | null;
+  sellerState?: string | null;
+  sellerCity?: string | null;
+  sellerCountry?: 'AR' | 'US' | string | null;
+  sellerAvatarUrl?: string | null;
   sellerRating: { avgStars: number | null; reviewCount: number } | null;
   comparisonSummary: OfferComparisonSummary;
 }

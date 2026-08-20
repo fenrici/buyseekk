@@ -4,6 +4,7 @@ import { OfferItem } from '@/lib/types';
 import { formatMoney } from '@/lib/api';
 import { comparisonLabel, useLocale, useT } from '@/lib/i18n';
 import { ImageGallery } from '@/components/ImageGallery';
+import { SellerIdentityDisplay } from '@/components/SellerIdentityDisplay';
 
 const diffStyles = {
   under: 'bg-emerald-100 text-emerald-700',
@@ -28,9 +29,6 @@ export function CompareBlock({
   const label = comparisonLabel(locale, offer.comparison.status, offer.comparison.diff, offer.currency);
   const galleryClass =
     size === 'sm' ? 'compare-image-gallery compare-image-gallery--sm' : 'compare-image-gallery';
-  const sellerLabel = isBuyer
-    ? offer.seller?.businessName || offer.seller?.name
-    : offer.request?.user?.name ?? '—';
 
   return (
     <div className="compare-block mt-4">
@@ -70,9 +68,25 @@ export function CompareBlock({
             </p>
             <span className={`mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${style}`}>{label}</span>
           </div>
-          <div>
+          <div className="compare-block__party min-w-0">
             <p className="text-xs text-slate-500">{isBuyer ? t('compare.seller') : t('compare.buyer')}</p>
-            <p className="text-sm font-semibold">{sellerLabel}</p>
+            {isBuyer ? (
+              <SellerIdentityDisplay
+                seller={{
+                  role: 'SELLER',
+                  name: offer.seller?.name,
+                  sellerType: offer.seller?.sellerType,
+                  businessName: offer.seller?.businessName,
+                  state: offer.seller?.state,
+                  city: offer.seller?.city,
+                  country: offer.seller?.country,
+                }}
+                compact
+                tone="light"
+              />
+            ) : (
+              <p className="text-sm font-semibold text-slate-800">{offer.request?.user?.name ?? '—'}</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-slate-500">{t('compare.proposal')}</p>

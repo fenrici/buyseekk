@@ -3198,6 +3198,7 @@ button.portal-mobile-link {
 
 .seller-identity {
   min-width: 0;
+  max-width: 100%;
 }
 
 .seller-identity__title {
@@ -3206,6 +3207,7 @@ button.portal-mobile-link {
   font-weight: 700;
   line-height: 1.35;
   color: #e2e8f0;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
@@ -3214,6 +3216,7 @@ button.portal-mobile-link {
   font-size: 0.8125rem;
   line-height: 1.4;
   color: #94a3b8;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
@@ -3223,6 +3226,36 @@ button.portal-mobile-link {
 
 .seller-identity--compact .seller-identity__detail {
   font-size: 0.75rem;
+}
+
+.seller-identity--light .seller-identity__title {
+  color: #0f172a;
+}
+
+.seller-identity--light .seller-identity__detail {
+  color: #475569;
+}
+
+.seller-identity__fallback {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.seller-identity__fallback--dark {
+  color: #e2e8f0;
+}
+
+.seller-identity__fallback--light {
+  color: #0f172a;
+}
+
+.compare-block__party {
+  min-width: 0;
+}
+
+.compare-block__party .seller-identity {
+  margin-top: 0.15rem;
 }
 
 .profile-incomplete-cta {

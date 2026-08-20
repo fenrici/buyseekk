@@ -9,6 +9,9 @@ export interface OfferHighlightSeller {
   businessName?: string | null;
   avatarUrl?: string | null;
   sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
+  state?: string | null;
+  city?: string | null;
+  country?: string | null;
   rating?: {
     avgStars: number | null;
     reviewCount: number;
@@ -51,14 +54,37 @@ export interface OfferHighlight {
   price: number;
   currency: string;
   requestTitle: string;
+  /** Always the personal User.name — never businessName. */
   sellerName: string;
+  sellerType?: 'INDIVIDUAL' | 'COMPANY' | null;
+  businessName?: string | null;
+  sellerState?: string | null;
+  sellerCity?: string | null;
+  sellerCountry?: string | null;
+  sellerAvatarUrl?: string | null;
   sellerRating: { avgStars: number | null; reviewCount: number } | null;
   comparisonSummary: ComparisonSummary;
 }
 
-function sellerDisplayName(seller?: OfferHighlightSeller | null): string {
-  if (!seller) return '—';
-  return seller.businessName?.trim() || seller.name;
+/** Personal name only; businessName must never replace User.name. */
+export function sellerPersonalName(seller?: OfferHighlightSeller | null): string {
+  if (!seller?.name?.trim()) return '—';
+  return seller.name.trim();
+}
+
+function toHighlightSellerFields(seller?: OfferHighlightSeller | null) {
+  return {
+    sellerName: sellerPersonalName(seller),
+    sellerType: seller?.sellerType ?? null,
+    businessName: seller?.businessName ?? null,
+    sellerState: seller?.state ?? null,
+    sellerCity: seller?.city ?? null,
+    sellerCountry: seller?.country ?? null,
+    sellerAvatarUrl: seller?.avatarUrl ?? null,
+    sellerRating: seller?.rating
+      ? { avgStars: seller.rating.avgStars, reviewCount: seller.rating.reviewCount }
+      : null,
+  };
 }
 
 function priceFitScore(comparison: PriceComparison): number {
@@ -179,10 +205,7 @@ export function pickOfferHighlights(offers: OfferForHighlight[]): OfferHighlight
         price: o.price,
         currency: o.currency,
         requestTitle: o.requestTitle,
-        sellerName: sellerDisplayName(o.seller),
-        sellerRating: o.seller?.rating
-          ? { avgStars: o.seller.rating.avgStars, reviewCount: o.seller.rating.reviewCount }
-          : null,
+        ...toHighlightSellerFields(o.seller),
         comparisonSummary: buildComparisonSummary(o),
       },
     ];
@@ -228,10 +251,7 @@ export function pickOfferHighlights(offers: OfferForHighlight[]): OfferHighlight
       price: offer.price,
       currency: offer.currency,
       requestTitle: offer.requestTitle,
-      sellerName: sellerDisplayName(offer.seller),
-      sellerRating: offer.seller?.rating
-        ? { avgStars: offer.seller.rating.avgStars, reviewCount: offer.seller.rating.reviewCount }
-        : null,
+      ...toHighlightSellerFields(offer.seller),
       comparisonSummary: buildComparisonSummary(offer),
     });
   }
