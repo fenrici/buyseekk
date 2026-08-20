@@ -36,7 +36,7 @@ function autoRequest(requirements: string, imageUrls?: string[]) {
 
 describe('Storage and uploads (e2e)', () => {
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
 
   describe('with local storage', () => {
     let app: INestApplication<App>;

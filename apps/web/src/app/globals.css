@@ -1166,6 +1166,68 @@ button.portal-mobile-link {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field__input {
+  padding-right: 5.5rem;
+}
+
+.password-field__toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  min-height: 2.75rem;
+  padding: 0.35rem 0.65rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.password-field__toggle:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.55);
+  outline-offset: 2px;
+}
+
+.password-requirements {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.password-requirements__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.password-requirements__item--pending {
+  color: #94a3b8;
+}
+
+.password-requirements__item--met {
+  color: #6ee7b7;
+}
+
+.password-requirements__mark {
+  flex-shrink: 0;
+  width: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .auth-error {
   padding: 10px 12px;
   border-radius: 10px;

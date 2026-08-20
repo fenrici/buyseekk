@@ -16,7 +16,7 @@ describe('End negotiation (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
   let seq = 0;
 
   beforeAll(async () => {

@@ -3,7 +3,9 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { isPasswordValid } from '@buyseekk/shared';
 import { api } from '@/lib/api';
+import { PasswordField } from '@/components/PasswordField';
 import { PublicHeader } from '@/components/PublicHeader';
 import { PortalLoadingScreen } from '@/components/PortalLoadingScreen';
 import { useT } from '@/lib/i18n';
@@ -26,8 +28,8 @@ function ResetPasswordForm() {
       setError(t('auth.resetPasswordInvalid'));
       return;
     }
-    if (password.length < 6) {
-      setError(t('auth.resetPasswordTooShort'));
+    if (!isPasswordValid(password)) {
+      setError(t('auth.passwordPolicyInvalid'));
       return;
     }
     if (password !== confirm) {
@@ -65,30 +67,22 @@ function ResetPasswordForm() {
               ) : (
                 <form onSubmit={handleSubmit} className="auth-form">
                   {error && <p className="auth-error" role="alert">{error}</p>}
-                  <div className="auth-field">
-                    <label htmlFor="reset-password" className="auth-label">{t('auth.password')}</label>
-                    <input
-                      id="reset-password"
-                      className="auth-input"
-                      type="password"
-                      autoComplete="new-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="auth-field">
-                    <label htmlFor="reset-confirm" className="auth-label">{t('auth.resetPasswordConfirm')}</label>
-                    <input
-                      id="reset-confirm"
-                      className="auth-input"
-                      type="password"
-                      autoComplete="new-password"
-                      value={confirm}
-                      onChange={(e) => setConfirm(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <PasswordField
+                    id="reset-password"
+                    label={t('auth.password')}
+                    value={password}
+                    onChange={setPassword}
+                    autoComplete="new-password"
+                    showRequirements
+                  />
+                  <PasswordField
+                    id="reset-confirm"
+                    label={t('auth.resetPasswordConfirm')}
+                    value={confirm}
+                    onChange={setConfirm}
+                    autoComplete="new-password"
+                    showRequirements={false}
+                  />
                   <button type="submit" disabled={loading} className="portal-cta portal-cta-primary auth-submit">
                     {loading ? t('auth.resetPasswordSaving') : t('auth.resetPasswordSubmit')}
                   </button>

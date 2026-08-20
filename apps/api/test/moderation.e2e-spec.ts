@@ -8,7 +8,7 @@ describe('Community auto-moderation (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
   let seq = 0;
   const alphaVariant = () => {
     seq += 1;

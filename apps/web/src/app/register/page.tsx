@@ -13,6 +13,8 @@ import { SellerOnboardingModal } from '@/components/SellerOnboardingModal';
 import { useGuestOnlyRoute } from '@/hooks/useGuestOnlyRoute';
 import { setStoredLocale, useT } from '@/lib/i18n';
 import { useAuth } from '@/providers/AuthProvider';
+import { isPasswordValid } from '@buyseekk/shared';
+import { PasswordField } from '@/components/PasswordField';
 import { getDefaultRegisterCountry, getDefaultRegisterCurrency } from '@/lib/launch-country';
 
 type Step = 'account' | 'role';
@@ -35,8 +37,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   function goToRoleStep() {
-    if (!form.name.trim() || !form.email.trim() || form.password.length < 6) {
+    if (!form.name.trim() || !form.email.trim()) {
       setError(t('common.error'));
+      return;
+    }
+    if (!isPasswordValid(form.password)) {
+      setError(t('auth.passwordPolicyInvalid'));
       return;
     }
     setError('');
@@ -55,6 +61,10 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+    if (!isPasswordValid(form.password)) {
+      setError(t('auth.passwordPolicyInvalid'));
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -153,22 +163,15 @@ export default function RegisterPage() {
                         required
                       />
                     </div>
-                    <div className="auth-field">
-                      <label htmlFor="register-password" className="auth-label">
-                        {t('auth.password')}
-                      </label>
-                      <input
-                        id="register-password"
-                        className="auth-input"
-                        type="password"
-                        value={form.password}
-                        onChange={(e) => update('password', e.target.value)}
-                        placeholder={t('auth.passwordPlaceholder')}
-                        autoComplete="new-password"
-                        minLength={6}
-                        required
-                      />
-                    </div>
+                    <PasswordField
+                      id="register-password"
+                      label={t('auth.password')}
+                      value={form.password}
+                      onChange={(value) => update('password', value)}
+                      placeholder={t('auth.passwordPlaceholder')}
+                      autoComplete="new-password"
+                      showRequirements
+                    />
                     <button
                       type="button"
                       onClick={goToRoleStep}

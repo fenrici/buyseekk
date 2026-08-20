@@ -15,7 +15,7 @@ describe('Critical business flow (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
 
   const buyerEmail = `buyer-${runId}@test.buyseekk.com`;
   const sellerEmail = `seller-${runId}@test.buyseekk.com`;

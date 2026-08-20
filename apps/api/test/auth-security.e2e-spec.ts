@@ -22,7 +22,7 @@ describe('Auth security (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -274,12 +274,12 @@ describe('Auth security (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
-      .send({ token: plain, password: 'newpass123' })
+      .send({ token: plain, password: 'Newpass123' })
       .expect(201);
 
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
-      .send({ token: plain, password: 'anotherpass' })
+      .send({ token: plain, password: 'Anotherpass1' })
       .expect(400);
 
     await request(app.getHttpServer())
@@ -287,7 +287,7 @@ describe('Auth security (e2e)', () => {
       .set(refreshCookieHeader(auth.refreshToken))
       .expect(401);
 
-    const loginRes = await loginUser(app, email, 'newpass123');
+    const loginRes = await loginUser(app, email, 'Newpass123');
     expect(loginRes.token).toBeDefined();
 
     const changeLogs = await prisma.securityLog.findMany({
@@ -458,7 +458,7 @@ describe('Auth security (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
-      .send({ token: expiredPlain, password: 'newpass123' })
+      .send({ token: expiredPlain, password: 'Newpass123' })
       .expect(400);
 
     const validPlain = generateSecureToken();
@@ -473,7 +473,7 @@ describe('Auth security (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
-      .send({ token: validPlain, password: 'brandnew123' })
+      .send({ token: validPlain, password: 'Brandnew123' })
       .expect(201);
 
     await request(app.getHttpServer())
@@ -481,7 +481,7 @@ describe('Auth security (e2e)', () => {
       .send({ email, password })
       .expect(401);
 
-    await loginUser(app, email, 'brandnew123');
+    await loginUser(app, email, 'Brandnew123');
 
     const remaining = await prisma.refreshToken.findMany({
       where: { userId: auth.user.id, revokedAt: null },

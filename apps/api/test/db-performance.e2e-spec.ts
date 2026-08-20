@@ -11,7 +11,7 @@ describe('DB performance guards (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const runId = Date.now();
-  const password = 'testpass123';
+  const password = 'Testpass123';
 
   beforeAll(async () => {
     app = await createTestApp();

@@ -3,6 +3,7 @@ export * from './limits';
 export * from './request-status';
 export * from './user-mode';
 export * from './seller-profile';
+export * from './password-policy';
 export * from './seller-filters';
 export * from './locations';
 export * from './pricing';

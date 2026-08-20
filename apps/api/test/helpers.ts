@@ -12,6 +12,8 @@ import { hashToken } from '../src/auth/token.util';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { STORAGE_SERVICE, StorageService } from '../src/storage/storage.interface';
 
+export const TEST_PASSWORD = 'Testpass123';
+
 export { REFRESH_COOKIE_NAME };
 
 export async function createTestApp(options?: {

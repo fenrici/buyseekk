@@ -1,12 +1,13 @@
 import { Country, Currency, Locale, RequestCategory, SellerType, UserRole } from '@prisma/client';
 import { Equals, IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsPasswordPolicy } from '../common/validators/password-policy.validator';
 
 export class RegisterDto {
   @IsEmail()
   email!: string;
 
   @IsString()
-  @MinLength(6)
+  @IsPasswordPolicy()
   password!: string;
 
   @IsString()
@@ -65,6 +66,6 @@ export class ResetPasswordDto {
   token!: string;
 
   @IsString()
-  @MinLength(6)
+  @IsPasswordPolicy()
   password!: string;
 }
