@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { formatUsAreaLocation, MAX_UPLOAD_BYTES, parseUsAreaLocation, type AppBusinessType, type UsStateCode } from '@buyseekk/shared';
+import { formatUsAreaLocation, MAX_UPLOAD_BYTES, parseUsAreaLocation, type UsStateCode } from '@buyseekk/shared';
 import { api, uploadImage } from '@/lib/api';
 import { Avatar } from '@/components/Avatar';
 import { isUsLaunch } from '@/lib/launch-country';
@@ -15,8 +15,6 @@ type FormState = {
   sellerType: SellerType;
   sellerCategory: 'AUTOS' | 'INMOBILIARIA';
   businessName: string;
-  businessType: AppBusinessType | '';
-  website: string;
   state: string;
   city: string;
   sellerAvatarUrl: string;
@@ -35,8 +33,6 @@ function formFromUser(user: User): FormState {
     sellerType: (user.sellerType as SellerType) ?? 'INDIVIDUAL',
     sellerCategory: user.sellerCategory ?? 'AUTOS',
     businessName: user.businessName ?? '',
-    businessType: (user.businessType as AppBusinessType) ?? '',
-    website: user.website ?? '',
     state,
     city: cityForFields,
     sellerAvatarUrl: user.sellerAvatarUrl ?? '',
@@ -106,13 +102,7 @@ export function ProfileSellerSection({
         state: location.state,
         city: location.city,
         sellerAvatarUrl: form.sellerAvatarUrl,
-        ...(isCompany
-          ? {
-              businessName: form.businessName.trim(),
-              businessType: form.businessType || undefined,
-              website: form.website.trim() || undefined,
-            }
-          : {}),
+        ...(isCompany ? { businessName: form.businessName.trim() } : {}),
       };
       const updated = await api<User>('/users/me/seller-profile', {
         method: 'PATCH',
@@ -174,7 +164,7 @@ export function ProfileSellerSection({
 
       <div className="profile-field">
         <span className="profile-field__label">{t('profile.sellerTypeLabel')}</span>
-        <div className="auth-option-row auth-option-row--compact" role="radiogroup">
+        <div className="auth-option-row auth-option-row--compact profile-seller-type-row" role="radiogroup">
           <button
             type="button"
             className={`auth-option-btn ${form.sellerType === 'INDIVIDUAL' ? 'active' : ''}`}
@@ -192,59 +182,19 @@ export function ProfileSellerSection({
         </div>
       </div>
 
-      <div className="profile-field">
-        <label htmlFor="seller-category">{t('sellerOnboarding.categoryLabel')}</label>
-        <select
-          id="seller-category"
-          className="input"
-          value={form.sellerCategory}
-          onChange={(e) => update('sellerCategory', e.target.value as FormState['sellerCategory'])}
-        >
-          <option value="AUTOS">{t('sellerOnboarding.categoryAutos')}</option>
-          <option value="INMOBILIARIA">{t('sellerOnboarding.categoryRealEstate')}</option>
-        </select>
-      </div>
-
       {isCompany && (
-        <>
-          <div className="profile-field">
-            <label htmlFor="seller-business-name">{t('profile.businessName')}</label>
-            <input
-              id="seller-business-name"
-              className="input"
-              value={form.businessName}
-              onChange={(e) => update('businessName', e.target.value)}
-              required
-              maxLength={80}
-            />
-          </div>
-          <div className="profile-field">
-            <label htmlFor="seller-business-type">{t('profile.businessTypeLabel')}</label>
-            <select
-              id="seller-business-type"
-              className="input"
-              value={form.businessType}
-              onChange={(e) => update('businessType', e.target.value as AppBusinessType)}
-              required
-            >
-              <option value="">{t('profile.businessTypePlaceholder')}</option>
-              <option value="DEALERSHIP">{t('profile.businessTypeDealership')}</option>
-              <option value="REAL_ESTATE_AGENCY">{t('profile.businessTypeRealEstate')}</option>
-              <option value="OTHER">{t('profile.businessTypeOther')}</option>
-            </select>
-          </div>
-          <div className="profile-field">
-            <label htmlFor="seller-website">{t('profile.website')}</label>
-            <input
-              id="seller-website"
-              className="input"
-              value={form.website}
-              onChange={(e) => update('website', e.target.value)}
-              placeholder={t('profile.websitePlaceholder')}
-              maxLength={200}
-            />
-          </div>
-        </>
+        <div className="profile-field">
+          <label htmlFor="seller-business-name">{t('profile.businessName')}</label>
+          <input
+            id="seller-business-name"
+            className="input"
+            value={form.businessName}
+            onChange={(e) => update('businessName', e.target.value)}
+            required
+            maxLength={80}
+            autoComplete="organization"
+          />
+        </div>
       )}
 
       {isUsLaunch() ? (

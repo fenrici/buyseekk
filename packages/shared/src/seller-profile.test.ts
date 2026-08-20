@@ -36,11 +36,12 @@ assert.equal(
     sellerType: 'COMPANY',
     sellerCategory: 'AUTOS',
     businessName: 'Porsche Miami',
-    businessType: 'DEALERSHIP',
+    businessType: null,
     state: 'FL',
     city: 'Miami, FL',
   }),
   true,
+  'businessType is not required for company profile completeness',
 );
 
 assert.equal(
@@ -48,8 +49,7 @@ assert.equal(
     role: 'SELLER',
     sellerType: 'COMPANY',
     sellerCategory: 'AUTOS',
-    businessName: 'Porsche Miami',
-    businessType: null,
+    businessName: '',
     state: 'FL',
     city: 'Miami, FL',
   }),
@@ -78,6 +78,42 @@ assert.equal(
   true,
 );
 
+assert.equal(
+  canSendOffers({
+    role: 'SELLER',
+    sellerType: 'INDIVIDUAL',
+    sellerCategory: 'AUTOS',
+    state: 'FL',
+    city: '',
+  }),
+  false,
+);
+
+assert.equal(
+  canSendOffers({
+    role: 'SELLER',
+    sellerType: 'COMPANY',
+    sellerCategory: 'AUTOS',
+    businessName: 'BMW Miami',
+    businessType: null,
+    state: 'FL',
+    city: 'Miami',
+  }),
+  true,
+);
+
+assert.equal(
+  canSendOffers({
+    role: 'SELLER',
+    sellerType: 'COMPANY',
+    sellerCategory: 'AUTOS',
+    businessName: '',
+    state: 'FL',
+    city: 'Miami',
+  }),
+  false,
+);
+
 const individualEs = formatSellerBuyerIdentity(
   {
     role: 'SELLER',
@@ -97,7 +133,7 @@ const companyEn = formatSellerBuyerIdentity(
     role: 'SELLER',
     sellerType: 'COMPANY',
     name: 'Franco Enrici',
-    businessName: 'Porsche Miami',
+    businessName: 'BMW Miami',
     businessType: 'DEALERSHIP',
     state: 'FL',
     city: 'Miami, FL',
@@ -105,8 +141,10 @@ const companyEn = formatSellerBuyerIdentity(
   },
   'EN',
 );
-assert.equal(companyEn.titleLine, 'Franco Enrici / Porsche Miami');
-assert.equal(companyEn.detailLine, 'Dealership · Miami, FL');
+assert.equal(companyEn.titleLine, 'Franco Enrici / BMW Miami');
+assert.equal(companyEn.detailLine, 'Miami, FL');
+assert.ok(!companyEn.titleLine.startsWith('BMW Miami'));
+assert.ok(!companyEn.detailLine.includes('Dealership'));
 
 assert.equal(
   formatSellerLocation({ city: 'Miami, FL', state: 'FL', country: 'US' }),

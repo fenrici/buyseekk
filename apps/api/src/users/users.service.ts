@@ -227,9 +227,11 @@ export class UsersService {
       ...(dto.sellerAvatarUrl !== undefined ? { sellerAvatarUrl: this.cleanOptional(dto.sellerAvatarUrl) } : {}),
       ...(isCompany
         ? {
-            businessName: dto.businessName?.trim() || null,
-            businessType: dto.businessType ?? null,
-            website: this.cleanOptional(dto.website),
+            ...(dto.businessName !== undefined
+              ? { businessName: dto.businessName?.trim() || null }
+              : {}),
+            ...(dto.businessType !== undefined ? { businessType: dto.businessType } : {}),
+            ...(dto.website !== undefined ? { website: this.cleanOptional(dto.website) } : {}),
           }
         : {}),
     };
@@ -287,8 +289,10 @@ export class UsersService {
 
     const profileData = this.sellerProfileData(dto);
     if (dto.sellerType === SellerType.COMPANY) {
-      if (!dto.businessName?.trim() || !dto.businessType) {
-        throw new BadRequestException('Completá nombre comercial y tipo de negocio');
+      const nextBusinessName =
+        dto.businessName !== undefined ? dto.businessName.trim() : user.businessName?.trim();
+      if (!nextBusinessName) {
+        throw new BadRequestException('Completá el nombre comercial');
       }
     }
 

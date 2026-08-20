@@ -183,6 +183,29 @@ describe('Seller profile & offer gating (e2e)', () => {
       .expect(403);
   });
 
+  it('allows company seller with businessName and location without businessType', async () => {
+    const buyer = await createBuyer();
+    const seller = await createSeller({ completeSellerProfile: false, sellerType: 'COMPANY' });
+    await request(app.getHttpServer())
+      .patch('/api/users/me/seller-profile')
+      .set(authHeader(seller.token))
+      .send({
+        sellerType: 'COMPANY',
+        sellerCategory: 'AUTOS',
+        businessName: 'BMW Miami',
+        state: 'FL',
+        city: 'Miami',
+      })
+      .expect(200);
+
+    const created = await createRequest(buyer.token);
+    await request(app.getHttpServer())
+      .post('/api/offers')
+      .set(authHeader(seller.token))
+      .send(offerPayload(created.id, seller.user.id))
+      .expect(201);
+  });
+
   it('preserves company data when switching to individual', async () => {
     const seller = await createSeller({ sellerType: 'COMPANY' });
     await completeSellerProfileForOffers(app, seller, {
@@ -210,6 +233,46 @@ describe('Seller profile & offer gating (e2e)', () => {
     expect(stored.businessName).toBe('Porsche Miami');
     expect(stored.businessType).toBe('DEALERSHIP');
     expect(stored.website).toBe('https://porsche-miami.example');
+  });
+
+  it('restores existing businessName when switching back to company', async () => {
+    const seller = await createSeller({ sellerType: 'COMPANY' });
+    await completeSellerProfileForOffers(app, seller, {
+      sellerType: 'COMPANY',
+      businessName: 'BMW Miami',
+      businessType: 'DEALERSHIP',
+      state: 'FL',
+      city: 'Miami',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/api/users/me/seller-profile')
+      .set(authHeader(seller.token))
+      .send({
+        sellerType: 'INDIVIDUAL',
+        sellerCategory: 'AUTOS',
+        state: 'FL',
+        city: 'Miami',
+      })
+      .expect(200);
+
+    const asIndividual = await prisma.user.findUniqueOrThrow({ where: { id: seller.user.id } });
+    expect(asIndividual.businessName).toBe('BMW Miami');
+
+    const restored = await request(app.getHttpServer())
+      .patch('/api/users/me/seller-profile')
+      .set(authHeader(seller.token))
+      .send({
+        sellerType: 'COMPANY',
+        sellerCategory: 'AUTOS',
+        businessName: asIndividual.businessName,
+        state: 'FL',
+        city: 'Miami',
+      })
+      .expect(200);
+
+    expect(restored.body.sellerType).toBe('COMPANY');
+    expect(restored.body.businessName).toBe('BMW Miami');
   });
 
   it('exposes formatted seller identity to buyer in received offers', async () => {

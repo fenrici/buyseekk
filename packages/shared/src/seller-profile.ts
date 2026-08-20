@@ -44,7 +44,6 @@ export function isCompanySellerProfileComplete(profile: SellerProfileFields): bo
     profile.sellerType === 'COMPANY' &&
     !!profile.sellerCategory &&
     hasText(profile.businessName) &&
-    !!profile.businessType &&
     hasSellerLocation(profile)
   );
 }
@@ -110,11 +109,10 @@ export function formatSellerBuyerIdentity(
   const location = formatSellerLocation(profile);
 
   if (profile.sellerType === 'COMPANY') {
-    const business = profile.businessName?.trim() || name;
-    const typeLabel = businessTypeLabel(profile.businessType, locale);
+    const business = profile.businessName?.trim() || '—';
     return {
       titleLine: `${name} / ${business}`,
-      detailLine: typeLabel ? `${typeLabel} · ${location}` : location,
+      detailLine: location,
     };
   }
 

@@ -45,9 +45,10 @@ const company = formatSellerBuyerIdentity(
   'ES',
 );
 assert.equal(company.titleLine, 'Franco Enrici / BMW Miami');
-assert.equal(company.detailLine, 'Concesionaria · Miami, FL');
+assert.equal(company.detailLine, 'Miami, FL');
 assert.ok(company.titleLine.startsWith('Franco Enrici /'));
 assert.ok(!company.titleLine.startsWith('BMW Miami'));
+assert.ok(!company.detailLine.includes('Concesionaria'));
 
 const individual = formatSellerBuyerIdentity(
   {
