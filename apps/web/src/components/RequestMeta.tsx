@@ -91,12 +91,11 @@ export function RequestMeta({
           {request.maxMileage != null ? ` · ≤ ${request.maxMileage.toLocaleString()} ${t('seller.miles')}` : ''}
         </p>
       )}
-      {request.category === 'INMOBILIARIA' && (
+      {request.category === 'INMOBILIARIA' && (request.bedrooms != null || request.minSqm != null || request.maxSqm != null) && (
         <p className={`${gap} ${specClass}`}>
-          {request.zone}
-          {request.bedrooms != null ? ` · ${request.bedrooms} ${t('request.bedroomsShort')}` : ''}
-          {request.minSqm != null ? ` · ≥ ${request.minSqm} m²` : ''}
-          {request.maxSqm != null ? ` · ≤ ${request.maxSqm} m²` : ''}
+          {request.bedrooms != null ? `${request.bedrooms} ${t('request.bedroomsShort')}` : ''}
+          {request.minSqm != null ? `${request.bedrooms != null ? ' · ' : ''}≥ ${request.minSqm} m²` : ''}
+          {request.maxSqm != null ? `${request.bedrooms != null || request.minSqm != null ? ' · ' : ''}≤ ${request.maxSqm} m²` : ''}
         </p>
       )}
     </>

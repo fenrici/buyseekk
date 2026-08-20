@@ -1,80 +1,96 @@
 'use client';
 
 import {
-  areasForUsState,
-  formatUsAreaLocation,
+  launchCityLocationsForUsState,
+  launchStatesForUsRequests,
   neighborhoodsForUsArea,
   parseUsAreaLocation,
-  US_STATE_CODES,
+  sanitizeUsLocationSelection,
   usStateLabel,
   type UsStateCode,
 } from '@buyseekk/shared';
 import { useT } from '@/lib/i18n';
 
 type Props = {
-  category: 'AUTOS' | 'INMOBILIARIA' | string;
+  mode?: 'form' | 'filter';
   location: string;
   zone: string;
+  state?: string;
   onLocationChange: (location: string) => void;
   onZoneChange: (zone: string) => void;
+  onStateChange?: (state: string) => void;
   className?: string;
 };
 
-function parseValue(location: string, zone: string) {
-  const parsed = parseUsAreaLocation(location);
-  const state = parsed?.state ?? 'FL';
-  const areas = areasForUsState(state);
-  const area = parsed?.area ?? areas[0] ?? 'Miami';
-  const neighborhoods = neighborhoodsForUsArea(state, area);
-  const neighborhood = zone || neighborhoods[0] || '';
-  return { state, area, neighborhood };
-}
-
 export function UsLocationPicker({
-  category,
+  mode = 'form',
   location,
   zone,
+  state: stateProp,
   onLocationChange,
   onZoneChange,
+  onStateChange,
   className = '',
 }: Props) {
   const t = useT();
-  const isAuto = category === 'AUTOS';
-  const value = parseValue(location, zone);
-  const areas = areasForUsState(value.state);
-  const neighborhoods = neighborhoodsForUsArea(value.state, value.area);
-  const showNeighborhood = !isAuto && neighborhoods.length > 0;
+  const allowEmpty = mode === 'filter';
+  const parsed = parseUsAreaLocation(location);
+  const sanitized = sanitizeUsLocationSelection(
+    {
+      state: stateProp || parsed?.state || (allowEmpty ? '' : 'FL'),
+      location,
+      zone,
+    },
+    { allowEmpty },
+  );
+  const state = sanitized.state as UsStateCode | '';
+  const cities = state ? launchCityLocationsForUsState(state) : [];
+  const cityName = parsed?.area ?? '';
+  const areas = state && cityName ? [...neighborhoodsForUsArea(state as UsStateCode, cityName)] : [];
+  const cityDisabled = allowEmpty && !state;
+  const areaDisabled = allowEmpty && !location;
 
-  function updateState(state: UsStateCode) {
-    const nextAreas = areasForUsState(state);
-    const nextArea = nextAreas[0] ?? '';
-    onLocationChange(formatUsAreaLocation(state, nextArea));
-    if (!isAuto) {
-      onZoneChange(neighborhoodsForUsArea(state, nextArea)[0] ?? '');
-    } else {
-      onZoneChange('');
+  function emit(next: { state: string; location: string; zone: string }) {
+    const clean = sanitizeUsLocationSelection(next, { allowEmpty });
+    if (onStateChange && clean.state !== (stateProp || parsed?.state || '')) {
+      onStateChange(clean.state);
     }
+    if (clean.location !== location) onLocationChange(clean.location);
+    if (clean.zone !== zone) onZoneChange(clean.zone);
   }
 
-  function updateArea(area: string) {
-    onLocationChange(formatUsAreaLocation(value.state, area));
-    if (!isAuto) {
-      onZoneChange(neighborhoodsForUsArea(value.state, area)[0] ?? '');
-    } else {
+  function updateState(nextState: string) {
+    if (!nextState) {
+      onStateChange?.('');
+      onLocationChange('');
       onZoneChange('');
+      return;
     }
+    const firstCity = launchCityLocationsForUsState(nextState)[0] ?? '';
+    const nextLocation = allowEmpty ? '' : firstCity;
+    emit({ state: nextState, location: nextLocation, zone: '' });
+    onStateChange?.(nextState);
+    onLocationChange(nextLocation);
+    onZoneChange('');
+  }
+
+  function updateCity(nextLocation: string) {
+    emit({ state: sanitized.state, location: nextLocation, zone: '' });
+    onLocationChange(nextLocation);
+    onZoneChange('');
   }
 
   return (
-    <div className={`us-location-picker ${className}`.trim()}>
-      <label className="block">
-        <span className="text-xs font-semibold text-slate-600">{t('request.state')} *</span>
+    <div className={`us-location-picker${className ? ` ${className}` : ''}`}>
+      <label className="us-location-picker__field">
+        <span className="us-location-picker__label">{t('request.state')}{mode === 'form' ? ' *' : ''}</span>
         <select
-          className="input mt-1 w-full"
-          value={value.state}
-          onChange={(e) => updateState(e.target.value as UsStateCode)}
+          className="input us-location-picker__select"
+          value={sanitized.state}
+          onChange={(e) => updateState(e.target.value)}
         >
-          {US_STATE_CODES.map((code) => (
+          {allowEmpty && <option value="">{t('seller.allStates')}</option>}
+          {launchStatesForUsRequests().map((code) => (
             <option key={code} value={code}>
               {usStateLabel(code)}
             </option>
@@ -82,13 +98,39 @@ export function UsLocationPicker({
         </select>
       </label>
 
-      <label className="block">
-        <span className="text-xs font-semibold text-slate-600">{t('request.area')} *</span>
+      <label className="us-location-picker__field">
+        <span className="us-location-picker__label">{t('request.city')}{mode === 'form' ? ' *' : ''}</span>
         <select
-          className="input mt-1 w-full"
-          value={value.area}
-          onChange={(e) => updateArea(e.target.value)}
+          className="input us-location-picker__select"
+          value={location}
+          disabled={cityDisabled}
+          onChange={(e) => updateCity(e.target.value)}
         >
+          {allowEmpty && <option value="">{t('seller.allCities')}</option>}
+          {cities.map((city) => {
+            const parsedCity = parseUsAreaLocation(city);
+            return (
+              <option key={city} value={city}>
+                {parsedCity?.area ?? city}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+
+      <label className="us-location-picker__field">
+        <span className="us-location-picker__label">{t('request.zone')}{mode === 'form' ? ' *' : ''}</span>
+        <select
+          className="input us-location-picker__select"
+          value={zone}
+          disabled={areaDisabled}
+          onChange={(e) => onZoneChange(e.target.value)}
+        >
+          {allowEmpty ? (
+            <option value="">{t('seller.allZones')}</option>
+          ) : (
+            <option value="">{t('request.anyArea')}</option>
+          )}
           {areas.map((area) => (
             <option key={area} value={area}>
               {area}
@@ -96,27 +138,6 @@ export function UsLocationPicker({
           ))}
         </select>
       </label>
-
-      {showNeighborhood && (
-        <label className="block">
-          <span className="text-xs font-semibold text-slate-600">{t('request.neighborhood')} *</span>
-          <select
-            className="input mt-1 w-full"
-            value={value.neighborhood}
-            onChange={(e) => onZoneChange(e.target.value)}
-          >
-            {neighborhoods.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      {isAuto && (
-        <p className="us-location-picker__hint text-xs text-slate-500">{t('request.autoAreaHint')}</p>
-      )}
     </div>
   );
 }

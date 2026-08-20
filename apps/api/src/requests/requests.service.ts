@@ -17,10 +17,8 @@ import {
   parsePagination,
   toPaginatedResult,
   zonesForCountryAndCity,
-  expandUsAreaFilter,
   isValidUsAreaLocation,
-  isValidUsNeighborhood,
-  neighborhoodsForUsArea,
+  isValidUsRequestArea,
   parseUsAreaLocation,
 } from '@buyseekk/shared';
 import { isBuyerCapable, isSellerCapable } from '../common/types/auth-user';
@@ -292,7 +290,7 @@ export class RequestsService {
 
     if (user.country === Country.US) {
       if (!isValidUsAreaLocation(dto.location)) {
-        throw new BadRequestException('Área no válida');
+        throw new BadRequestException('Ciudad no válida');
       }
     } else {
       const allowedCities = citiesForCountry(user.country);
@@ -301,13 +299,22 @@ export class RequestsService {
       }
     }
 
+    let resolvedState: string | null = null;
+    if (user.country === Country.US) {
+      const parsed = parseUsAreaLocation(dto.location);
+      resolvedState = parsed?.state ?? null;
+      const zoneValue = dto.zone?.trim() || null;
+      if (parsed && zoneValue && !isValidUsRequestArea(parsed.state, parsed.area, zoneValue)) {
+        throw new BadRequestException('Zona no válida para la ciudad seleccionada');
+      }
+      dto.zone = zoneValue ?? undefined;
+    }
+
     if (dto.category === RequestCategory.AUTOS) {
       if (!dto.carBrand || !dto.carModel || !dto.carColor || dto.carYearMin == null || dto.maxMileage == null) {
         throw new BadRequestException('Marca, modelo, color, año y millaje son obligatorios para autos');
       }
-      if (user.country === Country.US) {
-        dto.zone = undefined;
-      } else {
+      if (user.country !== Country.US) {
         if (!dto.zone) throw new BadRequestException('Zona obligatoria para autos');
         const autoZones = zonesForCountryAndCity(user.country, dto.location);
         if (!autoZones.includes(dto.zone)) {
@@ -323,17 +330,7 @@ export class RequestsService {
       }
     } else if (dto.category === RequestCategory.INMOBILIARIA) {
       if (!dto.title?.trim()) throw new BadRequestException('Título obligatorio');
-      if (user.country === Country.US) {
-        const parsed = parseUsAreaLocation(dto.location);
-        if (!parsed) throw new BadRequestException('Área no válida');
-        const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
-        if (hoods.length > 0) {
-          if (!dto.zone) throw new BadRequestException('Barrio obligatorio para inmuebles');
-          if (!isValidUsNeighborhood(parsed.state, parsed.area, dto.zone)) {
-            throw new BadRequestException('Barrio no válido para el área seleccionada');
-          }
-        }
-      } else {
+      if (user.country !== Country.US) {
         if (!dto.zone) throw new BadRequestException('Zona obligatoria para inmuebles');
         const allowedZones = zonesForCountryAndCity(user.country, dto.location);
         if (!allowedZones.includes(dto.zone)) {
@@ -391,6 +388,7 @@ export class RequestsService {
           negotiable: dto.negotiable ?? true,
           currency: dto.currency,
           location: dto.location,
+          state: resolvedState,
           zone: dto.zone ?? null,
           bedrooms: dto.category === RequestCategory.INMOBILIARIA ? dto.bedrooms! : null,
           minSqm: dto.category === RequestCategory.INMOBILIARIA ? dto.minSqm ?? null : null,
@@ -464,15 +462,19 @@ export class RequestsService {
     }
 
     if (filters.operation) where.operation = filters.operation;
-    if (filters.location) {
+    if (filters.location) where.location = filters.location;
+
+    const extraFilters: Record<string, unknown>[] = [];
+    if (filters.state && user.country === Country.US) {
+      extraFilters.push({ state: filters.state });
+    }
+    if (filters.zone) {
       if (user.country === Country.US) {
-        const expanded = expandUsAreaFilter(filters.location);
-        where.location = expanded.length === 1 ? expanded[0] : { in: expanded };
+        extraFilters.push({ OR: [{ zone: filters.zone }, { zone: null }] });
       } else {
-        where.location = filters.location;
+        extraFilters.push({ zone: filters.zone });
       }
     }
-    if (filters.zone) where.zone = filters.zone;
     if (filters.bedrooms) where.bedrooms = filters.bedrooms;
     if (filters.carBrand) where.carBrand = filters.carBrand;
     if (filters.carModel) where.carModel = filters.carModel;
@@ -493,10 +495,9 @@ export class RequestsService {
     if (filters.maxSqm != null) {
       rangeFilters.push({ OR: [{ maxSqm: null }, { maxSqm: { gte: filters.maxSqm } }] });
     }
-    if (rangeFilters.length === 1) {
-      Object.assign(where, rangeFilters[0]);
-    } else if (rangeFilters.length > 1) {
-      where.AND = rangeFilters;
+    if (rangeFilters.length) extraFilters.push(...rangeFilters);
+    if (extraFilters.length) {
+      where.AND = extraFilters;
     }
 
     const { page, limit, skip } = parsePagination(filters.page, filters.limit);
@@ -594,6 +595,7 @@ export class RequestsService {
     currency: Currency;
     location: string;
     zone: string | null;
+    state: string | null;
     country: Country;
     bedrooms: number | null;
     minSqm: number | null;
@@ -828,16 +830,30 @@ export class RequestsService {
     }
 
     const location = dto.location ?? req.location;
+    let nextState = req.state;
+    let clearIncompatibleZone = false;
     if (dto.location !== undefined) {
       if (user.country === Country.US) {
         if (!isValidUsAreaLocation(dto.location)) {
-          throw new BadRequestException('Área no válida');
+          throw new BadRequestException('Ciudad no válida');
         }
       } else {
         const allowedCities = citiesForCountry(user.country);
         if (!allowedCities.includes(dto.location)) {
           throw new BadRequestException('Ciudad no válida para tu país');
         }
+      }
+    }
+    if (user.country === Country.US) {
+      const parsed = parseUsAreaLocation(location);
+      nextState = parsed?.state ?? null;
+      if (dto.zone !== undefined) {
+        const zoneValue = dto.zone.trim() || null;
+        if (parsed && zoneValue && !isValidUsRequestArea(parsed.state, parsed.area, zoneValue)) {
+          throw new BadRequestException('Zona no válida para la ciudad seleccionada');
+        }
+      } else if (dto.location !== undefined && req.zone && parsed && !isValidUsRequestArea(parsed.state, parsed.area, req.zone)) {
+        clearIncompatibleZone = true;
       }
     }
 
@@ -888,14 +904,7 @@ export class RequestsService {
 
       if (!hasPending) {
         if (dto.zone !== undefined) {
-          if (user.country === Country.US) {
-            const parsed = parseUsAreaLocation(location);
-            if (!parsed) throw new BadRequestException('Área no válida');
-            const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
-            if (hoods.length > 0 && !isValidUsNeighborhood(parsed.state, parsed.area, dto.zone)) {
-              throw new BadRequestException('Barrio no válido para el área seleccionada');
-            }
-          } else {
+          if (user.country !== Country.US) {
             const allowedZones = zonesForCountryAndCity(user.country, location);
             if (!allowedZones.includes(dto.zone)) {
               throw new BadRequestException('Zona no válida para tu país y ciudad');
@@ -919,17 +928,11 @@ export class RequestsService {
         }
       }
 
-      if (!zone || bedrooms == null) {
+      if (bedrooms == null) {
         throw new BadRequestException('Datos de inmueble incompletos');
       }
-      if (user.country === Country.US) {
-        const parsed = parseUsAreaLocation(location);
-        if (parsed) {
-          const hoods = neighborhoodsForUsArea(parsed.state, parsed.area);
-          if (hoods.length > 0 && !zone) {
-            throw new BadRequestException('Datos de inmueble incompletos');
-          }
-        }
+      if (user.country !== Country.US && !zone) {
+        throw new BadRequestException('Datos de inmueble incompletos');
       }
     }
 
@@ -953,7 +956,11 @@ export class RequestsService {
         ...(dto.negotiable !== undefined ? { negotiable: dto.negotiable } : {}),
         ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
         ...(dto.location !== undefined ? { location: dto.location } : {}),
-        ...(dto.zone !== undefined ? { zone: dto.zone } : {}),
+        ...(user.country === Country.US && (dto.location !== undefined || dto.zone !== undefined)
+          ? { state: nextState }
+          : {}),
+        ...(dto.zone !== undefined ? { zone: dto.zone.trim() ? dto.zone.trim() : null } : {}),
+        ...(clearIncompatibleZone ? { zone: null } : {}),
         ...(dto.operation !== undefined && req.category !== RequestCategory.AUTOS
           ? { operation: dto.operation }
           : {}),

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/api';
 import { canUserSendOffers } from '@/lib/auth';
-import { SELLER_PROFILE_INCOMPLETE_CODE } from '@buyseekk/shared';
+import { formatRequestLocationDisplay, SELLER_PROFILE_INCOMPLETE_CODE } from '@buyseekk/shared';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
 import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 import { spamFieldErrors } from '@/lib/spam';
@@ -146,8 +146,11 @@ export default function RequestDetailPage() {
           </div>
           <RequestMeta request={request} locale={user.locale} size="md" />
           <p className="mt-2 text-sm text-slate-400">
-            {request.location}
-            {request.category === 'INMOBILIARIA' && request.zone ? ` · ${request.zone}` : ''} · {t('request.buyer')}:{' '}
+            {formatRequestLocationDisplay(
+              { location: request.location, zone: request.zone, country: request.country },
+              user.locale,
+            )}{' '}
+            · {t('request.buyer')}:{' '}
             <Link href={`/users/${request.user.id}`} className="font-semibold text-indigo-600 hover:underline">
               {request.user.name}
             </Link>

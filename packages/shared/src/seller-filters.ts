@@ -1,11 +1,10 @@
 /** Estado de filtros del panel vendedor (Explorar solicitudes). */
-import {
-  locationMatchesUsAreaFilter,
-} from './us-locations';
+import { requestMatchesUsLocationFilter } from './request-location';
 
 export type SellerFilterState = {
   category: string;
   operation: string;
+  state: string;
   location: string;
   zone: string;
   bedrooms: string;
@@ -21,6 +20,7 @@ export type SellerFilterState = {
 export const EMPTY_SELLER_FILTERS: SellerFilterState = {
   category: '',
   operation: '',
+  state: '',
   location: '',
   zone: '',
   bedrooms: '',
@@ -50,6 +50,7 @@ export function countActiveSellerFilters(
   let n = 0;
   if (!lockedCategory && state.category) n++;
   if (state.operation) n++;
+  if (state.state) n++;
   if (state.location) n++;
   if (state.zone) n++;
   const cat = effectiveCategory(state, lockedCategory);
@@ -70,6 +71,10 @@ export function countActiveSellerFilters(
 
 export function clearSellerFilter(state: SellerFilterState, key: keyof SellerFilterState): SellerFilterState {
   const next = { ...state, [key]: '' };
+  if (key === 'state') {
+    next.location = '';
+    next.zone = '';
+  }
   if (key === 'location') next.zone = '';
   if (key === 'carBrand') next.carModel = '';
   return next;
@@ -94,6 +99,7 @@ export function sellerFiltersToSearchParams(
   const cat = effectiveCategory(state, lockedCategory);
   if (!lockedCategory && state.category) params.set('category', state.category);
   if (state.operation) params.set('operation', state.operation);
+  if (state.state) params.set('state', state.state);
   if (state.location) params.set('location', state.location);
   if (state.zone) params.set('zone', state.zone);
   if (cat !== 'AUTOS') {
@@ -130,6 +136,7 @@ export type MatchableRequest = {
   operation: string;
   location: string;
   zone: string | null;
+  state?: string | null;
   bedrooms: number | null;
   minSqm: number | null;
   maxSqm: number | null;
@@ -157,14 +164,20 @@ export function requestMatchesSellerFilters(
   if (category && request.category !== category) return false;
 
   if (filters.operation && request.operation !== filters.operation) return false;
-  if (filters.location) {
-    if (opts.sellerCountry === 'US') {
-      if (!locationMatchesUsAreaFilter(request.location, filters.location)) return false;
-    } else if (request.location !== filters.location) {
+  if (opts.sellerCountry === 'US') {
+    if (
+      !requestMatchesUsLocationFilter(request, {
+        state: filters.state,
+        location: filters.location,
+        zone: filters.zone,
+      })
+    ) {
       return false;
     }
+  } else {
+    if (filters.location && request.location !== filters.location) return false;
+    if (filters.zone && request.zone !== filters.zone) return false;
   }
-  if (filters.zone && request.zone !== filters.zone) return false;
 
   const cat = category || request.category;
 

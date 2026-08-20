@@ -17,4 +17,5 @@ export * from './subscription';
 export * from './notification-preferences';
 export * from './launch-country';
 export * from './us-locations';
+export * from './request-location';
 export * from './chat-defaults';

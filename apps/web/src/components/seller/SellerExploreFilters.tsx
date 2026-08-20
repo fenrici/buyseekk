@@ -197,6 +197,8 @@ export function SellerExploreFilters({ explore }: Props) {
               }
               operation={filters.operation}
               onOperationChange={(id) => patchInstant({ operation: id })}
+              state={filters.state}
+              onStateChange={(nextState) => patchInstant({ state: nextState, location: '', zone: '' })}
               location={filters.location}
               onLocationChange={(city) => patchInstant({ location: city, zone: '' })}
               zone={filters.zone}
@@ -298,6 +300,10 @@ export function SellerExploreFilters({ explore }: Props) {
                   onCategoryChange={showCategoryFilter ? (id) => setDraftField('category', id) : undefined}
                   operation={draft.operation}
                   onOperationChange={(id) => setDraftField('operation', id)}
+                  state={draft.state}
+                  onStateChange={(nextState) => {
+                    setDraft((d) => ({ ...d, state: nextState, location: '', zone: '' }));
+                  }}
                   location={draft.location}
                   onLocationChange={(city) => setDraftField('location', city)}
                   zone={draft.zone}

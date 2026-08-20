@@ -1,6 +1,6 @@
 /**
- * US launch location model: State → Area → Neighborhood (real estate only).
- * Autos use State + Area; selecting an area matches the full metro (see US_AREA_EXPANSION).
+ * US request location model: State → City/Market → Area.
+ * Area lists live in US_AREAS_BY_CITY. Empty/null request zone means any area in the city.
  */
 
 export const US_STATE_CODES = ['FL', 'TX', 'CA', 'NY', 'AZ', 'NV', 'GA', 'NC'] as const;
@@ -27,6 +27,50 @@ export const US_AREAS_BY_STATE: Record<UsStateCode, readonly string[]> = {
   GA: ['Atlanta'],
   NC: ['Charlotte', 'Raleigh'],
 };
+
+/**
+ * Launch config for request location (buyer create/edit + seller filters).
+ * UI and API validation use only these — extend when new markets go live.
+ */
+export const US_REQUEST_LAUNCH_STATE_CODES = ['FL'] as const satisfies readonly UsStateCode[];
+export type UsRequestLaunchStateCode = (typeof US_REQUEST_LAUNCH_STATE_CODES)[number];
+
+export const US_REQUEST_LAUNCH_MARKETS_BY_STATE: Record<UsRequestLaunchStateCode, readonly string[]> = {
+  FL: ['Miami'],
+};
+
+export function launchStatesForUsRequests(): readonly UsRequestLaunchStateCode[] {
+  return US_REQUEST_LAUNCH_STATE_CODES;
+}
+
+export function isLaunchUsRequestState(state: string | null | undefined): state is UsRequestLaunchStateCode {
+  return !!state && (US_REQUEST_LAUNCH_STATE_CODES as readonly string[]).includes(state);
+}
+
+export function launchMarketsForUsState(state: string): readonly string[] {
+  if (!isLaunchUsRequestState(state)) return [];
+  return US_REQUEST_LAUNCH_MARKETS_BY_STATE[state];
+}
+
+export function launchCityLocationsForUsState(state: string): string[] {
+  return launchMarketsForUsState(state).map((city) =>
+    formatUsAreaLocation(state as UsStateCode, city),
+  );
+}
+
+export function allLaunchUsRequestLocations(): string[] {
+  const out: string[] = [];
+  for (const state of US_REQUEST_LAUNCH_STATE_CODES) {
+    out.push(...launchCityLocationsForUsState(state));
+  }
+  return out;
+}
+
+export function isLaunchUsRequestLocation(location: string): boolean {
+  const parsed = parseUsAreaLocation(location);
+  if (!parsed || !isLaunchUsRequestState(parsed.state)) return false;
+  return launchMarketsForUsState(parsed.state).includes(parsed.area);
+}
 
 /** Canonical storage key: "{area}, {ST}" */
 export function formatUsAreaLocation(state: UsStateCode, area: string): string {
@@ -63,108 +107,51 @@ export function areasForUsState(state: UsStateCode): readonly string[] {
   return US_AREAS_BY_STATE[state] ?? [];
 }
 
-/** Neighborhoods for real estate — keyed by canonical area location */
-export const US_NEIGHBORHOODS_BY_AREA: Record<string, readonly string[]> = {
+/**
+ * Request areas (zona) by city/market. Easy to extend: add a key "{City}, {ST}".
+ * "Cualquier zona" is not listed — it is represented as a null/empty zone.
+ */
+export const US_AREAS_BY_CITY: Record<string, readonly string[]> = {
   'Miami, FL': [
     'Brickell',
     'Downtown Miami',
     'Edgewater',
     'Wynwood',
+    'Design District',
     'Coconut Grove',
     'Coral Gables',
-    'Key Biscayne',
-    'Sunny Isles Beach',
-    'Aventura',
-    'Bal Harbour',
-    'Miami Beach',
-    'South Beach',
     'Doral',
     'Kendall',
-    'Pinecrest',
+    'Miami Beach',
+    'Aventura',
+    'Sunny Isles',
+    'North Miami',
+    'Key Biscayne',
   ],
 };
+
+/** @deprecated Use US_AREAS_BY_CITY */
+export const US_NEIGHBORHOODS_BY_AREA = US_AREAS_BY_CITY;
 
 export function neighborhoodsForUsArea(state: UsStateCode, area: string): readonly string[] {
-  return US_NEIGHBORHOODS_BY_AREA[formatUsAreaLocation(state, area)] ?? [];
+  return US_AREAS_BY_CITY[formatUsAreaLocation(state, area)] ?? [];
 }
 
-/**
- * Legacy and granular location strings that belong to a metro area.
- * Filter by "Miami, FL" matches all of these for autos.
- */
-export const US_AREA_EXPANSION: Record<string, readonly string[]> = {
-  'Miami, FL': [
-    'Miami, FL',
-    'Miami Beach, FL',
-    'Miami',
-    'Miami Beach',
-    'Brickell',
-    'Doral',
-    'Coral Gables',
-    'Aventura',
-    'Hialeah',
-    'Kendall',
-    'Homestead',
-    'Fort Lauderdale, FL',
-    'Fort Lauderdale',
-    'Hollywood, FL',
-    'Hollywood',
-    'Pembroke Pines, FL',
-    'Pembroke Pines',
-    'Sunny Isles Beach, FL',
-    'Sunny Isles Beach',
-  ],
-};
+export function cityLocationsForUsState(state: UsStateCode): string[] {
+  return areasForUsState(state).map((city) => formatUsAreaLocation(state, city));
+}
 
-/** All canonical area locations for dropdowns (flat list). */
+/** All launch request locations for dropdowns (flat list). */
 export function allUsAreaLocations(): string[] {
-  const out: string[] = [];
-  for (const state of US_STATE_CODES) {
-    for (const area of US_AREAS_BY_STATE[state]) {
-      out.push(formatUsAreaLocation(state, area));
-    }
-  }
-  return out;
+  return allLaunchUsRequestLocations();
 }
 
 export function isUsAreaLocation(location: string): boolean {
   return parseUsAreaLocation(location) !== null;
 }
 
-/** Map legacy/granular location to canonical area key. */
-export function normalizeUsAreaLocation(location: string): string {
-  const parsed = parseUsAreaLocation(location);
-  if (parsed) return formatUsAreaLocation(parsed.state, parsed.area);
-
-  for (const [canonical, aliases] of Object.entries(US_AREA_EXPANSION)) {
-    if (aliases.includes(location)) return canonical;
-  }
-
-  return location;
-}
-
-/** Prisma `in` values when filtering by area (includes legacy locations). */
-export function expandUsAreaFilter(filterLocation: string): string[] {
-  const canonical = normalizeUsAreaLocation(filterLocation);
-  const expanded = US_AREA_EXPANSION[canonical];
-  if (expanded) return [...new Set([canonical, ...expanded])];
-  return [canonical];
-}
-
-export function locationMatchesUsAreaFilter(
-  requestLocation: string,
-  filterLocation: string,
-): boolean {
-  if (!filterLocation) return true;
-  const expanded = expandUsAreaFilter(filterLocation);
-  if (expanded.includes(requestLocation)) return true;
-  return normalizeUsAreaLocation(requestLocation) === normalizeUsAreaLocation(filterLocation);
-}
-
 export function isValidUsAreaLocation(location: string): boolean {
-  const parsed = parseUsAreaLocation(location);
-  if (!parsed) return false;
-  return US_AREAS_BY_STATE[parsed.state]?.includes(parsed.area) ?? false;
+  return isLaunchUsRequestLocation(location);
 }
 
 export function isValidUsNeighborhood(state: UsStateCode, area: string, neighborhood: string): boolean {

@@ -14,6 +14,10 @@ export class ListRequestsQueryDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
   location?: string;
 
   @IsOptional()

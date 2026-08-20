@@ -8,8 +8,11 @@ import {
   CAR_COLORS,
   carYearPresets,
   citiesForCountry,
+  formatRequestLocationDisplay,
   MILEAGE_PRESETS,
   modelsForBrand,
+  neighborhoodsForUsArea,
+  parseUsAreaLocation,
   SQM_PRESETS,
   zonesForCountryAndCity,
 } from '@buyseekk/shared';
@@ -200,8 +203,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         next.carColor = '';
         next.carYearMin = '';
         next.maxMileage = '';
-        const allowedZones = zonesForCountryAndCity(next.country, next.location);
-        next.zone = allowedZones[0] ?? '';
+        next.zone = useUsLocations ? '' : zonesForCountryAndCity(next.country, next.location)[0] ?? '';
       }
       if (field === 'category' && value === 'AUTOS') {
         next.operation = 'COMPRA';
@@ -221,9 +223,16 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         next.carModel = brandModels[0] ?? '';
       }
       if (field === 'location') {
-        const allowedZones = zonesForCountryAndCity(next.country, value);
-        if (!allowedZones.includes(next.zone)) {
-          next.zone = allowedZones[0] ?? '';
+        if (useUsLocations) {
+          const parsed = parseUsAreaLocation(value);
+          if (!parsed || !neighborhoodsForUsArea(parsed.state, parsed.area).includes(next.zone)) {
+            next.zone = '';
+          }
+        } else {
+          const allowedZones = zonesForCountryAndCity(next.country, value);
+          if (!allowedZones.includes(next.zone)) {
+            next.zone = allowedZones[0] ?? '';
+          }
         }
       }
       return next;
@@ -252,10 +261,6 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         return t('request.budgetMax', { max: budgetMaxLabel(form.currency, isRent) });
       }
       if (!form.location) return t('request.areaRequired');
-      if (useUsLocations && !isAuto) {
-        const hoods = zonesForCountryAndCity(form.country, form.location);
-        if (hoods.length > 0 && !form.zone) return t('request.neighborhoodRequired');
-      }
     }
     if (targetStep >= 3) {
       if (form.requirements.trim().length < 10) return t('request.requirementsMin');
@@ -310,11 +315,11 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
         payload.carColor = form.carColor;
         payload.carYearMin = parseInt(form.carYearMin, 10);
         payload.maxMileage = parseInt(form.maxMileage, 10);
-        if (!useUsLocations) payload.zone = form.zone;
+        payload.zone = form.zone || null;
         payload.title = form.title.trim() || t('request.autoTitle', { brand: form.carBrand, model: form.carModel });
       } else {
         payload.title = form.title.trim();
-        payload.zone = form.zone;
+        payload.zone = form.zone || null;
         payload.bedrooms = parseInt(form.bedrooms, 10);
         if (form.minSqm) payload.minSqm = parseInt(form.minSqm, 10);
         if (form.maxSqm) payload.maxSqm = parseInt(form.maxSqm, 10);
@@ -495,8 +500,8 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
           </label>
           {useUsLocations ? (
             <UsLocationPicker
-              className="md:col-span-2 grid gap-4"
-              category={form.category}
+              className="us-location-picker--wide md:col-span-2"
+              mode="form"
               location={form.location}
               zone={form.zone}
               onLocationChange={(loc) => updateField('location', loc)}
@@ -560,7 +565,7 @@ export function CreateRequestForm({ user, onSuccess }: { user: User; onSuccess: 
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('request.summaryTitle')}</p>
             <p className="mt-2 font-semibold text-slate-200">{summaryTitle}</p>
             <p className="mt-1 text-sm text-slate-400">
-              {form.location} · {form.zone}
+              {formatRequestLocationDisplay({ location: form.location, zone: form.zone, country: form.country }, user.locale)}
               {isAuto && ` · ${form.carBrand} ${form.carModel} · ≥ ${form.carYearMin}`}
             </p>
             <p className="mt-1 text-sm font-medium text-indigo-300">

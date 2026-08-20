@@ -90,6 +90,7 @@ export interface RequestItem {
   negotiable: boolean;
   currency: string;
   location: string;
+  state?: string | null;
   zone?: string | null;
   bedrooms?: number | null;
   minSqm?: number | null;
@@ -141,6 +142,7 @@ export interface PublicRequestItem {
   negotiable: boolean;
   currency: string;
   location: string;
+  state?: string | null;
   zone?: string | null;
   country: string;
   bedrooms?: number | null;

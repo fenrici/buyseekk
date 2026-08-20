@@ -346,6 +346,7 @@ model Request {
   negotiable   Boolean         @default(true)
   currency     Currency
   location     String
+  state        String?
   zone         String?
   bedrooms     Int?
   minSqm       Int?
@@ -377,6 +378,7 @@ model Request {
   @@index([category, active])
   @@index([category, country, carBrand, carModel])
   @@index([category, country, location, zone])
+  @@index([country, state, location, zone])
   @@index([category, country, bedrooms, minSqm, maxSqm])
 }
 

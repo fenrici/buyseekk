@@ -32,17 +32,6 @@ function toAutoFilters(state: SellerFilterState) {
   };
 }
 
-function fromParts(
-  category: string,
-  operation: string,
-  location: string,
-  zone: string,
-  estate: { bedrooms: string; minSqm: string; maxSqm: string },
-  auto: { carBrand: string; carModel: string; carColor: string; carYearMin: string; maxMileage: string },
-): SellerFilterState {
-  return { category, operation, location, zone, ...estate, ...auto };
-}
-
 export function useSellerExplore() {
   const { user } = useAuth();
   const lockedCategory = user?.sellerCategory ?? '';
@@ -129,6 +118,10 @@ export function useSellerExplore() {
   const patchFilters = useCallback(
     (patch: Partial<SellerFilterState>, closeSheet = false) => {
       const next = { ...filtersRef.current, ...patch };
+      if (patch.state !== undefined && patch.location === undefined) {
+        next.location = '';
+        next.zone = '';
+      }
       if (patch.location !== undefined && patch.zone === undefined) next.zone = '';
       applyFilters(next, closeSheet);
     },
@@ -248,6 +241,10 @@ export function useSellerExplore() {
     setDraftField: (key: keyof SellerFilterState, value: string) =>
       setDraft((d) => {
         const next = { ...d, [key]: value };
+        if (key === 'state') {
+          next.location = '';
+          next.zone = '';
+        }
         if (key === 'location') next.zone = '';
         if (key === 'carBrand') next.carModel = '';
         return next;
@@ -255,4 +252,4 @@ export function useSellerExplore() {
   };
 }
 
-export { fromParts, toAutoFilters, toEstateFilters };
+export { toAutoFilters, toEstateFilters };

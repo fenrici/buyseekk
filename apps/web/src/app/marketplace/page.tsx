@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { PaginatedResult, PublicRequestItem } from '@/lib/types';
 import { PublicHeader } from '@/components/PublicHeader';
+import { RequestLocationText } from '@/components/RequestLocationText';
 import { RequestMeta } from '@/components/RequestMeta';
 import { GuestCta } from '@/components/GuestCta';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
@@ -183,10 +184,14 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <RequestMeta request={r} locale={locale} size="sm" />
-                <p className="mt-2 text-xs text-slate-400">
-                  {r.location}
-                  {r.zone ? ` · ${r.zone}` : ''}
-                  {' · '}
+                <RequestLocationText
+                  className="mt-2 text-xs text-slate-400"
+                  location={r.location}
+                  zone={r.zone}
+                  country={r.country}
+                  locale={locale}
+                />
+                <p className="mt-1 text-xs text-slate-400">
                   {timeAgo(locale, r.lastActivityAt ?? r.createdAt)}
                 </p>
                 <div className="mt-auto pt-3 lg:pt-4">

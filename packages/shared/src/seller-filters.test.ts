@@ -63,9 +63,18 @@ assert.equal(
   true,
 );
 
-const miamiBeachRequest = { ...bmwMiamiRequest, location: 'Miami Beach, FL', zone: null };
+const orlandoRequest = { ...bmwMiamiRequest, location: 'Orlando, FL', zone: null };
 assert.equal(
-  requestMatchesSellerFilters(miamiBeachRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  requestMatchesSellerFilters(orlandoRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  false,
+);
+
+assert.equal(
+  requestMatchesSellerFilters(
+    bmwMiamiRequest,
+    { ...EMPTY_SELLER_FILTERS, category: 'AUTOS', state: 'FL' },
+    { sellerCountry: 'US', savedCategory: 'AUTOS' },
+  ),
   true,
 );
 
@@ -73,6 +82,15 @@ const mercedesRequest = { ...bmwMiamiRequest, carBrand: 'Mercedes-Benz', carMode
 assert.equal(
   requestMatchesSellerFilters(mercedesRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
   false,
+);
+
+const miamiAnyRequest = { ...bmwMiamiRequest, zone: null };
+assert.equal(
+  requestMatchesSellerFilters(miamiAnyRequest, { ...bmwMiamiFilters, zone: 'Brickell' }, {
+    sellerCountry: 'US',
+    savedCategory: 'AUTOS',
+  }),
+  true,
 );
 
 console.log('seller-filters: all assertions passed');

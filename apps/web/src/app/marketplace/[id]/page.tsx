@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { PublicRequestItem } from '@/lib/types';
 import { PublicHeader } from '@/components/PublicHeader';
+import { RequestLocationText } from '@/components/RequestLocationText';
 import { RequestMeta } from '@/components/RequestMeta';
 import { ImageGallery } from '@/components/ImageGallery';
 import { GuestCta } from '@/components/GuestCta';
@@ -70,10 +71,14 @@ export default function PublicRequestDetailPage() {
 
             <RequestMeta request={request} locale={locale} size="md" />
 
-            <p className="mt-3 text-sm text-slate-400">
-              {request.location}
-              {request.zone ? ` · ${request.zone}` : ''}
-              {' · '}
+            <RequestLocationText
+              className="mt-3 text-sm text-slate-400"
+              location={request.location}
+              zone={request.zone}
+              country={request.country}
+              locale={locale}
+            />
+            <p className="mt-1 text-sm text-slate-400">
               {timeAgo(locale, request.lastActivityAt ?? request.createdAt)}
             </p>
 

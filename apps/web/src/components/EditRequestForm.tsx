@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { isActiveNegotiation } from '@buyseekk/shared';
+import { isActiveNegotiation, parseUsAreaLocation, sanitizeUsLocationSelection } from '@buyseekk/shared';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
@@ -11,6 +11,7 @@ import { RequestItem } from '@/lib/types';
 import { ImageUpload } from '@/components/ImageUpload';
 import { MoneyInput } from '@/components/MoneyInput';
 import { moneyInputLocale } from '@/lib/money-input';
+import { UsLocationPicker } from '@/components/UsLocationPicker';
 
 type EditMode = 'full' | 'limited' | 'locked';
 
@@ -40,6 +41,8 @@ export function EditRequestForm({
   const [budget, setBudget] = useState(String(request.budget));
   const [negotiable, setNegotiable] = useState(request.negotiable !== false);
   const [imageUrls, setImageUrls] = useState<string[]>(request.imageUrls ?? []);
+  const [location, setLocation] = useState(request.location);
+  const [zone, setZone] = useState(request.zone ?? '');
 
   if (mode === 'locked') {
     const lockedMessage =
@@ -89,6 +92,15 @@ export function EditRequestForm({
         payload.negotiable = negotiable;
         payload.imageUrls = imageUrls;
         if (request.budgetPeriod) payload.budgetPeriod = request.budgetPeriod;
+        if (request.country === 'US') {
+          const clean = sanitizeUsLocationSelection({
+            state: parseUsAreaLocation(location)?.state ?? '',
+            location,
+            zone,
+          });
+          payload.location = clean.location;
+          payload.zone = clean.zone || null;
+        }
       }
 
       await api(`/requests/${request.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
@@ -141,6 +153,17 @@ export function EditRequestForm({
           required
         />
       </label>
+
+      {mode === 'full' && request.country === 'US' && (
+        <UsLocationPicker
+          className="us-location-picker--wide"
+          mode="form"
+          location={location}
+          zone={zone}
+          onLocationChange={setLocation}
+          onZoneChange={setZone}
+        />
+      )}
 
       <div className="block">
         <span className="text-xs font-semibold text-slate-600">{t('request.negotiableHint')}</span>

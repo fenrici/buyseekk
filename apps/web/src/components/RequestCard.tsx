@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { requestHasActiveNegotiation } from '@buyseekk/shared';
 import { Avatar } from '@/components/Avatar';
 import { EditRequestForm } from '@/components/EditRequestForm';
+import { RequestLocationText } from '@/components/RequestLocationText';
 import { RequestMeta } from '@/components/RequestMeta';
 import { RequestActivity, RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { SaveRequestButton, canSellerOfferOnRequest } from '@/components/SaveRequestButton';
@@ -47,10 +48,13 @@ export function RequestCard(props: Props) {
             <RequestStatusBadge status={request.status} />
           </div>
           <RequestMeta request={request} locale={locale} size="sm" />
-          <p className="mt-2 text-xs text-slate-400">
-            {request.location}
-            {request.zone ? ` · ${request.zone}` : ''}
-          </p>
+          <RequestLocationText
+            className="mt-2 text-xs text-slate-400"
+            location={request.location}
+            zone={request.zone}
+            country={request.country}
+            locale={locale}
+          />
           <RequestActivity
             offersCount={request.offersCount}
             conversationsCount={request.conversationsCount}
@@ -122,10 +126,13 @@ export function RequestCard(props: Props) {
                 compact
                 showRequirements={false}
               />
-              <p className="mt-1.5 truncate text-xs text-slate-400">
-                {request.location}
-                {request.zone ? ` · ${request.zone}` : ''}
-              </p>
+              <RequestLocationText
+                className="mt-1.5 truncate text-xs text-slate-400"
+                location={request.location}
+                zone={request.zone}
+                country={request.country}
+                locale={locale}
+              />
               <RequestActivity
                 offersCount={request.offersCount}
                 conversationsCount={request.conversationsCount}

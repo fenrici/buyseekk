@@ -1,5 +1,5 @@
 import type { SellerFilterState } from '@buyseekk/shared';
-import { formatUsAreaDisplay } from '@buyseekk/shared';
+import { formatUsAreaDisplay, usStateLabel } from '@buyseekk/shared';
 
 export type SavedSearchItem = {
   id: string;
@@ -29,6 +29,9 @@ export function buildSellerFilterChips(
       key: 'operation',
       label: state.operation === 'ALQUILER' ? t('request.rent') : t('request.buy'),
     });
+  }
+  if (state.state) {
+    chips.push({ key: 'state', label: usStateLabel(state.state) });
   }
   if (state.location) {
     chips.push({ key: 'location', label: formatUsAreaDisplay(state.location) });

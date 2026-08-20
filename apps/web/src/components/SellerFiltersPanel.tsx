@@ -1,8 +1,8 @@
 'use client';
 
-import { formatUsAreaDisplay } from '@buyseekk/shared';
 import { AutoFilters, AutoFilterValues } from '@/components/AutoFilters';
 import { RealEstateFilters, RealEstateFilterValues } from '@/components/RealEstateFilters';
+import { UsLocationPicker } from '@/components/UsLocationPicker';
 import { ZoneChips } from '@/components/ZoneChips';
 import { useT } from '@/lib/i18n';
 import { User } from '@/lib/types';
@@ -15,6 +15,8 @@ type Props = {
   onCategoryChange?: (id: string) => void;
   operation: string;
   onOperationChange: (id: string) => void;
+  state: string;
+  onStateChange: (state: string) => void;
   location: string;
   onLocationChange: (city: string) => void;
   zone: string;
@@ -35,6 +37,8 @@ export function SellerFiltersPanel({
   onCategoryChange,
   operation,
   onOperationChange,
+  state,
+  onStateChange,
   location,
   onLocationChange,
   zone,
@@ -50,7 +54,6 @@ export function SellerFiltersPanel({
 }: Props) {
   const t = useT();
   const isUs = user.country === 'US';
-  const showNeighborhoodFilter = category !== 'AUTOS' && (!isUs || category === 'INMOBILIARIA');
 
   return (
     <div className="seller-filters-panel">
@@ -97,8 +100,22 @@ export function SellerFiltersPanel({
         </div>
       )}
 
+      {isUs ? (
+        <div className="seller-filter-group">
+          <UsLocationPicker
+            mode="filter"
+            state={state}
+            location={location}
+            zone={zone}
+            onStateChange={onStateChange}
+            onLocationChange={onLocationChange}
+            onZoneChange={onZoneChange}
+          />
+        </div>
+      ) : (
+        <>
       <div className="seller-filter-group">
-        <span className="seller-filter-label">{isUs ? t('seller.filterArea') : t('seller.filterCity')}</span>
+        <span className="seller-filter-label">{t('seller.filterCity')}</span>
         <div className="explore-pills seller-filter-pills">
           <button
             type="button"
@@ -106,7 +123,7 @@ export function SellerFiltersPanel({
             className={`explore-pill ${location === '' ? 'active' : ''}`}
             aria-pressed={location === ''}
           >
-            {isUs ? t('seller.allAreas') : t('seller.allCities')}
+            {t('seller.allCities')}
           </button>
           {cities.map((city) => (
             <button
@@ -116,24 +133,22 @@ export function SellerFiltersPanel({
               className={`explore-pill ${location === city ? 'active' : ''}`}
               aria-pressed={location === city}
             >
-              {isUs ? formatUsAreaDisplay(city) : city}
+              {city}
             </button>
           ))}
         </div>
       </div>
 
-      {showNeighborhoodFilter && (
-        <div className="seller-filter-group">
-          <span className="seller-filter-label">
-            {isUs ? t('request.neighborhood') : t('request.zone')}
-          </span>
-          <ZoneChips
-            country={user.country}
-            city={location}
-            value={zone}
-            onChange={onZoneChange}
-          />
-        </div>
+      <div className="seller-filter-group">
+        <span className="seller-filter-label">{t('request.zone')}</span>
+        <ZoneChips
+          country={user.country}
+          city={location}
+          value={zone}
+          onChange={onZoneChange}
+        />
+      </div>
+        </>
       )}
 
       <RealEstateFilters
