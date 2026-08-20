@@ -16,19 +16,8 @@ export const ZONES_BY_COUNTRY_CITY: Record<Country, Record<string, string[]>> = 
     Rosario: ['Centro', 'Pichincha', 'Fisherton'],
     Mendoza: ['Godoy Cruz', 'Luján de Cuyo', 'Maipú'],
   },
-  US: {
-    'Miami, FL': ['Brickell', 'Wynwood', 'Little Havana', 'Edgewater', 'Design District'],
-    'Miami Beach, FL': ['South Beach', 'Mid-Beach', 'North Beach'],
-    'Orlando, FL': ['Downtown', 'Winter Park', 'Lake Nona'],
-    'Tampa, FL': ['Hyde Park', 'Ybor City', 'Westshore'],
-    'Dallas, TX': ['Uptown', 'Deep Ellum', 'Preston Hollow'],
-    'Austin, TX': ['Downtown', 'South Congress', 'East Austin'],
-    'Houston, TX': ['Montrose', 'River Oaks', 'The Heights'],
-    'Los Angeles, CA': ['Beverly Hills', 'Hollywood', 'Santa Monica', 'West Hollywood'],
-    'San Diego, CA': ['La Jolla', 'Gaslamp', 'Pacific Beach'],
-    'San Francisco, CA': ['SOMA', 'Marina', 'Pacific Heights'],
-    'New York, NY': ['Chelsea', 'Upper East Side', 'Williamsburg', 'Riverdale'],
-  },
+  // US zones come from US_AREAS_BY_CITY via neighborhoodsForUsArea — keep empty.
+  US: {},
 };
 
 export function citiesForCountry(country: Country): string[] {

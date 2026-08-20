@@ -34,10 +34,10 @@ export function UsLocationPicker({
 }: Props) {
   const t = useT();
   const allowEmpty = mode === 'filter';
-  const parsed = parseUsAreaLocation(location);
+  const parsedProp = parseUsAreaLocation(location);
   const sanitized = sanitizeUsLocationSelection(
     {
-      state: stateProp || parsed?.state || (allowEmpty ? '' : 'FL'),
+      state: stateProp || parsedProp?.state || (allowEmpty ? '' : 'FL'),
       location,
       zone,
     },
@@ -45,19 +45,12 @@ export function UsLocationPicker({
   );
   const state = sanitized.state as UsStateCode | '';
   const cities = state ? launchCityLocationsForUsState(state) : [];
-  const cityName = parsed?.area ?? '';
-  const areas = state && cityName ? [...neighborhoodsForUsArea(state as UsStateCode, cityName)] : [];
+  const selectedLocation = sanitized.location || location;
+  const selectedCity = parseUsAreaLocation(selectedLocation)?.area ?? '';
+  const areas =
+    state && selectedCity ? [...neighborhoodsForUsArea(state as UsStateCode, selectedCity)] : [];
   const cityDisabled = allowEmpty && !state;
-  const areaDisabled = allowEmpty && !location;
-
-  function emit(next: { state: string; location: string; zone: string }) {
-    const clean = sanitizeUsLocationSelection(next, { allowEmpty });
-    if (onStateChange && clean.state !== (stateProp || parsed?.state || '')) {
-      onStateChange(clean.state);
-    }
-    if (clean.location !== location) onLocationChange(clean.location);
-    if (clean.zone !== zone) onZoneChange(clean.zone);
-  }
+  const areaDisabled = allowEmpty && !selectedLocation;
 
   function updateState(nextState: string) {
     if (!nextState) {
@@ -66,18 +59,33 @@ export function UsLocationPicker({
       onZoneChange('');
       return;
     }
-    const firstCity = launchCityLocationsForUsState(nextState)[0] ?? '';
-    const nextLocation = allowEmpty ? '' : firstCity;
-    emit({ state: nextState, location: nextLocation, zone: '' });
-    onStateChange?.(nextState);
-    onLocationChange(nextLocation);
-    onZoneChange('');
+    const firstCity = allowEmpty ? '' : launchCityLocationsForUsState(nextState)[0] ?? '';
+    const clean = sanitizeUsLocationSelection(
+      { state: nextState, location: firstCity, zone: '' },
+      { allowEmpty },
+    );
+    onStateChange?.(clean.state);
+    onLocationChange(clean.location);
+    onZoneChange(clean.zone);
   }
 
   function updateCity(nextLocation: string) {
-    emit({ state: sanitized.state, location: nextLocation, zone: '' });
-    onLocationChange(nextLocation);
-    onZoneChange('');
+    const clean = sanitizeUsLocationSelection(
+      { state: sanitized.state, location: nextLocation, zone: '' },
+      { allowEmpty },
+    );
+    if (onStateChange && clean.state !== sanitized.state) onStateChange(clean.state);
+    onLocationChange(clean.location);
+    onZoneChange(clean.zone);
+  }
+
+  function updateZone(nextZone: string) {
+    const clean = sanitizeUsLocationSelection(
+      { state: sanitized.state, location: selectedLocation, zone: nextZone },
+      { allowEmpty },
+    );
+    if (clean.location !== location) onLocationChange(clean.location);
+    onZoneChange(clean.zone);
   }
 
   return (
@@ -102,7 +110,7 @@ export function UsLocationPicker({
         <span className="us-location-picker__label">{t('request.city')}{mode === 'form' ? ' *' : ''}</span>
         <select
           className="input us-location-picker__select"
-          value={location}
+          value={selectedLocation}
           disabled={cityDisabled}
           onChange={(e) => updateCity(e.target.value)}
         >
@@ -122,9 +130,9 @@ export function UsLocationPicker({
         <span className="us-location-picker__label">{t('request.zone')}{mode === 'form' ? ' *' : ''}</span>
         <select
           className="input us-location-picker__select"
-          value={zone}
+          value={sanitized.zone}
           disabled={areaDisabled}
-          onChange={(e) => onZoneChange(e.target.value)}
+          onChange={(e) => updateZone(e.target.value)}
         >
           {allowEmpty ? (
             <option value="">{t('seller.allZones')}</option>

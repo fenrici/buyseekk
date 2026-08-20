@@ -122,7 +122,11 @@ export function requestMatchesUsLocationFilter(
   }
 
   if (filterZone) {
-    if (isRequestAreaAny(request.zone)) return true;
+    // Soft-match "Cualquier zona" only inside the filtered market.
+    // Without a city filter, never treat statewide any-area as a zone hit.
+    if (isRequestAreaAny(request.zone)) {
+      return !!filterLocation;
+    }
     return request.zone === filterZone;
   }
 

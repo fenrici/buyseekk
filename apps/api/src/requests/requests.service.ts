@@ -484,7 +484,12 @@ export class RequestsService {
     }
     if (filters.zone) {
       if (user.country === Country.US) {
-        extraFilters.push({ OR: [{ zone: filters.zone }, { zone: null }] });
+        // Any-area soft match only when the seller also scoped a market/city.
+        if (filters.location) {
+          extraFilters.push({ OR: [{ zone: filters.zone }, { zone: null }] });
+        } else {
+          extraFilters.push({ zone: filters.zone });
+        }
       } else {
         extraFilters.push({ zone: filters.zone });
       }

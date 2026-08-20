@@ -94,4 +94,38 @@ assert.equal(
   true,
 );
 
+const naplesRequest = { ...bmwMiamiRequest, location: 'Naples, FL', zone: 'Old Naples' };
+assert.equal(
+  requestMatchesSellerFilters(naplesRequest, bmwMiamiFilters, { sellerCountry: 'US', savedCategory: 'AUTOS' }),
+  false,
+);
+
+const fortLauderdaleRequest = { ...bmwMiamiRequest, location: 'Fort Lauderdale, FL', zone: null };
+assert.equal(
+  requestMatchesSellerFilters(fortLauderdaleRequest, bmwMiamiFilters, {
+    sellerCountry: 'US',
+    savedCategory: 'AUTOS',
+  }),
+  false,
+);
+
+// Zone without city must not soft-match any-area statewide
+assert.equal(
+  requestMatchesSellerFilters(
+    orlandoRequest,
+    { ...EMPTY_SELLER_FILTERS, category: 'AUTOS', state: 'FL', zone: 'Brickell' },
+    { sellerCountry: 'US', savedCategory: 'AUTOS' },
+  ),
+  false,
+);
+
+assert.equal(
+  requestMatchesSellerFilters(
+    naplesRequest,
+    { ...EMPTY_SELLER_FILTERS, category: 'AUTOS', state: 'FL', location: 'Naples, FL' },
+    { sellerCountry: 'US', savedCategory: 'AUTOS' },
+  ),
+  true,
+);
+
 console.log('seller-filters: all assertions passed');

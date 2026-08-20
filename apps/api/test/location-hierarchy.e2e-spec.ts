@@ -3,6 +3,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import {
   launchCityLocationsForUsState,
+  launchMarketsForUsState,
   launchStatesForUsRequests,
   neighborhoodsForUsArea,
 } from '@buyseekk/shared';
@@ -95,26 +96,44 @@ describe('Request location hierarchy (e2e)', () => {
     return res.body.items as Array<{ id: string }>;
   }
 
-  it('exposes only Florida with Miami as the launch market', () => {
+  it('exposes Florida launch markets with per-market areas', () => {
     expect(launchStatesForUsRequests()).toEqual(['FL']);
-    expect(launchCityLocationsForUsState('FL')).toEqual(['Miami, FL']);
     expect(launchCityLocationsForUsState('TX')).toEqual([]);
+    const markets = launchMarketsForUsState('FL');
+    for (const market of [
+      'Miami',
+      'Fort Lauderdale',
+      'West Palm Beach',
+      'Orlando',
+      'Tampa',
+      'St. Petersburg',
+      'Naples',
+      'Fort Myers',
+      'Sarasota',
+      'Jacksonville',
+    ]) {
+      expect(markets).toContain(market);
+      expect(launchCityLocationsForUsState('FL')).toContain(`${market}, FL`);
+    }
     expect(neighborhoodsForUsArea('FL', 'Miami')).toContain('Brickell');
+    expect(neighborhoodsForUsArea('FL', 'Orlando')).toContain('Downtown Orlando');
     expect(neighborhoodsForUsArea('FL', 'Orlando')).not.toContain('Brickell');
+    expect(neighborhoodsForUsArea('FL', 'Naples')).toContain('Old Naples');
   });
 
-  it('rejects non-launch locations and invalid zone/city pairs', async () => {
+  it('accepts launch markets and rejects non-launch + invalid zone/city pairs', async () => {
     const buyer = await createBuyer();
+
     await request(app.getHttpServer())
       .post('/api/requests')
       .set(authHeader(buyer.token))
-      .send(autoPayload({ location: 'Orlando, FL', zone: '' }))
+      .send(autoPayload({ location: 'Dallas, TX', zone: '' }))
       .expect(400);
 
     await request(app.getHttpServer())
       .post('/api/requests')
       .set(authHeader(buyer.token))
-      .send(autoPayload({ location: 'Fort Lauderdale, FL', zone: '' }))
+      .send(autoPayload({ location: 'Orlando, FL', zone: 'Brickell' }))
       .expect(400);
 
     await request(app.getHttpServer())
@@ -122,9 +141,21 @@ describe('Request location hierarchy (e2e)', () => {
       .set(authHeader(buyer.token))
       .send(autoPayload({ location: 'Miami, FL', zone: 'Brickell' }))
       .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/requests')
+      .set(authHeader(buyer.token))
+      .send(autoPayload({ location: 'Naples, FL', zone: 'Old Naples' }))
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/requests')
+      .set(authHeader(buyer.token))
+      .send(autoPayload({ location: 'Fort Lauderdale, FL', zone: '' }))
+      .expect(201);
   });
 
-  it('saves Miami Brickell and Miami any-area, and edit keeps the same semantics', async () => {
+  it('saves Brickell / any-area and edit keeps the same market semantics', async () => {
     const buyer = await createBuyer();
     const brickell = await createRequest(buyer.token, { zone: 'Brickell' });
     expect(brickell.location).toBe('Miami, FL');
@@ -144,40 +175,61 @@ describe('Request location hierarchy (e2e)', () => {
     expect(patched.body.location).toBe('Miami, FL');
     expect(patched.body.zone).toBe('Kendall');
 
-    await request(app.getHttpServer())
+    const moved = await request(app.getHttpServer())
       .patch(`/api/requests/${brickell.id}`)
       .set(authHeader(buyer.token))
-      .send({ location: 'Orlando, FL' })
-      .expect(400);
+      .send({ location: 'Orlando, FL', zone: 'Downtown Orlando' })
+      .expect(200);
+    expect(moved.body.location).toBe('Orlando, FL');
+    expect(moved.body.zone).toBe('Downtown Orlando');
 
     await request(app.getHttpServer())
       .patch(`/api/requests/${anyArea.id}`)
       .set(authHeader(buyer.token))
-      .send({ zone: 'Brickell' })
-      .expect(200);
+      .send({ location: 'Orlando, FL', zone: 'Brickell' })
+      .expect(400);
   });
 
-  it('seller filters by Florida, Miami, and Brickell without metro expansion', async () => {
-    const buyer = await createBuyer();
+  it('seller filters by Florida / market / area without cross-market matching', async () => {
+    const buyerA = await createBuyer();
+    const buyerB = await createBuyer();
     const seller = await createSeller();
 
-    const brickell = await createRequest(buyer.token, { zone: 'Brickell' });
-    const anyMiami = await createRequest(buyer.token, { zone: '' });
-    const kendall = await createRequest(buyer.token, { zone: 'Kendall' });
-
-    await request(app.getHttpServer())
-      .post('/api/requests')
-      .set(authHeader(buyer.token))
-      .send(autoPayload({ location: 'Dallas, TX', zone: '' }))
-      .expect(400);
+    const brickell = await createRequest(buyerA.token, { zone: 'Brickell' });
+    const anyMiami = await createRequest(buyerA.token, { zone: '' });
+    const kendall = await createRequest(buyerA.token, { zone: 'Kendall' });
+    const naples = await createRequest(buyerA.token, {
+      location: 'Naples, FL',
+      zone: 'Old Naples',
+    });
+    const fortLauderdale = await createRequest(buyerB.token, {
+      location: 'Fort Lauderdale, FL',
+      zone: '',
+    });
+    const orlando = await createRequest(buyerB.token, {
+      location: 'Orlando, FL',
+      zone: 'Downtown Orlando',
+    });
 
     const ids = (items: Array<{ id: string }>) => items.map((i) => i.id);
 
     const florida = await sellerList(seller.token, { state: 'FL' });
-    expect(ids(florida)).toEqual(expect.arrayContaining([brickell.id, anyMiami.id, kendall.id]));
+    expect(ids(florida)).toEqual(
+      expect.arrayContaining([
+        brickell.id,
+        anyMiami.id,
+        kendall.id,
+        naples.id,
+        fortLauderdale.id,
+        orlando.id,
+      ]),
+    );
 
     const miami = await sellerList(seller.token, { state: 'FL', location: 'Miami, FL' });
     expect(ids(miami)).toEqual(expect.arrayContaining([brickell.id, anyMiami.id, kendall.id]));
+    expect(ids(miami)).not.toContain(naples.id);
+    expect(ids(miami)).not.toContain(fortLauderdale.id);
+    expect(ids(miami)).not.toContain(orlando.id);
 
     const brickellFilter = await sellerList(seller.token, {
       state: 'FL',
@@ -186,5 +238,22 @@ describe('Request location hierarchy (e2e)', () => {
     });
     expect(ids(brickellFilter)).toEqual(expect.arrayContaining([brickell.id, anyMiami.id]));
     expect(ids(brickellFilter)).not.toContain(kendall.id);
+    expect(ids(brickellFilter)).not.toContain(fortLauderdale.id);
+    expect(ids(brickellFilter)).not.toContain(naples.id);
+
+    const naplesFilter = await sellerList(seller.token, {
+      state: 'FL',
+      location: 'Naples, FL',
+    });
+    expect(ids(naplesFilter)).toContain(naples.id);
+    expect(ids(naplesFilter)).not.toContain(brickell.id);
+    expect(ids(naplesFilter)).not.toContain(anyMiami.id);
+
+    // Zone without city must not pull any-area from other markets
+    const zoneOnly = await sellerList(seller.token, { state: 'FL', zone: 'Brickell' });
+    expect(ids(zoneOnly)).toContain(brickell.id);
+    expect(ids(zoneOnly)).not.toContain(anyMiami.id);
+    expect(ids(zoneOnly)).not.toContain(fortLauderdale.id);
+    expect(ids(zoneOnly)).not.toContain(orlando.id);
   });
 });
