@@ -17,8 +17,11 @@ type Props = {
   header?: ReactNode;
   subtitle?: ReactNode;
   sellerName?: string;
+  onBack?: () => void;
+  backLabel?: string;
 };
 
+/** Detalle completo de Offer recibida (comparación + acciones). */
 export function OfferReceivedCard({
   offer,
   onAccept,
@@ -29,13 +32,19 @@ export function OfferReceivedCard({
   header,
   subtitle,
   sellerName,
+  onBack,
+  backLabel,
 }: Props) {
   const decisionSubtitle = subtitle ?? <UserRatingBadge stats={offer.seller?.rating} compact />;
 
   return (
     <article id={`offer-${offer.id}`} className="offer-received-card scroll-mt-24">
+      {onBack && (
+        <button type="button" className="offer-received-card__back" onClick={onBack}>
+          ← {backLabel ?? 'Back'}
+        </button>
+      )}
       {header && <div className="mb-2">{header}</div>}
-      <p className="mb-3 text-sm font-semibold text-slate-400">{offer.requestTitle}</p>
       <CompareBlock offer={offer} />
       <OfferDecisionBar
         seller={{

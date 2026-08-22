@@ -9,9 +9,11 @@ import {
   autoRequestTitle,
   formatAutoSpecLine,
   formatBudgetCapLabel,
+  formatBuyerRequestSummary,
   formatCarColorLabel,
   formatMaxMileageLabel,
 } from './request-display';
+import { formatBudgetDifferenceLabel } from './pricing';
 import { requestMatchesSellerFilters, EMPTY_SELLER_FILTERS } from './seller-filters';
 
 assert.equal(autoRequestTitle({ carBrand: 'Porsche', carModel: '911 Carrera' }), 'Porsche 911 Carrera');
@@ -41,6 +43,44 @@ assert.equal(
 );
 
 assert.match(formatBudgetCapLabel(120000, 'USD', 'ES'), /^Hasta US\$\s?120\.000$/);
+
+assert.equal(
+  formatBudgetDifferenceLabel(85000, 82000, 'USD', 'ES'),
+  'US$3,000 por debajo de tu presupuesto',
+);
+assert.equal(
+  formatBudgetDifferenceLabel(85000, 87000, 'USD', 'ES'),
+  'US$2,000 por encima de tu presupuesto',
+);
+assert.equal(formatBudgetDifferenceLabel(85000, 85000, 'USD', 'ES'), 'Dentro de tu presupuesto');
+assert.equal(
+  formatBudgetDifferenceLabel(85000, 82000, 'USD', 'EN'),
+  'US$3,000 below your budget',
+);
+assert.equal(formatBudgetDifferenceLabel(0, 82000, 'USD', 'ES'), null);
+
+const summary = formatBuyerRequestSummary(
+  {
+    carBrand: 'BMW',
+    carModel: 'M2',
+    budget: 85000,
+    currency: 'USD',
+    location: 'Miami, FL',
+    zone: 'Brickell',
+    country: 'US',
+    category: 'AUTOS',
+    carYearMin: 2022,
+    maxMileage: 25000,
+    carColor: CAR_COLOR_NO_PREFERENCE,
+  },
+  'ES',
+);
+assert.ok(summary.primary.includes('BMW M2'));
+assert.ok(summary.primary.includes('Miami, FL'));
+assert.ok(summary.primary.includes('Brickell'));
+assert.ok(summary.secondary?.includes('2022'));
+assert.ok(summary.secondary?.includes('25'));
+assert.ok(summary.secondary?.includes('Sin preferencia'));
 
 const anyColorRequest = {
   category: 'AUTOS',

@@ -1,18 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, normalizePaginated } from '@/lib/api';
+import { highlightToOfferItem } from '@/lib/offer-highlight';
 import { OfferHighlight, OfferItem, PaginatedResult } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { PanelListLoading } from '@/components/PanelListLoading';
+import { BuyerRequestOffersSummary } from '@/components/BuyerRequestOffersSummary';
 import { OfferHighlightsSummary } from '@/components/OfferHighlightsSummary';
 import { OfferReceivedCard } from '@/components/OfferReceivedCard';
+import { OfferReceivedCompactCard } from '@/components/OfferReceivedCompactCard';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
 import { useT } from '@/lib/i18n';
 
 type ReceivedStatusFilter = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+
+function requestGroupKey(offer: OfferItem) {
+  return offer.request?.id || `title:${offer.requestTitle}`;
+}
+
+function groupOffersByRequest(offers: OfferItem[]) {
+  const groups: { key: string; offers: OfferItem[] }[] = [];
+  const index = new Map<string, number>();
+  for (const offer of offers) {
+    const key = requestGroupKey(offer);
+    const existing = index.get(key);
+    if (existing == null) {
+      index.set(key, groups.length);
+      groups.push({ key, offers: [offer] });
+    } else {
+      groups[existing].offers.push(offer);
+    }
+  }
+  return groups;
+}
 
 export default function BuyerOffersPage() {
   const router = useRouter();
@@ -25,9 +48,11 @@ export default function BuyerOffersPage() {
   const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
 
   useEffect(() => {
     setPage(1);
+    setSelectedOfferId(null);
   }, [statusFilter]);
 
   useEffect(() => {
@@ -85,6 +110,7 @@ export default function BuyerOffersPage() {
         router.push(`/chats/${res.chatId}`);
         return;
       }
+      setSelectedOfferId(null);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -94,6 +120,7 @@ export default function BuyerOffersPage() {
   async function reject(id: string) {
     try {
       await api(`/offers/${id}/reject`, { method: 'PATCH' });
+      setSelectedOfferId(null);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -107,6 +134,7 @@ export default function BuyerOffersPage() {
         router.push(`/ratings`);
         return;
       }
+      setSelectedOfferId(null);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -116,6 +144,7 @@ export default function BuyerOffersPage() {
   async function endNegotiation(id: string) {
     try {
       await api(`/offers/${id}/end-negotiation`, { method: 'PATCH' });
+      setSelectedOfferId(null);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -127,15 +156,29 @@ export default function BuyerOffersPage() {
       await api(`/offers/${id}`, { method: 'DELETE' });
       setOffers((prev) => prev.filter((o) => o.id !== id));
       setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
+      setSelectedOfferId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
     }
   }
 
+  const highlightIds = useMemo(
+    () => new Set(offerHighlights.map((h) => h.offerId)),
+    [offerHighlights],
+  );
+  const listOffers = statusFilter === 'PENDIENTE' ? offers.filter((o) => !highlightIds.has(o.id)) : offers;
+  const requestGroups = useMemo(() => groupOffersByRequest(listOffers), [listOffers]);
+
+  const selectedOffer = useMemo(() => {
+    if (!selectedOfferId) return null;
+    const fromList = offers.find((o) => o.id === selectedOfferId);
+    if (fromList) return fromList;
+    const highlight = offerHighlights.find((h) => h.offerId === selectedOfferId);
+    return highlight ? highlightToOfferItem(highlight) : null;
+  }, [selectedOfferId, offers, offerHighlights]);
+
   if (!user) return null;
 
-  const highlightIds = new Set(offerHighlights.map((h) => h.offerId));
-  const otherOffers = offers.filter((o) => !highlightIds.has(o.id));
   const statusFilters: { id: ReceivedStatusFilter; label: string }[] = [
     { id: 'PENDIENTE', label: t('buyer.receivedFilterPending') },
     { id: 'ACEPTADA', label: t('buyer.receivedFilterAccepted') },
@@ -155,22 +198,24 @@ export default function BuyerOffersPage() {
         <h1 className="text-3xl font-bold text-white">{t('buyer.receivedTitle')}</h1>
         <p className="mt-1 text-slate-500">{t('buyer.receivedSubtitle')}</p>
 
-        <div className="panel-tabs mt-6" role="tablist" aria-label={t('buyer.receivedTitle')}>
-          {statusFilters.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              role="tab"
-              className={`panel-tab ${statusFilter === filter.id ? 'active' : ''}`}
-              onClick={() => setStatusFilter(filter.id)}
-              aria-selected={statusFilter === filter.id}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        {!selectedOffer && (
+          <div className="panel-tabs mt-6" role="tablist" aria-label={t('buyer.receivedTitle')}>
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                role="tab"
+                className={`panel-tab ${statusFilter === filter.id ? 'active' : ''}`}
+                onClick={() => setStatusFilter(filter.id)}
+                aria-selected={statusFilter === filter.id}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {meta.total > 0 && (
+        {!selectedOffer && meta.total > 0 && (
           <p className="mt-3 text-sm text-slate-400">
             {t('buyer.receivedCount', { total: String(meta.total) })}
           </p>
@@ -180,18 +225,29 @@ export default function BuyerOffersPage() {
 
         <div className="mt-8 space-y-6">
           <PanelListLoading loading={loading} />
-          {!loading && (
+          {!loading && selectedOffer && (
+            <OfferReceivedCard
+              offer={selectedOffer}
+              onAccept={accept}
+              onReject={reject}
+              onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
+              onEndNegotiation={statusFilter === 'ACEPTADA' ? endNegotiation : undefined}
+              onDelete={statusFilter === 'ACEPTADA' ? removeFromListing : undefined}
+              onBack={() => setSelectedOfferId(null)}
+              backLabel={t('buyer.backToOffers')}
+            />
+          )}
+
+          {!loading && !selectedOffer && (
             <>
               {statusFilter === 'PENDIENTE' && offerHighlights.length > 0 && (
                 <OfferHighlightsSummary
                   highlights={offerHighlights}
-                  onAccept={accept}
-                  onReject={reject}
-                  onComplete={complete}
+                  onViewOffer={setSelectedOfferId}
                 />
               )}
 
-              {otherOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
+              {listOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                   {t('highlights.allOffers')}
                 </h2>
@@ -204,23 +260,31 @@ export default function BuyerOffersPage() {
                 </div>
               )}
 
-              {(statusFilter === 'PENDIENTE' ? otherOffers : offers).map((o) => (
-                <OfferReceivedCard
-                  key={o.id}
-                  offer={o}
-                  onAccept={accept}
-                  onReject={reject}
-                  onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
-                  onEndNegotiation={statusFilter === 'ACEPTADA' ? endNegotiation : undefined}
-                  onDelete={statusFilter === 'ACEPTADA' ? removeFromListing : undefined}
-                />
-              ))}
+              <div className="buyer-offers-groups">
+                {requestGroups.map((group) => (
+                  <section key={group.key} className="buyer-offers-group">
+                    <BuyerRequestOffersSummary offer={group.offers[0]} />
+                    <div className="buyer-offers-group__list">
+                      {group.offers.map((o) => (
+                        <OfferReceivedCompactCard
+                          key={o.id}
+                          offer={o}
+                          onViewOffer={setSelectedOfferId}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
 
               <PaginationControls
                 page={meta.page}
                 totalPages={meta.totalPages}
                 total={meta.total}
-                onPageChange={setPage}
+                onPageChange={(next) => {
+                  setSelectedOfferId(null);
+                  setPage(next);
+                }}
                 itemLabel={t('buyer.tabOffers').toLowerCase()}
               />
             </>

@@ -3,18 +3,12 @@
 import { highlightToOfferItem } from '@/lib/offer-highlight';
 import { useT } from '@/lib/i18n';
 import type { OfferHighlight, OfferHighlightLabel } from '@/lib/types';
-import { OfferReceivedCard } from '@/components/OfferReceivedCard';
+import { OfferReceivedCompactCard } from '@/components/OfferReceivedCompactCard';
 
 const BADGE_CLASS: Record<OfferHighlightLabel, string> = {
   recommended: 'offer-highlight-badge--recommended',
   lowest_price: 'offer-highlight-badge--price',
   closest_match: 'offer-highlight-badge--closest',
-};
-
-const REASON_KEY: Record<OfferHighlightLabel, string> = {
-  recommended: 'highlights.reasonRecommended',
-  lowest_price: 'highlights.reasonLowest',
-  closest_match: 'highlights.reasonClosest',
 };
 
 const BADGE_KEY: Record<OfferHighlightLabel, string> = {
@@ -27,12 +21,10 @@ const LABEL_ORDER: OfferHighlightLabel[] = ['recommended', 'lowest_price', 'clos
 
 type Props = {
   highlights: OfferHighlight[];
-  onAccept: (offerId: string) => void;
-  onReject: (offerId: string) => void;
-  onComplete?: (offerId: string) => void;
+  onViewOffer: (offerId: string) => void;
 };
 
-export function OfferHighlightsSummary({ highlights, onAccept, onReject, onComplete }: Props) {
+export function OfferHighlightsSummary({ highlights, onViewOffer }: Props) {
   const t = useT();
 
   if (!highlights.length) return null;
@@ -50,14 +42,10 @@ export function OfferHighlightsSummary({ highlights, onAccept, onReject, onCompl
 
       <div className="offer-highlights-stack">
         {sorted.map((h) => (
-          <OfferReceivedCard
+          <OfferReceivedCompactCard
             key={`${h.label}-${h.offerId}`}
             offer={highlightToOfferItem(h)}
-            onAccept={onAccept}
-            onReject={onReject}
-            onComplete={onComplete}
-            sellerName={h.sellerName}
-            subtitle={<p className="text-sm text-slate-400">{t(REASON_KEY[h.label])}</p>}
+            onViewOffer={onViewOffer}
             header={
               <span className={`offer-highlight-badge ${BADGE_CLASS[h.label]}`}>
                 {t(BADGE_KEY[h.label])}

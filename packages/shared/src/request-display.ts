@@ -6,6 +6,7 @@ import {
   isCarConditionNew,
   isMileageNoPreference,
 } from './car-catalog';
+import { formatRequestLocationDisplay } from './request-location';
 
 type AutoSpecInput = {
   carBrand?: string | null;
@@ -108,4 +109,65 @@ export function formatColorFieldLabel(
   if (!value) return null;
   const label = locale === 'EN' ? 'Color' : 'Color';
   return `${label}: ${value}`;
+}
+
+export type BuyerRequestSummaryInput = AutoSpecInput & {
+  title?: string | null;
+  category?: string | null;
+  budget?: number | null;
+  currency?: string | null;
+  budgetPeriod?: string | null;
+  location?: string | null;
+  zone?: string | null;
+  country?: string | null;
+  minSqm?: number | null;
+  maxSqm?: number | null;
+};
+
+/** Líneas compactas para el resumen de Request encima del listado de ofertas. */
+export function formatBuyerRequestSummary(
+  request: BuyerRequestSummaryInput,
+  locale: AppLocale = 'ES',
+): { primary: string; secondary: string | null } {
+  const title =
+    autoRequestTitle(request) ||
+    request.title?.trim() ||
+    (locale === 'EN' ? 'Your request' : 'Tu solicitud');
+
+  const primaryParts = [title];
+  if (request.budget != null && request.budget > 0 && request.currency) {
+    primaryParts.push(
+      formatBudgetCapLabel(request.budget, request.currency, locale, request.budgetPeriod),
+    );
+  }
+  if (request.location?.trim()) {
+    primaryParts.push(
+      formatRequestLocationDisplay(
+        {
+          location: request.location,
+          zone: request.zone,
+          country: request.country,
+        },
+        locale,
+      ),
+    );
+  }
+
+  const secondaryParts: string[] = [];
+  if (request.category === 'AUTOS' || request.carBrand || request.carModel) {
+    const specs = formatAutoSpecLine(request, locale);
+    if (specs) secondaryParts.push(specs);
+    const color = formatCarColorLabel(request.carColor, locale);
+    if (color) secondaryParts.push(color);
+  } else {
+    const min = formatMinSqmLabel(request.minSqm, locale);
+    const max = formatMaxSqmLabel(request.maxSqm, locale);
+    if (min) secondaryParts.push(min);
+    if (max) secondaryParts.push(max);
+  }
+
+  return {
+    primary: primaryParts.join(' · '),
+    secondary: secondaryParts.length ? secondaryParts.join(' · ') : null,
+  };
 }
