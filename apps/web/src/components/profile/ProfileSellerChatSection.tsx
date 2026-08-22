@@ -49,10 +49,10 @@ export function ProfileSellerChatSection({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card mt-6 space-y-4 p-5">
+    <form onSubmit={handleSubmit} className="card profile-seller-chat-section mt-6 space-y-4 p-5">
       <div>
-        <h3 className="font-semibold text-slate-900">{t('profile.acceptMessageTitle')}</h3>
-        <p className="mt-1 text-sm text-slate-500">{t('profile.acceptMessageDesc')}</p>
+        <h3 className="profile-seller-section__title">{t('profile.acceptMessageTitle')}</h3>
+        <p className="profile-seller-section__hint">{t('profile.acceptMessageDesc')}</p>
       </div>
       <textarea
         className="input min-h-[100px] resize-y"
@@ -64,9 +64,9 @@ export function ProfileSellerChatSection({
         placeholder={placeholder}
         maxLength={500}
       />
-      <p className="text-xs text-slate-500">{t('profile.acceptMessageHint')}</p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-emerald-600">{t('profile.saved')}</p>}
+      <p className="profile-seller-chat-section__hint">{t('profile.acceptMessageHint')}</p>
+      {error && <p className="profile-form__alert profile-form__alert--error">{error}</p>}
+      {saved && <p className="profile-form__alert profile-form__alert--success">{t('profile.saved')}</p>}
       <button type="submit" disabled={saving} className="btn btn-primary">
         {saving ? t('common.saving') : t('profile.save')}
       </button>
