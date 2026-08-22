@@ -13,9 +13,12 @@ import { OfferReceivedCard } from '@/components/OfferReceivedCard';
 import { OfferReceivedCompactCard } from '@/components/OfferReceivedCompactCard';
 import { PaginationControls } from '@/components/PaginationControls';
 import { useAuth } from '@/providers/AuthProvider';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useT } from '@/lib/i18n';
 
 type ReceivedStatusFilter = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+
+const DESKTOP_MIN = '(min-width: 1024px)';
 
 function requestGroupKey(offer: OfferItem) {
   return offer.request?.id || `title:${offer.requestTitle}`;
@@ -41,6 +44,9 @@ export default function BuyerOffersPage() {
   const router = useRouter();
   const { user } = useAuth();
   const t = useT();
+  const desktopMq = useMediaQuery(DESKTOP_MIN);
+  const viewportReady = desktopMq !== null;
+  const isDesktop = desktopMq === true;
   const [statusFilter, setStatusFilter] = useState<ReceivedStatusFilter>('PENDIENTE');
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [offerHighlights, setOfferHighlights] = useState<OfferHighlight[]>([]);
@@ -54,6 +60,10 @@ export default function BuyerOffersPage() {
     setPage(1);
     setSelectedOfferId(null);
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (isDesktop) setSelectedOfferId(null);
+  }, [isDesktop]);
 
   useEffect(() => {
     if (!user) return;
@@ -170,12 +180,20 @@ export default function BuyerOffersPage() {
   const requestGroups = useMemo(() => groupOffersByRequest(listOffers), [listOffers]);
 
   const selectedOffer = useMemo(() => {
-    if (!selectedOfferId) return null;
+    if (isDesktop || !selectedOfferId) return null;
     const fromList = offers.find((o) => o.id === selectedOfferId);
     if (fromList) return fromList;
     const highlight = offerHighlights.find((h) => h.offerId === selectedOfferId);
     return highlight ? highlightToOfferItem(highlight) : null;
-  }, [selectedOfferId, offers, offerHighlights]);
+  }, [isDesktop, selectedOfferId, offers, offerHighlights]);
+
+  const decisionHandlers = {
+    onAccept: accept,
+    onReject: reject,
+    onComplete: statusFilter === 'ACEPTADA' ? complete : undefined,
+    onEndNegotiation: statusFilter === 'ACEPTADA' ? endNegotiation : undefined,
+    onDelete: statusFilter === 'ACEPTADA' ? removeFromListing : undefined,
+  };
 
   if (!user) return null;
 
@@ -191,6 +209,9 @@ export default function BuyerOffersPage() {
         ? { title: t('buyer.noReceivedRejected'), hint: t('buyer.noReceivedRejectedHint') }
         : { title: t('buyer.noOffers'), hint: null };
 
+  const showListChrome = !viewportReady || isDesktop || !selectedOffer;
+  const listPending = loading || !viewportReady;
+
   return (
     <div className="panel-dark">
       <Header variant="dark" />
@@ -198,7 +219,7 @@ export default function BuyerOffersPage() {
         <h1 className="text-3xl font-bold text-white">{t('buyer.receivedTitle')}</h1>
         <p className="mt-1 text-slate-500">{t('buyer.receivedSubtitle')}</p>
 
-        {!selectedOffer && (
+        {showListChrome && (
           <div className="panel-tabs mt-6" role="tablist" aria-label={t('buyer.receivedTitle')}>
             {statusFilters.map((filter) => (
               <button
@@ -215,7 +236,7 @@ export default function BuyerOffersPage() {
           </div>
         )}
 
-        {!selectedOffer && meta.total > 0 && (
+        {showListChrome && meta.total > 0 && (
           <p className="mt-3 text-sm text-slate-400">
             {t('buyer.receivedCount', { total: String(meta.total) })}
           </p>
@@ -224,35 +245,19 @@ export default function BuyerOffersPage() {
         {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-8 space-y-6">
-          <PanelListLoading loading={loading} />
-          {!loading && selectedOffer && (
+          <PanelListLoading loading={listPending} />
+
+          {!listPending && !isDesktop && selectedOffer && (
             <OfferReceivedCard
               offer={selectedOffer}
-              onAccept={accept}
-              onReject={reject}
-              onComplete={statusFilter === 'ACEPTADA' ? complete : undefined}
-              onEndNegotiation={statusFilter === 'ACEPTADA' ? endNegotiation : undefined}
-              onDelete={statusFilter === 'ACEPTADA' ? removeFromListing : undefined}
+              {...decisionHandlers}
               onBack={() => setSelectedOfferId(null)}
               backLabel={t('buyer.backToOffers')}
             />
           )}
 
-          {!loading && !selectedOffer && (
+          {!listPending && (isDesktop || !selectedOffer) && (
             <>
-              {statusFilter === 'PENDIENTE' && offerHighlights.length > 0 && (
-                <OfferHighlightsSummary
-                  highlights={offerHighlights}
-                  onViewOffer={setSelectedOfferId}
-                />
-              )}
-
-              {listOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
-                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                  {t('highlights.allOffers')}
-                </h2>
-              )}
-
               {offers.length === 0 && !error && (
                 <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center">
                   <p className="text-slate-400">{emptyCopy.title}</p>
@@ -260,22 +265,77 @@ export default function BuyerOffersPage() {
                 </div>
               )}
 
-              <div className="buyer-offers-groups">
-                {requestGroups.map((group) => (
-                  <section key={group.key} className="buyer-offers-group">
-                    <BuyerRequestOffersSummary offer={group.offers[0]} />
-                    <div className="buyer-offers-group__list">
-                      {group.offers.map((o) => (
-                        <OfferReceivedCompactCard
-                          key={o.id}
-                          offer={o}
-                          onViewOffer={setSelectedOfferId}
+              {isDesktop ? (
+                <div className="buyer-offers-desktop-list">
+                  {statusFilter === 'PENDIENTE' &&
+                    offerHighlights.map((h) => {
+                      const badgeClass =
+                        h.label === 'lowest_price'
+                          ? 'offer-highlight-badge--price'
+                          : h.label === 'closest_match'
+                            ? 'offer-highlight-badge--closest'
+                            : 'offer-highlight-badge--recommended';
+                      const badgeLabel =
+                        h.label === 'recommended'
+                          ? t('highlights.badgeRecommended')
+                          : h.label === 'lowest_price'
+                            ? t('highlights.badgeLowest')
+                            : t('highlights.badgeClosest');
+                      return (
+                        <OfferReceivedCard
+                          key={`highlight-${h.label}-${h.offerId}`}
+                          offer={highlightToOfferItem(h)}
+                          {...decisionHandlers}
+                          header={
+                            <span className={`offer-highlight-badge ${badgeClass}`}>{badgeLabel}</span>
+                          }
                         />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
+                      );
+                    })}
+
+                  {listOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                      {t('highlights.allOffers')}
+                    </h2>
+                  )}
+
+                  {listOffers.map((o) => (
+                    <OfferReceivedCard key={o.id} offer={o} {...decisionHandlers} />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {statusFilter === 'PENDIENTE' && offerHighlights.length > 0 && (
+                    <OfferHighlightsSummary
+                      highlights={offerHighlights}
+                      onViewOffer={setSelectedOfferId}
+                    />
+                  )}
+
+                  {listOffers.length > 0 && offerHighlights.length > 0 && statusFilter === 'PENDIENTE' && (
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                      {t('highlights.allOffers')}
+                    </h2>
+                  )}
+
+                  <div className="buyer-offers-groups">
+                    {requestGroups.map((group) => (
+                      <section key={group.key} className="buyer-offers-group">
+                        <BuyerRequestOffersSummary offer={group.offers[0]} />
+                        <div className="buyer-offers-group__list">
+                          {group.offers.map((o) => (
+                            <OfferReceivedCompactCard
+                              key={o.id}
+                              offer={o}
+                              onViewOffer={setSelectedOfferId}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <PaginationControls
                 page={meta.page}

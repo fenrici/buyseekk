@@ -5544,6 +5544,13 @@ a.profile-menu-row {
   gap: 1.75rem;
 }
 
+.buyer-offers-desktop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+}
+
 .buyer-offers-group {
   display: flex;
   flex-direction: column;
@@ -5616,7 +5623,7 @@ a.profile-menu-row {
 .offer-compact-card__img {
   display: block;
   width: 100%;
-  height: 150px;
+  height: 128px;
   object-fit: cover;
   border-radius: 0.75rem;
   background: rgb(15 23 42 / 0.7);
@@ -5742,7 +5749,7 @@ a.profile-menu-row {
 
 @media (max-width: 389px) {
   .offer-compact-card__img {
-    height: 140px;
+    height: 118px;
   }
 
   .offer-compact-card__price {
@@ -5805,86 +5812,25 @@ a.profile-menu-row {
   }
 }
 
-/* Desktop: more presence + 2-column offer grid when width allows. */
+/* Desktop compact-card sizing kept for any residual compact surfaces below 1024 only.
+   Buyer received list uses full OfferReceivedCard from 1024px up (see page.tsx). */
 @media (min-width: 1024px) {
   .buyer-offers-group__list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-
-  .buyer-offers-group__list > .offer-compact-card:only-child {
-    grid-column: 1 / -1;
-    max-width: 40rem;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
   }
 
   .offer-highlights-stack {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 1.25rem;
-  }
-
-  .offer-highlights-stack > .offer-compact-card:only-child {
-    grid-column: 1 / -1;
-    max-width: 40rem;
-    width: 100%;
-  }
-
-  .offer-compact-card {
-    padding: 1.25rem;
-  }
-
-  .offer-compact-card__layout {
-    grid-template-columns: 176px minmax(0, 1fr);
-    gap: 0.6rem 1.35rem;
-  }
-
-  .offer-compact-card__media,
-  .offer-compact-card__img {
-    width: 176px;
-  }
-
-  .offer-compact-card__img {
-    height: 176px;
-  }
-
-  .offer-compact-card__main {
-    gap: 0.5rem;
-  }
-
-  .offer-compact-card__price {
-    font-size: 1.7rem;
-  }
-
-  .offer-compact-card__diff {
-    font-size: 0.875rem;
-  }
-
-  .offer-compact-card__cta {
-    min-height: 2.85rem;
-    min-width: 8rem;
   }
 }
 
 @media (min-width: 1280px) {
-  .offer-compact-card__layout {
-    grid-template-columns: 196px minmax(0, 1fr);
-    gap: 0.65rem 1.5rem;
-  }
-
-  .offer-compact-card__media,
-  .offer-compact-card__img {
-    width: 196px;
-  }
-
-  .offer-compact-card__img {
-    height: 196px;
-  }
-
-  .buyer-offers-group__list > .offer-compact-card:only-child,
-  .offer-highlights-stack > .offer-compact-card:only-child {
-    max-width: 44rem;
+  .buyer-offers-desktop-list {
+    gap: 2rem;
   }
 }
 
