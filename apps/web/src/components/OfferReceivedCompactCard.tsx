@@ -66,7 +66,7 @@ export function OfferReceivedCompactCard({ offer, onViewOffer, header }: Props) 
           )}
         </div>
 
-        <div className="offer-compact-card__body">
+        <div className="offer-compact-card__main">
           <div className="offer-compact-card__price-row">
             <p className="offer-compact-card__price">
               {formatMoney(offer.price, offer.currency)}
@@ -96,38 +96,38 @@ export function OfferReceivedCompactCard({ offer, onViewOffer, header }: Props) 
               </p>
             </div>
           </div>
+        </div>
 
-          {offer.message?.trim() && (
-            <p className="offer-compact-card__message">{offer.message.trim()}</p>
-          )}
+        {offer.message?.trim() && (
+          <p className="offer-compact-card__message">{offer.message.trim()}</p>
+        )}
 
-          <div className="offer-compact-card__actions">
-            {activeNegotiation && offer.chatId ? (
-              <>
-                <Link
-                  href={`/chats/${offer.chatId}`}
-                  className="offer-action-btn offer-action-btn--primary offer-compact-card__cta"
-                >
-                  {t('buyer.openChat')}
-                </Link>
-                <button
-                  type="button"
-                  className="offer-compact-card__secondary"
-                  onClick={() => onViewOffer(offer.id)}
-                >
-                  {t('highlights.viewOffer')}
-                </button>
-              </>
-            ) : (
+        <div className="offer-compact-card__actions">
+          {activeNegotiation && offer.chatId ? (
+            <>
+              <Link
+                href={`/chats/${offer.chatId}`}
+                className="offer-action-btn offer-action-btn--primary offer-compact-card__cta"
+              >
+                {t('buyer.openChat')}
+              </Link>
               <button
                 type="button"
-                className="offer-action-btn offer-action-btn--primary offer-compact-card__cta"
+                className="offer-compact-card__secondary"
                 onClick={() => onViewOffer(offer.id)}
               >
                 {t('highlights.viewOffer')}
               </button>
-            )}
-          </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="offer-action-btn offer-action-btn--primary offer-compact-card__cta"
+              onClick={() => onViewOffer(offer.id)}
+            >
+              {t('highlights.viewOffer')}
+            </button>
+          )}
         </div>
       </div>
     </article>
