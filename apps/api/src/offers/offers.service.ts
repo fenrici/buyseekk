@@ -11,10 +11,12 @@ import {
   comparePrices,
   defaultAcceptMessageForLocale,
   OFFER_HIGHLIGHTS_POOL_LIMIT,
+  OFFER_MESSAGE_MAX_LENGTH,
   parsePagination,
   pickOfferHighlights,
   SELLER_PROFILE_INCOMPLETE_CODE,
   canSendOffers,
+  normalizeOfferMessage,
   type OfferForHighlight,
   toPaginatedResult,
 } from '@buyseekk/shared';
@@ -149,14 +151,23 @@ export class OffersService {
     }
     assertValidImageUrls(dto.imageUrls, 'producto');
     assertOwnedImageUrls(dto.imageUrls, sellerId);
-    assertCleanPublicText(dto.message, 'la propuesta');
+    const message = normalizeOfferMessage(dto.message);
+    if (!message) {
+      throw new BadRequestException('La propuesta es obligatoria');
+    }
+    if (message.length > OFFER_MESSAGE_MAX_LENGTH) {
+      throw new BadRequestException(
+        `La propuesta no puede superar ${OFFER_MESSAGE_MAX_LENGTH} caracteres`,
+      );
+    }
+    assertCleanPublicText(message, 'la propuesta');
     assertValidMoneyAmount(
       dto.price,
       dto.currency,
       'precio',
       request.budgetPeriod != null || request.operation === 'ALQUILER',
     );
-    await assertOfferSpamLimits(this.prisma, sellerId, dto.message);
+    await assertOfferSpamLimits(this.prisma, sellerId, message);
     await this.subscription.assertDailyOfferLimit(seller);
 
     let offer;
@@ -168,7 +179,7 @@ export class OffersService {
             sellerId,
             price: dto.price,
             currency: dto.currency,
-            message: dto.message,
+            message,
             imageUrls: dto.imageUrls!,
             requestTitle: request.title,
             requestBudget: request.budget,

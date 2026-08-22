@@ -1,4 +1,6 @@
 export const MAX_ACTIVE_REQUESTS = 5;
+/** Máximo de caracteres del mensaje inicial de una Offer (propuesta del seller). */
+export const OFFER_MESSAGE_MAX_LENGTH = 180;
 /** Máximo de ofertas que un vendedor puede enviar por hora. */
 export const MAX_OFFERS_PER_HOUR = 8;
 /** Ventana (días) para detectar solicitudes u ofertas con texto duplicado. */

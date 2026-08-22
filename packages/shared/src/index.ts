@@ -1,5 +1,6 @@
 export * from './types';
 export * from './limits';
+export * from './offer-message';
 export * from './request-status';
 export * from './user-mode';
 export * from './seller-profile';

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/api';
 import { canUserSendOffers } from '@/lib/auth';
-import { formatRequestLocationDisplay, SELLER_PROFILE_INCOMPLETE_CODE } from '@buyseekk/shared';
+import { formatRequestLocationDisplay, SELLER_PROFILE_INCOMPLETE_CODE, OFFER_MESSAGE_MAX_LENGTH, clampOfferMessage, isValidOfferMessage } from '@buyseekk/shared';
 import { budgetLimitErrorKey, budgetMaxLabel } from '@/lib/money-limits';
 import { EmailVerificationErrorAlert } from '@/components/EmailVerificationErrorAlert';
 import { spamFieldErrors } from '@/lib/spam';
@@ -62,6 +62,14 @@ export default function RequestDetailPage() {
     const spamMsgs = spamFieldErrors(t, message);
     if (spamMsgs.length) {
       setError(spamMsgs.join('\n'));
+      return;
+    }
+    if (!isValidOfferMessage(message)) {
+      setError(
+        !message.trim()
+          ? t('request.messageRequired')
+          : t('request.messageMax', { max: String(OFFER_MESSAGE_MAX_LENGTH) }),
+      );
       return;
     }
     const priceNum = parseInt(price, 10);
@@ -204,9 +212,21 @@ export default function RequestDetailPage() {
                   className="input offer-form__input w-full"
                   rows={4}
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  maxLength={OFFER_MESSAGE_MAX_LENGTH}
+                  onChange={(e) => setMessage(clampOfferMessage(e.target.value))}
                   required
+                  aria-describedby="offer-message-count"
                 />
+                <p
+                  id="offer-message-count"
+                  className={`offer-form__char-count${
+                    message.length >= OFFER_MESSAGE_MAX_LENGTH - 20
+                      ? ' offer-form__char-count--near'
+                      : ''
+                  }`}
+                >
+                  {message.length} / {OFFER_MESSAGE_MAX_LENGTH}
+                </p>
               </div>
               <ImageUpload
                 label={t('request.productPhotos')}

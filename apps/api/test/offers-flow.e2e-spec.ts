@@ -1120,4 +1120,99 @@ describe('Offers flow (e2e)', () => {
       expect(await prisma.chat.count({ where: { offer: { requestId: created.id } } })).toBe(1);
     });
   });
+
+  describe('offer message length', () => {
+    function messageOfLength(length: number) {
+      const base =
+        'Lo tenemos listo en stock, color especial, kilometraje bajo y precio competitivo. Sin marcas, como nuevo. Consultá disponibilidad hoy. ';
+      if (base.length === length) return base;
+      if (base.length > length) return base.slice(0, length);
+      const pad = 'Detalle extra disponible. ';
+      let out = base;
+      while (out.length < length) {
+        out += pad;
+      }
+      return out.slice(0, length);
+    }
+
+    it('accepts a short but valid proposal message', async () => {
+      const buyer = await createBuyer('msg-short');
+      const seller = await createSeller('msg-short');
+      const created = await createRequest(buyer.token);
+      const message = 'Disponible en negro.';
+
+      const res = await sendOffer(seller, created.id, message).expect(201);
+      expect(res.body.message).toBe(message);
+    });
+
+    it('accepts a message with exactly 180 characters', async () => {
+      const buyer = await createBuyer('msg-ok');
+      const seller = await createSeller('msg-ok');
+      const created = await createRequest(buyer.token);
+      const message = messageOfLength(180);
+      expect(message).toHaveLength(180);
+
+      const res = await sendOffer(seller, created.id, message).expect(201);
+      expect(res.body.message).toBe(message);
+      expect(res.body.message).toHaveLength(180);
+    });
+
+    it('rejects a message with 181 characters', async () => {
+      const buyer = await createBuyer('msg-long');
+      const seller = await createSeller('msg-long');
+      const created = await createRequest(buyer.token);
+      const message = messageOfLength(181);
+      expect(message).toHaveLength(181);
+
+      const res = await sendOffer(seller, created.id, message).expect(400);
+      expect(JSON.stringify(res.body)).toMatch(/180|caracter|longer|must be shorter|maxLength/i);
+    });
+
+    it('rejects whitespace-only messages', async () => {
+      const buyer = await createBuyer('msg-space');
+      const seller = await createSeller('msg-space');
+      const created = await createRequest(buyer.token);
+
+      await sendOffer(seller, created.id, '   ').expect(400);
+      await sendOffer(seller, created.id, '          ').expect(400);
+    });
+
+    it('accepts a normal proposal message', async () => {
+      const buyer = await createBuyer('msg-normal');
+      const seller = await createSeller('msg-normal');
+      const created = await createRequest(buyer.token);
+      const message =
+        'Lo tenemos en un color especial limitado a un precio todavía más accesible que el que deseas, con 6,100 millas. Sin marcas, como nuevo.';
+
+      const res = await sendOffer(seller, created.id, message).expect(201);
+      expect(res.body.message).toBe(message);
+    });
+
+    it('still allows chat messages longer than the offer proposal limit', async () => {
+      const buyer = await createBuyer('chat-long');
+      const seller = await createSeller('chat-long');
+      const created = await createRequest(buyer.token);
+      const offerRes = await sendOffer(
+        seller,
+        created.id,
+        'Propuesta válida con fotos del vehículo listo para entregar.',
+      ).expect(201);
+
+      const accept = await request(app.getHttpServer())
+        .patch(`/api/offers/${offerRes.body.id}/accept`)
+        .set(authHeader(buyer.token))
+        .expect(200);
+
+      const longChat =
+        'Te comparto más detalle del vehículo, historial de servicio y opciones de entrega. ' +
+        'Además podemos coordinar una inspección presencial cuando te quede cómodo. '.repeat(3);
+      expect(longChat.length).toBeGreaterThan(180);
+
+      await request(app.getHttpServer())
+        .post(`/api/chats/${accept.body.chatId}/messages`)
+        .set(authHeader(seller.token))
+        .send({ text: longChat })
+        .expect(201);
+    });
+  });
 });

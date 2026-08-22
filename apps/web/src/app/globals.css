@@ -5943,6 +5943,21 @@ html:has(.panel-dark) body {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  min-width: 0;
+}
+
+.offer-form__char-count {
+  margin: 0;
+  align-self: flex-end;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.offer-form__char-count--near {
+  color: #fbbf24;
+  font-weight: 600;
 }
 
 .offer-form__label,

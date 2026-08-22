@@ -1,6 +1,7 @@
 import { Currency } from '@prisma/client';
-import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
-import { MAX_IMAGES_PER_ENTITY } from '@buyseekk/shared';
+import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { MAX_IMAGES_PER_ENTITY, OFFER_MESSAGE_MAX_LENGTH } from '@buyseekk/shared';
 
 export class CreateOfferDto {
   @IsString()
@@ -13,8 +14,10 @@ export class CreateOfferDto {
   @IsEnum(Currency)
   currency!: Currency;
 
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
-  @MinLength(10)
+  @MinLength(1)
+  @MaxLength(OFFER_MESSAGE_MAX_LENGTH)
   message!: string;
 
   @IsOptional()
