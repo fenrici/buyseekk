@@ -5590,17 +5590,20 @@ a.profile-menu-row {
   border-radius: 1rem;
   border: 1px solid rgb(99 102 241 / 0.18);
   background: linear-gradient(145deg, rgb(30 27 75 / 0.4), rgb(15 23 42 / 0.75));
-  padding: 0.9rem;
+  padding: 0.75rem;
   overflow: hidden;
   width: 100%;
+  max-width: 21.25rem; /* 340px — contained on 375–430 */
+  margin-inline: auto;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .offer-compact-card__badge {
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
 }
 
-/* Mobile: full-width photo on top, content stacked below. */
+/* Mobile: stacked photo on top, contained proportions. */
 .offer-compact-card__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -5609,7 +5612,7 @@ a.profile-menu-row {
     'main'
     'message'
     'actions';
-  gap: 0.7rem;
+  gap: 0.6rem;
   align-items: start;
 }
 
@@ -5623,9 +5626,10 @@ a.profile-menu-row {
 .offer-compact-card__img {
   display: block;
   width: 100%;
-  height: 128px;
+  height: auto;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
-  border-radius: 0.75rem;
+  border-radius: 0.7rem;
   background: rgb(15 23 42 / 0.7);
 }
 
@@ -5637,7 +5641,7 @@ a.profile-menu-row {
   grid-area: main;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
   min-width: 0;
 }
 
@@ -5647,7 +5651,7 @@ a.profile-menu-row {
 
 .offer-compact-card__price {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.6875rem; /* 27px */
   font-weight: 800;
   line-height: 1.15;
   color: #6ee7b7;
@@ -5656,13 +5660,14 @@ a.profile-menu-row {
 
 .offer-compact-card__diff {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.35;
+  font-weight: 500;
   color: #94a3b8;
 }
 
 .offer-compact-card__diff--under {
-  color: #6ee7b7;
+  color: #86efac;
 }
 
 .offer-compact-card__diff--over {
@@ -5676,9 +5681,9 @@ a.profile-menu-row {
 .offer-compact-card__seller {
   display: flex;
   align-items: flex-start;
-  gap: 0.55rem;
+  gap: 0.5rem;
   min-width: 0;
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 .offer-compact-card__seller-text {
@@ -5688,7 +5693,7 @@ a.profile-menu-row {
 
 .offer-compact-card__seller-title {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.35;
   color: #e2e8f0;
@@ -5697,7 +5702,7 @@ a.profile-menu-row {
 
 .offer-compact-card__seller-detail {
   margin: 0.1rem 0 0;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.35;
   color: #94a3b8;
   overflow-wrap: anywhere;
@@ -5706,7 +5711,7 @@ a.profile-menu-row {
 .offer-compact-card__message {
   grid-area: message;
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
   color: #cbd5e1;
   display: -webkit-box;
@@ -5714,6 +5719,7 @@ a.profile-menu-row {
   -webkit-line-clamp: 1;
   line-clamp: 1;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offer-compact-card__actions {
@@ -5721,14 +5727,16 @@ a.profile-menu-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.55rem 0.75rem;
+  gap: 0.45rem 0.7rem;
   margin-top: 0;
 }
 
 .offer-compact-card__cta {
-  min-height: 2.75rem;
-  min-width: 7.5rem;
+  min-height: 2.5rem;
+  min-width: 6.75rem;
+  padding-inline: 0.9rem;
   justify-content: center;
+  font-size: 0.875rem;
 }
 
 .offer-compact-card__secondary {
@@ -5737,7 +5745,7 @@ a.profile-menu-row {
   border: none;
   background: transparent;
   color: #a5b4fc;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -5748,18 +5756,33 @@ a.profile-menu-row {
 }
 
 @media (max-width: 389px) {
-  .offer-compact-card__img {
-    height: 118px;
+  .offer-compact-card {
+    max-width: 20.5rem; /* 328px on ~375 */
   }
 
   .offer-compact-card__price {
-    font-size: 1.375rem;
+    font-size: 1.625rem; /* 26px */
   }
 }
 
-/* Tablet: lateral photo 148px — unchanged from prior desktop/tablet design. */
+@media (min-width: 390px) and (max-width: 429px) {
+  .offer-compact-card {
+    max-width: 21.25rem; /* 340px on ~390 */
+  }
+}
+
+@media (min-width: 430px) and (max-width: 767px) {
+  .offer-compact-card {
+    max-width: 21.5rem; /* 344px on ~430 */
+  }
+}
+
+/* Tablet: lateral photo 148px — full-width cards again. */
 @media (min-width: 768px) {
   .offer-compact-card {
+    max-width: none;
+    width: 100%;
+    margin-inline: 0;
     padding: 1.15rem;
   }
 
@@ -5779,6 +5802,7 @@ a.profile-menu-row {
   .offer-compact-card__img {
     width: 148px;
     height: 148px;
+    aspect-ratio: auto;
     border-radius: 0.85rem;
   }
 
@@ -5805,6 +5829,11 @@ a.profile-menu-row {
   .offer-compact-card__seller-detail,
   .offer-compact-card__message {
     font-size: 0.875rem;
+  }
+
+  .offer-compact-card__cta {
+    min-height: 2.75rem;
+    min-width: 7.5rem;
   }
 
   .offer-compact-card__secondary {
