@@ -40,7 +40,11 @@ export function CompareBlock({
           <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">
             {isBuyer ? t('compare.youAsked') : t('compare.theyAsked')}
           </p>
-          <ImageGallery urls={offer.request?.imageUrls} alt={t('compare.theyAsked')} className={galleryClass} />
+          <ImageGallery
+            urls={offer.request?.imageUrls}
+            alt={t('compare.theyAsked')}
+            className={galleryClass}
+          />
           <div>
             <p className="text-xs text-slate-500">{t('compare.budget')}</p>
             <p className="font-semibold">{formatMoney(offer.requestBudget, offer.currency, period)}</p>
@@ -60,7 +64,12 @@ export function CompareBlock({
           <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
             {isBuyer ? t('compare.theyOffer') : t('compare.yourOffer')}
           </p>
-          <ImageGallery urls={offer.imageUrls} alt={t('compare.theyOffer')} className={galleryClass} />
+          <ImageGallery
+            urls={offer.imageUrls}
+            alt={t('compare.theyOffer')}
+            className={`${galleryClass} compare-image-gallery--cover`}
+            cover
+          />
           <div>
             <p className="text-xs text-slate-500">{t('compare.price')}</p>
             <p className={`font-extrabold text-emerald-600 ${size === 'sm' ? 'text-lg' : 'text-xl'}`}>
