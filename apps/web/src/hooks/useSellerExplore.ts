@@ -107,6 +107,9 @@ export function useSellerExplore() {
     (next: SellerFilterState, closeSheet = false) => {
       const normalized = lockedCategory ? { ...next, category: lockedCategory } : next;
       lastLoadedKey.current = '';
+      // Keep ref in sync for same-tick sequential patches (e.g. UsLocationPicker
+      // calls onStateChange + onLocationChange + onZoneChange in one event).
+      filtersRef.current = normalized;
       setFilters(normalized);
       setDraft(normalized);
       setPage(1);
