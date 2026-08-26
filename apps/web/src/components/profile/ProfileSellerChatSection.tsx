@@ -49,13 +49,13 @@ export function ProfileSellerChatSection({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card profile-seller-chat-section mt-6 space-y-4 p-5">
+    <form onSubmit={handleSubmit} className="card profile-seller-chat-section mt-6 p-5">
       <div>
         <h3 className="profile-seller-section__title">{t('profile.acceptMessageTitle')}</h3>
         <p className="profile-seller-section__hint">{t('profile.acceptMessageDesc')}</p>
       </div>
       <textarea
-        className="input min-h-[100px] resize-y"
+        className="input"
         value={message}
         onChange={(e) => {
           setSaved(false);
@@ -67,7 +67,7 @@ export function ProfileSellerChatSection({
       <p className="profile-seller-chat-section__hint">{t('profile.acceptMessageHint')}</p>
       {error && <p className="profile-form__alert profile-form__alert--error">{error}</p>}
       {saved && <p className="profile-form__alert profile-form__alert--success">{t('profile.saved')}</p>}
-      <button type="submit" disabled={saving} className="btn btn-primary">
+      <button type="submit" disabled={saving} className="btn btn-primary profile-seller-chat-section__save">
         {saving ? t('common.saving') : t('profile.save')}
       </button>
     </form>
