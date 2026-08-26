@@ -6217,19 +6217,26 @@ a.profile-menu-row {
 }
 
 /* Full OfferReceivedCard footer: one horizontal row on desktop (≥1024).
-   Must set __main row explicitly here — do not rely on the ≥768 rule alone
-   (minifier collapses flex-direction/wrap to flex-flow and the desktop block
-   previously only tweaked gap/flex, which left a fragile cascade). */
+   Applies to buyer AND seller (SellerSentOfferCard also uses offer-received-card).
+   Must set __main row explicitly — ≥768 forces seller __main to column, and the
+   previous desktop block excluded --seller via :not(), so /seller/offers stayed stacked. */
 @media (min-width: 1024px) {
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) {
+  .offer-received-card .offer-decision-bar {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 0.35rem;
+  }
+
+  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) {
     padding: 0.5rem 0.85rem;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__main {
+  .offer-received-card .offer-decision-bar--seller {
+    padding: 0.55rem 0 0;
+  }
+
+  .offer-received-card .offer-decision-bar .offer-decision-bar__main {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -6240,7 +6247,7 @@ a.profile-menu-row {
     min-width: 0;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__top {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__top {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -6251,7 +6258,7 @@ a.profile-menu-row {
   }
 
   /* Content-sized left cluster; shrink for ellipsis — do not grow and steal the row. */
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__identity {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__identity {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -6260,13 +6267,14 @@ a.profile-menu-row {
     min-width: 0;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__identity .seller-identity {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__identity .seller-identity {
     flex: 0 1 auto;
     min-width: 0;
     max-width: 100%;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__identity .seller-identity__title {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__identity .seller-identity__title,
+  .offer-received-card .offer-decision-bar .offer-decision-bar__seller {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -6275,11 +6283,11 @@ a.profile-menu-row {
   }
 
   /* Detail stays in CompareBlock; keep footer to name + badge. */
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__identity .seller-identity__detail {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__identity .seller-identity__detail {
     display: none;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__subtitle {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__subtitle {
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -6287,7 +6295,7 @@ a.profile-menu-row {
     white-space: nowrap;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__actions {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__actions {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -6299,7 +6307,7 @@ a.profile-menu-row {
     max-width: none;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__actions .offer-action-btn {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__actions .offer-action-btn {
     flex: 0 0 auto;
     width: auto;
     min-height: 2.125rem;
@@ -6307,7 +6315,7 @@ a.profile-menu-row {
     padding: 0 0.7rem;
   }
 
-  .offer-received-card .offer-decision-bar:not(.offer-decision-bar--seller) .offer-decision-bar__secondary {
+  .offer-received-card .offer-decision-bar .offer-decision-bar__secondary {
     display: flex;
     align-items: center;
     justify-content: flex-end;
