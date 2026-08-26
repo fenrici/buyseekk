@@ -7,6 +7,7 @@ import { avatarUrlForMode, resolveNavMode } from '@buyseekk/shared';
 import { api, normalizePaginated } from '@/lib/api';
 import { getAppHomePath } from '@/lib/auth';
 import { Avatar } from '@/components/Avatar';
+import { UserDisplayName } from '@/components/UserDisplayName';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
@@ -150,7 +151,9 @@ export function Header({ variant = 'light' }: HeaderProps) {
                 <span className="header-profile__avatar">
                   <Avatar name={user.name} url={avatarUrlForMode(user)} size={32} />
                 </span>
-                <span>{user.name}</span>
+                <span>
+                  <UserDisplayName name={user.name} subscriptionPlan={user.subscriptionPlan} />
+                </span>
               </Link>
             </>
           ) : (

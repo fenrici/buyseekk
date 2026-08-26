@@ -3,6 +3,7 @@
 import type { SubscriptionPlan } from '@buyseekk/shared';
 import Link from 'next/link';
 import { Avatar } from '@/components/Avatar';
+import { UserDisplayName } from '@/components/UserDisplayName';
 import { useT } from '@/lib/i18n';
 import type { User } from '@/lib/types';
 
@@ -29,7 +30,9 @@ export function ProfileHeader({ user, displayName, avatarUrl, isSeller, onEditPr
       <div className="profile-hero__main">
         <Avatar name={displayName || user.name} url={avatarUrl} size={80} className="profile-hero__avatar" />
         <div className="profile-hero__info">
-          <h1 className="profile-hero__name">{displayName || user.name}</h1>
+          <h1 className="profile-hero__name">
+            <UserDisplayName name={displayName || user.name} subscriptionPlan={user.subscriptionPlan} />
+          </h1>
           <p className="profile-hero__email">{user.email}</p>
           <p className="profile-hero__verified">
             <span

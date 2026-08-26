@@ -76,7 +76,7 @@ export function ProfilePricingCard({
       {showCta && (
         <button
           type="button"
-          className={`pricing-card__cta pricing-card__cta--${ctaVariant}`}
+          className={`pricing-card__cta pricing-card__cta--${ctaVariant}${upgradeLoading ? ' pricing-card__cta--loading' : ''}`}
           disabled={ctaDisabled}
           onClick={plan === 'PLUS' && onUpgrade && !ctaDisabled ? onUpgrade : undefined}
         >

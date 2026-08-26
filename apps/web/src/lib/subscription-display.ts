@@ -1,4 +1,15 @@
-import { LEGACY_SUBSCRIPTION_PRICES_USD, SUBSCRIPTION_PRICES_USD, type SubscriptionPlan } from '@buyseekk/shared';
+import {
+  LEGACY_SUBSCRIPTION_PRICES_USD,
+  SUBSCRIPTION_PRICES_USD,
+  type SubscriptionPlan,
+} from '@buyseekk/shared';
+
+/** Display-only: show Plus membership badge from cached User.subscriptionPlan. */
+export function showsPlusMembershipBadge(
+  plan: SubscriptionPlan | 'FREE' | 'PLUS' | 'ENTERPRISE' | null | undefined,
+): boolean {
+  return plan === 'PLUS';
+}
 
 type PriceT = {
   (key: 'subscription.priceMonth', vars: { amount: string }): string;

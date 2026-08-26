@@ -299,7 +299,7 @@ export default function ProfilePage() {
             <aside className="profile-page__sidebar">
               <ProfileAccountSidebar
                 user={account}
-                onUpgrade={() => go('plan')}
+                onOpenPlan={() => go('plan')}
                 onSecurity={() => go('security')}
               />
             </aside>

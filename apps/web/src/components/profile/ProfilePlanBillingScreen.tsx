@@ -48,8 +48,8 @@ export function ProfilePlanBillingScreen({ user, isSeller, checkoutReturn = null
   const t = useT();
   const currentPlan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
   const hasPlus = planGrantsPlus(currentPlan);
-  // Always offer Plus Checkout; stale cache must not block purchase. Server enforces real Plus.
-  const upgradePlans = PRICING_PLANS.filter((plan) => plan === 'PLUS' || plan !== currentPlan);
+  const publicCurrentPlan =
+    currentPlan === 'ENTERPRISE' ? 'PLUS' : (currentPlan as PublicSubscriptionPlan);
 
   const [offersToday, setOffersToday] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
@@ -136,7 +136,10 @@ export function ProfilePlanBillingScreen({ user, isSeller, checkoutReturn = null
         </p>
       )}
 
-      <section className="pricing-current" aria-labelledby="pricing-current-title">
+      <section
+        className={`pricing-current${hasPlus ? ' pricing-current--plus' : ''}`}
+        aria-labelledby="pricing-current-title"
+      >
         <p id="pricing-current-title" className="pricing-current__eyebrow">
           {t('profile.planSectionLabel')}
         </p>
@@ -149,6 +152,9 @@ export function ProfilePlanBillingScreen({ user, isSeller, checkoutReturn = null
             {currentPlan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(currentPlan, t)}
           </p>
         </div>
+        <p className="pricing-current__summary">
+          {t(`subscription.tagline.${currentPlan === 'ENTERPRISE' ? 'PLUS' : currentPlan}`)}
+        </p>
         <ul className="pricing-current__features">
           {summaryFeatures.map((line) => (
             <li key={line}>{line}</li>
@@ -172,15 +178,39 @@ export function ProfilePlanBillingScreen({ user, isSeller, checkoutReturn = null
         )}
       </section>
 
-      {upgradePlans.length > 0 && (
+      {hasPlus ? (
+        <>
+          <section className="pricing-manage card" aria-labelledby="pricing-manage-title">
+            <h3 id="pricing-manage-title" className="pricing-manage__title">
+              {t('subscription.manageSubscription')}
+            </h3>
+            <p className="pricing-manage__text">{t('subscription.manageSubscriptionHint')}</p>
+            <button type="button" className="pricing-manage__cta" disabled>
+              <span>{t('subscription.manageSubscription')}</span>
+              <span className="pricing-manage__soon">{t('subscription.comingSoon')}</span>
+            </button>
+          </section>
+
+          <section className="pricing-grid pricing-grid--readonly" aria-label={t('subscription.compareTitle')}>
+            {PRICING_PLANS.map((plan) => (
+              <ProfilePricingCard
+                key={plan}
+                plan={plan}
+                currentPlan={publicCurrentPlan}
+                highlighted={plan === 'PLUS'}
+              />
+            ))}
+          </section>
+        </>
+      ) : (
         <section className="pricing-grid" aria-label={t('subscription.compareTitle')}>
-          {upgradePlans.map((plan) => (
+          {PRICING_PLANS.filter((plan) => plan === 'PLUS').map((plan) => (
             <ProfilePricingCard
               key={plan}
               plan={plan}
-              currentPlan={currentPlan === 'ENTERPRISE' ? 'PLUS' : (currentPlan as PublicSubscriptionPlan)}
+              currentPlan={publicCurrentPlan}
               highlighted={plan === 'PLUS'}
-              onUpgrade={plan === 'PLUS' ? handleUpgrade : undefined}
+              onUpgrade={handleUpgrade}
               upgradeLoading={checkoutLoading}
               upgradeDisabled={checkoutLoading}
             />

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { avatarUrlForMode, formatSellerBuyerIdentity } from '@buyseekk/shared';
 import { Avatar } from '@/components/Avatar';
+import { UserDisplayName } from '@/components/UserDisplayName';
 import { useLocale, useT } from '@/lib/i18n';
 import type { User } from '@/lib/types';
 
@@ -43,7 +44,9 @@ export function ProfileCompactHeader({ user, isSeller, onEditProfile }: Props) {
             className="profile-compact__avatar"
           />
           <div className="profile-compact__info">
-            <h1 className="profile-compact__name">{user.name}</h1>
+            <h1 className="profile-compact__name">
+              <UserDisplayName name={user.name} subscriptionPlan={user.subscriptionPlan} />
+            </h1>
             <p className="profile-compact__email">{user.email}</p>
             {sellerIdentity ? (
               <>

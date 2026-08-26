@@ -3999,6 +3999,82 @@ button.portal-mobile-link {
   font-weight: 700;
 }
 
+.profile-plan-teaser--interactive {
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-plan-teaser__open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.profile-plan-teaser__open:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.profile-plan-teaser__open:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.65);
+  outline-offset: -2px;
+}
+
+.profile-plan-teaser__chevron {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: #64748b;
+}
+
+.profile-side-card .profile-plan-teaser__open {
+  padding: 0;
+}
+
+.profile-side-card .profile-plan-teaser__upgrade {
+  margin-top: 0.75rem;
+}
+
+.user-display-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.user-display-name__text {
+  min-width: 0;
+}
+
+.plus-membership-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ede9fe;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.52), rgba(139, 92, 246, 0.38));
+  border: 1px solid rgba(167, 139, 250, 0.42);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.08);
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
 .profile-menu {
   padding: 0.35rem 0;
   overflow: hidden;
@@ -4257,6 +4333,18 @@ a.profile-menu-row {
   background: linear-gradient(135deg, rgba(30, 27, 75, 0.28), rgba(15, 23, 42, 0.72));
 }
 
+.pricing-current--plus {
+  border-color: rgba(129, 140, 248, 0.28);
+  background: linear-gradient(135deg, rgba(49, 46, 129, 0.42), rgba(15, 23, 42, 0.78));
+}
+
+.pricing-current__summary {
+  margin: 0.55rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
 .pricing-current__eyebrow {
   margin: 0 0 0.55rem;
   font-size: 0.7rem;
@@ -4361,6 +4449,53 @@ a.profile-menu-row {
   flex-direction: column;
   gap: 1rem;
   width: 100%;
+}
+
+.pricing-grid--readonly .pricing-card:not(.pricing-card--current) {
+  opacity: 0.72;
+}
+
+.pricing-manage {
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.pricing-manage__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.pricing-manage__text {
+  margin: 0.45rem 0 0.85rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.pricing-manage__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(30, 41, 59, 0.55);
+  color: #94a3b8;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+.pricing-manage__soon {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
 }
 
 .pricing-card {
@@ -4482,6 +4617,31 @@ a.profile-menu-row {
   font-weight: 700;
   cursor: pointer;
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@media (min-width: 768px) {
+  .pricing-card__features {
+    margin-bottom: 0.85rem;
+  }
+
+  .pricing-card__cta {
+    width: auto;
+    min-width: 11.25rem;
+    max-width: 13.75rem;
+    min-height: 2.625rem;
+    height: 2.625rem;
+    padding: 0 1.15rem;
+    margin-top: 0.35rem;
+    align-self: flex-end;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .pricing-card__cta--loading {
+    max-width: 15rem;
+    font-size: 0.82rem;
+  }
 }
 
 .pricing-card__cta:disabled {
