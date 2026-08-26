@@ -9,6 +9,7 @@ import {
   type NotificationPreferences,
 } from '@buyseekk/shared';
 import { api, uploadImage } from '@/lib/api';
+import { parseCheckoutReturn } from '@/lib/billing-checkout';
 import { User } from '@/lib/types';
 import { Header } from '@/components/Header';
 import { ProfileAboutSection } from '@/components/profile/ProfileAboutSection';
@@ -67,7 +68,10 @@ export default function ProfilePage() {
   useEffect(() => {
     const section = searchParams.get('section');
     if (section === 'seller') setScreen('seller');
+    if (section === 'plan') setScreen('plan');
   }, [searchParams]);
+
+  const checkoutReturn = parseCheckoutReturn(searchParams.get('checkout'));
 
   if (!user) return null;
 
@@ -250,7 +254,11 @@ export default function ProfilePage() {
           onBack={goHub}
           variant="wide"
         >
-          <ProfilePlanBillingScreen user={account} isSeller={isSeller} />
+          <ProfilePlanBillingScreen
+            user={account}
+            isSeller={isSeller}
+            checkoutReturn={checkoutReturn}
+          />
         </ProfileSubLayout>
       );
       break;

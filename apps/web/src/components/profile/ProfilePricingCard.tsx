@@ -12,9 +12,20 @@ type Props = {
   plan: PublicSubscriptionPlan;
   currentPlan: PublicSubscriptionPlan | SubscriptionPlan;
   highlighted?: boolean;
+  /** When set, Plus CTA starts Hosted Checkout (server decides entitlement). */
+  onUpgrade?: () => void;
+  upgradeLoading?: boolean;
+  upgradeDisabled?: boolean;
 };
 
-export function ProfilePricingCard({ plan, currentPlan, highlighted = false }: Props) {
+export function ProfilePricingCard({
+  plan,
+  currentPlan,
+  highlighted = false,
+  onUpgrade,
+  upgradeLoading = false,
+  upgradeDisabled = false,
+}: Props) {
   const t = useT();
   const isCurrent = plan === currentPlan;
   const features = featureList(t(`subscription.pricingFeatures.${plan}`));
@@ -22,19 +33,29 @@ export function ProfilePricingCard({ plan, currentPlan, highlighted = false }: P
   let ctaLabel = t('subscription.upgradeCta');
   let ctaVariant: 'primary' | 'ghost' | 'current' = 'primary';
   let ctaDisabled = true;
+  let showSoon = false;
 
   if (plan === 'FREE') {
     ctaLabel = t('subscription.currentPlan');
     ctaVariant = 'current';
-    ctaDisabled = isCurrent;
-  } else if (plan === 'PLUS') {
-    ctaLabel = isCurrent ? t('subscription.currentPlan') : t('subscription.upgradeCta');
-    ctaVariant = isCurrent ? 'current' : 'primary';
     ctaDisabled = true;
+  } else if (plan === 'PLUS') {
+    if (onUpgrade) {
+      // Stale User.subscriptionPlan=PLUS must still be able to start Checkout; server enforces real Plus.
+      ctaLabel = upgradeLoading ? t('subscription.checkoutLoading') : t('subscription.upgradeCta');
+      ctaVariant = 'primary';
+      ctaDisabled = upgradeLoading || upgradeDisabled;
+      showSoon = false;
+    } else {
+      ctaLabel = isCurrent ? t('subscription.currentPlan') : t('subscription.upgradeCta');
+      ctaVariant = isCurrent ? 'current' : 'primary';
+      ctaDisabled = true;
+      showSoon = !isCurrent;
+    }
   }
 
   const price = plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
-  const showCta = isCurrent || plan !== 'FREE';
+  const showCta = plan === 'PLUS' || isCurrent;
 
   return (
     <article
@@ -57,10 +78,10 @@ export function ProfilePricingCard({ plan, currentPlan, highlighted = false }: P
           type="button"
           className={`pricing-card__cta pricing-card__cta--${ctaVariant}`}
           disabled={ctaDisabled}
-          title={ctaDisabled && !isCurrent ? t('subscription.comingSoon') : undefined}
+          onClick={plan === 'PLUS' && onUpgrade && !ctaDisabled ? onUpgrade : undefined}
         >
           <span>{ctaLabel}</span>
-          {!isCurrent && (
+          {showSoon && (
             <span className="pricing-card__soon">{t('subscription.comingSoon')}</span>
           )}
         </button>

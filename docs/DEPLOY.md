@@ -56,6 +56,9 @@ En **Variables** del servicio API, agregá:
 | `LAUNCH_COUNTRY` | `US` | Mercado único en lanzamiento |
 | `WEB_URL` | URL de Vercel | Links en emails (auth + notificaciones) |
 | `PLUS_FEATURES_UNLOCKED` | `true` o `false` | Obligatorio en producción. `true` = lanzamiento gratis |
+| `STRIPE_BILLING_ENABLED` | `false` (default) / `true` | Hosted Checkout web. Con `true` exige keys de test + `WEB_URL` |
+| `STRIPE_SECRET_KEY` | `sk_test_...` | Solo API. Nunca en web / Vercel |
+| `STRIPE_PRICE_PLUS_MONTHLY` | `price_...` | Price ID de Buyseek Plus mensual (Dashboard Stripe) |
 | `NOTIFICATION_EMAILS_ENABLED` | `true` | Emails automáticos de notificaciones |
 | `REDIS_URL` | URL Redis | Obligatorio si escalás a 2+ réplicas API |
 | `SENTRY_DSN` | URL Sentry | Opcional — monitoreo de errores |
@@ -68,6 +71,21 @@ openssl rand -base64 32
 ```
 
 > `PORT` lo inyecta Railway automáticamente — no hace falta setearlo.
+
+#### 2.4.0a Stripe Checkout (test mode — FASE 2)
+
+Para probar Upgrade to Plus en web:
+
+1. Stripe Dashboard → **Test mode**.
+2. Creators → Product **Buyseek Plus** (recurring monthly) → copiá el **Price ID** (`price_...`).
+3. Developers → API keys → **Secret key** `sk_test_...`.
+4. En Railway API:
+   - `STRIPE_BILLING_ENABLED=true`
+   - `STRIPE_SECRET_KEY=sk_test_...`
+   - `STRIPE_PRICE_PLUS_MONTHLY=price_...`
+   - `WEB_URL` = URL pública de la web (success/cancel)
+   - `PLUS_FEATURES_UNLOCKED=false` si querés que el checkout no choque con el bypass de lanzamiento
+5. Webhooks y Customer Portal: **FASE 3** (todavía no). El return `?checkout=success` **no** otorga Plus.
 
 #### 2.4.0 Rate limiting y seguridad (opcional)
 

@@ -121,8 +121,17 @@ export function normalizePaginated<T>(data: PaginatedResult<T> | T[]): Paginated
 }
 
 function throwApiError(data: Record<string, unknown>, status: number): never {
-  const msg = data.message ?? data.error ?? 'Error en la solicitud';
-  const code = typeof data.code === 'string' ? data.code : undefined;
+  const raw = data.message ?? data.error ?? 'Error en la solicitud';
+  const msg =
+    typeof raw === 'object' && raw !== null && 'message' in raw
+      ? String((raw as { message: unknown }).message)
+      : raw;
+  const code =
+    typeof data.code === 'string'
+      ? data.code
+      : typeof raw === 'object' && raw !== null && 'code' in raw
+        ? String((raw as { code: unknown }).code)
+        : undefined;
   throw new ApiError(Array.isArray(msg) ? msg.join(', ') : String(msg), status, code);
 }
 

@@ -91,6 +91,20 @@ class EnvironmentVariables {
   @IsString()
   PLUS_FEATURES_UNLOCKED?: string;
 
+  /** Stripe Hosted Checkout (web). Default off — keys not required until enabled. */
+  @IsOptional()
+  @IsString()
+  STRIPE_BILLING_ENABLED?: string;
+
+  @IsOptional()
+  @IsString()
+  STRIPE_SECRET_KEY?: string;
+
+  /** Stripe Price ID for Buyseek Plus monthly (server-side only). */
+  @IsOptional()
+  @IsString()
+  STRIPE_PRICE_PLUS_MONTHLY?: string;
+
   @IsOptional()
   @IsString()
   WEB_URL?: string;
@@ -152,6 +166,21 @@ export function validateEnv(config: Record<string, unknown>) {
       throw new Error(
         'PLUS_FEATURES_UNLOCKED debe estar definido explícitamente en producción (true para lanzamiento gratuito, false para límites Free)',
       );
+    }
+  }
+
+  const stripeBilling = validated.STRIPE_BILLING_ENABLED?.trim().toLowerCase();
+  const stripeBillingOn =
+    stripeBilling === 'true' || stripeBilling === '1' || stripeBilling === 'yes';
+  if (stripeBillingOn) {
+    if (!validated.STRIPE_SECRET_KEY?.trim()) {
+      throw new Error('STRIPE_BILLING_ENABLED=true requiere STRIPE_SECRET_KEY');
+    }
+    if (!validated.STRIPE_PRICE_PLUS_MONTHLY?.trim()) {
+      throw new Error('STRIPE_BILLING_ENABLED=true requiere STRIPE_PRICE_PLUS_MONTHLY');
+    }
+    if (!validated.WEB_URL?.trim()) {
+      throw new Error('STRIPE_BILLING_ENABLED=true requiere WEB_URL (success/cancel Checkout URLs)');
     }
   }
 

@@ -8,7 +8,13 @@ import {
   type PublicSubscriptionPlan,
   type SubscriptionPlan,
 } from '@buyseekk/shared';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
+import {
+  checkoutReturnGrantsPlus,
+  isStripeCheckoutUrl,
+  requestPlusCheckout,
+  type CheckoutReturnStatus,
+} from '@/lib/billing-checkout';
 import { planPriceLabel } from '@/lib/subscription-display';
 import { useT } from '@/lib/i18n';
 import type { User } from '@/lib/types';
@@ -35,18 +41,21 @@ function planGrantsPlus(plan: SubscriptionPlan) {
 type Props = {
   user: User;
   isSeller: boolean;
+  checkoutReturn?: CheckoutReturnStatus;
 };
 
-export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
+export function ProfilePlanBillingScreen({ user, isSeller, checkoutReturn = null }: Props) {
   const t = useT();
   const currentPlan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
   const hasPlus = planGrantsPlus(currentPlan);
-  // Public catalog is FREE + PLUS only. Legacy ENTERPRISE users still see their current plan above.
-  const upgradePlans = PRICING_PLANS.filter((plan) => plan !== currentPlan);
+  // Always offer Plus Checkout; stale cache must not block purchase. Server enforces real Plus.
+  const upgradePlans = PRICING_PLANS.filter((plan) => plan === 'PLUS' || plan !== currentPlan);
 
   const [offersToday, setOffersToday] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
   const [usageLoading, setUsageLoading] = useState(isSeller);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   useEffect(() => {
     if (!isSeller) {
@@ -76,14 +85,57 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
     };
   }, [isSeller, user.id]);
 
+  async function handleUpgrade() {
+    if (checkoutLoading) return;
+    setCheckoutError('');
+    setCheckoutLoading(true);
+    try {
+      const url = await requestPlusCheckout();
+      if (!isStripeCheckoutUrl(url)) {
+        throw new Error(t('subscription.checkoutError'));
+      }
+      window.location.assign(url);
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : t('subscription.checkoutError');
+      setCheckoutError(message || t('subscription.checkoutError'));
+      setCheckoutLoading(false);
+    }
+  }
+
   const offerLimit = hasPlus ? null : FREE_DAILY_OFFER_LIMIT;
   const alertLimit = hasPlus ? null : FREE_MAX_SMART_ALERTS;
   const summaryFeatures = featureList(
     t(`subscription.pricingFeatures.${currentPlan === 'ENTERPRISE' ? 'PLUS' : currentPlan}`),
   );
 
+  // Never treat checkout=success as Plus entitlement.
+  const showSuccessBanner =
+    checkoutReturn === 'success' && !checkoutReturnGrantsPlus(checkoutReturn);
+  const showCanceledBanner = checkoutReturn === 'canceled';
+
   return (
     <div className="pricing-page">
+      {showSuccessBanner && (
+        <p className="pricing-banner pricing-banner--success" role="status">
+          {t('subscription.checkoutSuccess')}
+        </p>
+      )}
+      {showCanceledBanner && (
+        <p className="pricing-banner pricing-banner--info" role="status">
+          {t('subscription.checkoutCanceled')}
+        </p>
+      )}
+      {checkoutError && (
+        <p className="pricing-banner pricing-banner--error" role="alert">
+          {checkoutError}
+        </p>
+      )}
+
       <section className="pricing-current" aria-labelledby="pricing-current-title">
         <p id="pricing-current-title" className="pricing-current__eyebrow">
           {t('profile.planSectionLabel')}
@@ -128,6 +180,9 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
               plan={plan}
               currentPlan={currentPlan === 'ENTERPRISE' ? 'PLUS' : (currentPlan as PublicSubscriptionPlan)}
               highlighted={plan === 'PLUS'}
+              onUpgrade={plan === 'PLUS' ? handleUpgrade : undefined}
+              upgradeLoading={checkoutLoading}
+              upgradeDisabled={checkoutLoading}
             />
           ))}
         </section>

@@ -223,11 +223,55 @@ model User {
   reportsReviewed           Report[] @relation("ReportsReviewed")
   chatReadStates            ChatReadState[]
   subscriptions             Subscription[]
+  billingCustomers          BillingCustomer[]
+  billingCheckoutSessions   BillingCheckoutSession[]
 
   @@index([blocked])
   @@index([suspended])
   @@index([role])
   @@index([subscriptionPlan])
+}
+
+/// Provider customer mapping (Stripe Customer now; Apple/Google later). Not on User.
+model BillingCustomer {
+  id                 String               @id @default(cuid())
+  userId             String
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider           SubscriptionProvider
+  providerCustomerId String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@unique([userId, provider])
+  @@unique([provider, providerCustomerId])
+  @@index([userId])
+}
+
+/// Pending/completed Hosted Checkout attempts (reuse OPEN; Phase 3 marks COMPLETE/EXPIRED).
+enum BillingCheckoutStatus {
+  OPEN
+  COMPLETE
+  EXPIRED
+  CANCELED
+}
+
+model BillingCheckoutSession {
+  id                String                @id @default(cuid())
+  userId            String
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          SubscriptionProvider
+  /// Public plan code (PLUS). Kept as string for provider-agnostic checkout attempts.
+  plan              String
+  providerSessionId String?
+  checkoutUrl       String?
+  status            BillingCheckoutStatus @default(OPEN)
+  expiresAt         DateTime
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([provider, providerSessionId])
+  @@index([userId, provider, plan, status])
+  @@index([userId, status, expiresAt])
 }
 
 /// Provider-agnostic billing subscription (Stripe now; Apple/Google later).

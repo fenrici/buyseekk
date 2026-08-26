@@ -82,6 +82,33 @@ describe('Security config', () => {
     expect(() => validateEnv(prodEnv({ REDIS_URL: 'http://localhost:6379' }))).toThrow(/REDIS_URL/);
   });
 
+  it('requires Stripe keys and WEB_URL when STRIPE_BILLING_ENABLED=true', () => {
+    expect(() =>
+      validateEnv(
+        baseEnv({
+          STRIPE_BILLING_ENABLED: 'true',
+          STRIPE_SECRET_KEY: 'sk_test_x',
+          STRIPE_PRICE_PLUS_MONTHLY: 'price_x',
+          WEB_URL: 'http://localhost:3000',
+        }),
+      ),
+    ).not.toThrow();
+
+    expect(() => validateEnv(baseEnv({ STRIPE_BILLING_ENABLED: 'true' }))).toThrow(/STRIPE_SECRET_KEY/);
+    expect(() =>
+      validateEnv(baseEnv({ STRIPE_BILLING_ENABLED: 'true', STRIPE_SECRET_KEY: 'sk_test_x' })),
+    ).toThrow(/STRIPE_PRICE_PLUS_MONTHLY/);
+    expect(() =>
+      validateEnv(
+        baseEnv({
+          STRIPE_BILLING_ENABLED: 'true',
+          STRIPE_SECRET_KEY: 'sk_test_x',
+          STRIPE_PRICE_PLUS_MONTHLY: 'price_x',
+        }),
+      ),
+    ).toThrow(/WEB_URL/);
+  });
+
   it('requires R2 in production and HTTPS public URL', () => {
     expect(() => validateEnv(prodEnv({ STORAGE_PROVIDER: 'local' }))).toThrow(/STORAGE_PROVIDER/);
     expect(() => validateEnv(prodEnv({ STORAGE_PROVIDER: undefined }))).toThrow(/STORAGE_PROVIDER/);

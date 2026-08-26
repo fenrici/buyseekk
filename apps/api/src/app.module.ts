@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { BillingModule } from './billing/billing.module';
 import { DemoModule } from './demo/demo.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { DemoModule } from './demo/demo.module';
       throttlers: buildThrottlerDefinitions(),
     }),
     SubscriptionModule,
+    BillingModule,
     StorageModule,
     CommonModule,
     PrismaModule,
