@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import {
   FREE_DAILY_OFFER_LIMIT,
   FREE_MAX_SMART_ALERTS,
+  PUBLIC_SUBSCRIPTION_PLANS,
+  type PublicSubscriptionPlan,
   type SubscriptionPlan,
 } from '@buyseekk/shared';
 import { api } from '@/lib/api';
@@ -16,7 +18,7 @@ type SavedSearch = { id: string };
 type OfferItem = { createdAt: string };
 type Paginated<T> = { items: T[] };
 
-const PRICING_PLANS: SubscriptionPlan[] = ['FREE', 'PLUS', 'ENTERPRISE'];
+const PRICING_PLANS: PublicSubscriptionPlan[] = [...PUBLIC_SUBSCRIPTION_PLANS];
 
 function startOfUtcDay(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -24,6 +26,10 @@ function startOfUtcDay(now = new Date()) {
 
 function featureList(raw: string) {
   return raw.split('|').map((line) => line.trim()).filter(Boolean);
+}
+
+function planGrantsPlus(plan: SubscriptionPlan) {
+  return plan === 'PLUS' || plan === 'ENTERPRISE';
 }
 
 type Props = {
@@ -34,7 +40,8 @@ type Props = {
 export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
   const t = useT();
   const currentPlan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
-  const hasPlus = currentPlan === 'PLUS' || currentPlan === 'ENTERPRISE';
+  const hasPlus = planGrantsPlus(currentPlan);
+  // Public catalog is FREE + PLUS only. Legacy ENTERPRISE users still see their current plan above.
   const upgradePlans = PRICING_PLANS.filter((plan) => plan !== currentPlan);
 
   const [offersToday, setOffersToday] = useState(0);
@@ -71,7 +78,9 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
 
   const offerLimit = hasPlus ? null : FREE_DAILY_OFFER_LIMIT;
   const alertLimit = hasPlus ? null : FREE_MAX_SMART_ALERTS;
-  const summaryFeatures = featureList(t(`subscription.pricingFeatures.${currentPlan}`));
+  const summaryFeatures = featureList(
+    t(`subscription.pricingFeatures.${currentPlan === 'ENTERPRISE' ? 'PLUS' : currentPlan}`),
+  );
 
   return (
     <div className="pricing-page">
@@ -117,7 +126,7 @@ export function ProfilePlanBillingScreen({ user, isSeller }: Props) {
             <ProfilePricingCard
               key={plan}
               plan={plan}
-              currentPlan={currentPlan}
+              currentPlan={currentPlan === 'ENTERPRISE' ? 'PLUS' : (currentPlan as PublicSubscriptionPlan)}
               highlighted={plan === 'PLUS'}
             />
           ))}

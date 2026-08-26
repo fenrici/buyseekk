@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   FREE_DAILY_OFFER_LIMIT,
   FREE_MAX_SMART_ALERTS,
-  SUBSCRIPTION_PLANS,
+  PUBLIC_SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
 } from '@buyseekk/shared';
 import { api } from '@/lib/api';
@@ -111,10 +111,12 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
           </span>
         </div>
         <p className="profile-plan-card__price">{planPriceLabel(plan, t)}</p>
-        <p className="profile-plan-card__tagline">{t(`subscription.tagline.${plan}`)}</p>
+        <p className="profile-plan-card__tagline">
+          {t(`subscription.tagline.${plan === 'ENTERPRISE' ? 'PLUS' : plan}`)}
+        </p>
 
         <ul className="profile-plan-card__features">
-          {featureList(t(`subscription.profileFeatures.${plan}`)).map((line) => (
+          {featureList(t(`subscription.profileFeatures.${plan === 'ENTERPRISE' ? 'PLUS' : plan}`)).map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>
@@ -164,8 +166,8 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
           {t('subscription.compareTitle')}
         </h2>
         <div className="profile-compare__grid">
-          {SUBSCRIPTION_PLANS.map((tier) => {
-            const active = tier === plan;
+          {PUBLIC_SUBSCRIPTION_PLANS.map((tier) => {
+            const active = tier === plan || (plan === 'ENTERPRISE' && tier === 'PLUS');
             return (
               <article
                 key={tier}

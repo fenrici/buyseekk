@@ -1,6 +1,6 @@
 'use client';
 
-import type { SubscriptionPlan } from '@buyseekk/shared';
+import type { PublicSubscriptionPlan, SubscriptionPlan } from '@buyseekk/shared';
 import { planPriceLabel } from '@/lib/subscription-display';
 import { useT } from '@/lib/i18n';
 
@@ -9,8 +9,8 @@ function featureList(raw: string) {
 }
 
 type Props = {
-  plan: SubscriptionPlan;
-  currentPlan: SubscriptionPlan;
+  plan: PublicSubscriptionPlan;
+  currentPlan: PublicSubscriptionPlan | SubscriptionPlan;
   highlighted?: boolean;
 };
 
@@ -31,15 +31,9 @@ export function ProfilePricingCard({ plan, currentPlan, highlighted = false }: P
     ctaLabel = isCurrent ? t('subscription.currentPlan') : t('subscription.upgradeCta');
     ctaVariant = isCurrent ? 'current' : 'primary';
     ctaDisabled = true;
-  } else if (plan === 'ENTERPRISE') {
-    ctaLabel = isCurrent ? t('subscription.currentPlan') : t('profile.contactEnterprise');
-    ctaVariant = isCurrent ? 'current' : 'ghost';
-    ctaDisabled = true;
   }
 
-  const price =
-    plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
-
+  const price = plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
   const showCta = isCurrent || plan !== 'FREE';
 
   return (

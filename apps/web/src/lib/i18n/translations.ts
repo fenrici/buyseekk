@@ -935,7 +935,7 @@ export const es = {
     faq2q: '¿Cómo envío una oferta?',
     faq2a: 'Registrate como vendedor, explorá solicitudes activas y tocá "Enviar oferta" en la que coincida con lo que vendés.',
     faq3q: '¿Buyseek cobra comisiones?',
-    faq3a: 'En esta etapa el uso es gratuito. Los planes Plus y Enterprise se habilitarán próximamente.',
+    faq3a: 'En esta etapa el uso es gratuito. El plan Plus se habilitará próximamente.',
     faq4q: '¿Cómo cierro una operación?',
     faq4a:
       'Cuando aceptás una oferta podés coordinar por chat. Para confirmar una compra, marcá "Operación concretada" en Ofertas recibidas. Si no se concretó, podés cerrar la solicitud desde Mis solicitudes.',
@@ -1908,7 +1908,7 @@ export const en: DeepString<typeof es> = {
     faq2q: 'How do I send an offer?',
     faq2a: 'Sign up as a seller, browse active requests and tap "Send offer" on a matching listing.',
     faq3q: 'Does Buyseek charge fees?',
-    faq3a: 'At this stage usage is free. Plus and Enterprise plans will be available soon.',
+    faq3a: 'At this stage usage is free. The Plus plan will be available soon.',
     faq4q: 'How do I close a deal?',
     faq4a:
       'When you accept an offer you can coordinate via chat. To confirm a purchase, mark "Deal completed" in Offers received. If it did not work out, you can close the request from My requests.',

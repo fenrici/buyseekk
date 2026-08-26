@@ -38,7 +38,7 @@ export class SavedSearchesService {
   async create(userId: string, dto: CreateSavedSearchDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, subscriptionPlan: true },
+      select: { id: true },
     });
     if (!user) throw new NotFoundException('Usuario no encontrado');
 

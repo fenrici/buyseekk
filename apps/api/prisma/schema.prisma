@@ -23,7 +23,25 @@ enum UserMode {
 enum SubscriptionPlan {
   FREE
   PLUS
+  /// Legacy / dormant — not offered publicly. Kept for existing rows.
   ENTERPRISE
+}
+
+/// Billing provider. Only STRIPE is used in web MVP; APPLE/GOOGLE reserved for native apps.
+enum SubscriptionProvider {
+  STRIPE
+  APPLE
+  GOOGLE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  EXPIRED
 }
 
 enum SellerType {
@@ -181,6 +199,7 @@ model User {
   suspended        Boolean   @default(false)
   suspendedAt      DateTime?
   suspendedReason  String?
+  /// Display/cache only — mirrored from Subscription rows via syncPlanCacheFromEntitlements. Never used for Plus authorization.
   subscriptionPlan SubscriptionPlan @default(FREE)
   preferredMode        UserMode @default(BUYER)
   notificationPreferences Json?
@@ -203,10 +222,48 @@ model User {
   reportsAgainst            Report[] @relation("ReportsAgainst")
   reportsReviewed           Report[] @relation("ReportsReviewed")
   chatReadStates            ChatReadState[]
+  subscriptions             Subscription[]
 
   @@index([blocked])
   @@index([suspended])
   @@index([role])
+  @@index([subscriptionPlan])
+}
+
+/// Provider-agnostic billing subscription (Stripe now; Apple/Google later).
+model Subscription {
+  id                     String               @id @default(cuid())
+  userId                 String
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider               SubscriptionProvider
+  providerCustomerId     String?
+  providerSubscriptionId String
+  providerPriceId        String?
+  status                 SubscriptionStatus
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean              @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@unique([provider, providerSubscriptionId])
+  @@index([userId])
+  @@index([userId, status])
+  @@index([provider, providerCustomerId])
+}
+
+/// Idempotency ledger for provider webhooks (Stripe/Apple/Google).
+model BillingEvent {
+  id              String               @id @default(cuid())
+  provider        SubscriptionProvider
+  providerEventId String
+  type            String
+  processedAt     DateTime?
+  createdAt       DateTime             @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([provider, createdAt])
 }
 
 model Report {

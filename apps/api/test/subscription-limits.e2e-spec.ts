@@ -184,7 +184,250 @@ describe('Subscription plan limits (e2e)', () => {
     expect(blocked.body.message).toBe(SUBSCRIPTION_LIMIT_MESSAGES.smartAlerts);
   });
 
-  it('allows PLUS user beyond FREE limits', async () => {
+  it('grants Plus via ACTIVE Stripe Subscription without plan cache', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-sub-active-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Sub Active',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerCustomerId: `cus_test_${runId}`,
+        providerSubscriptionId: `sub_active_${runId}`,
+        providerPriceId: 'price_plus_test',
+        status: 'ACTIVE',
+        currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    });
+
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS + 1; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Sub alerta ${i + 1}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Miami Sub ${i}` },
+        })
+        .expect(201);
+    }
+  });
+
+  it('grants Plus while CANCELED but currentPeriodEnd is in the future', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-sub-canceled-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Sub Canceled',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerSubscriptionId: `sub_canceled_${runId}`,
+        status: 'CANCELED',
+        cancelAtPeriodEnd: true,
+        canceledAt: new Date('2026-08-20T00:00:00.000Z'),
+        // Far-future period end so wall-clock e2e stays deterministic without faking timers.
+        currentPeriodEnd: new Date('2099-01-01T00:00:00.000Z'),
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post('/api/saved-searches')
+      .set(authHeader(seller.token))
+      .send({
+        name: 'Canceled still plus',
+        category: 'AUTOS',
+        filters: { ...bmwMiamiFilters, carBrand: 'Audi' },
+      })
+      .expect(201);
+
+    // Create 3 more would hit Free limit without Plus — create up to Free max + 1 total
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Canceled plus ${i + 2}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Naples ${i}` },
+        })
+        .expect(201);
+    }
+  });
+
+  it('does not grant Plus when CANCELED period already ended', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-sub-canceled-past-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Sub Canceled Past',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerSubscriptionId: `sub_canceled_past_${runId}`,
+        status: 'CANCELED',
+        cancelAtPeriodEnd: true,
+        canceledAt: new Date('2026-07-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
+
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Canceled past ${i + 1}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Past ${i}` },
+        })
+        .expect(201);
+    }
+
+    await request(app.getHttpServer())
+      .post('/api/saved-searches')
+      .set(authHeader(seller.token))
+      .send({
+        name: 'Canceled past blocked',
+        category: 'AUTOS',
+        filters: { ...bmwMiamiFilters, location: 'Past blocked' },
+      })
+      .expect(400);
+  });
+
+  it('does not grant Plus when Subscription is EXPIRED', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-sub-expired-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Sub Expired',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerSubscriptionId: `sub_expired_${runId}`,
+        status: 'EXPIRED',
+        currentPeriodEnd: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    });
+
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Expired free ${i + 1}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Orlando ${i}` },
+        })
+        .expect(201);
+    }
+
+    await request(app.getHttpServer())
+      .post('/api/saved-searches')
+      .set(authHeader(seller.token))
+      .send({
+        name: 'Expired blocked',
+        category: 'AUTOS',
+        filters: { ...bmwMiamiFilters, location: 'Tampa, FL' },
+      })
+      .expect(400);
+  });
+
+  it('does not grant Plus from stale User.subscriptionPlan cache alone', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-stale-cache-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Stale Cache',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.user.update({
+      where: { id: seller.user.id },
+      data: { subscriptionPlan: 'PLUS' },
+    });
+
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Stale cache ${i + 1}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Stale ${i}` },
+        })
+        .expect(201);
+    }
+
+    const blocked = await request(app.getHttpServer())
+      .post('/api/saved-searches')
+      .set(authHeader(seller.token))
+      .send({
+        name: 'Stale cache blocked',
+        category: 'AUTOS',
+        filters: { ...bmwMiamiFilters, location: 'Stale blocked' },
+      })
+      .expect(400);
+
+    expect(blocked.body.message).toBe(SUBSCRIPTION_LIMIT_MESSAGES.smartAlerts);
+  });
+
+  it('does not grant Plus from legacy ENTERPRISE plan cache alone', async () => {
+    const seller = await registerUser(app, {
+      email: `plan-enterprise-cache-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Enterprise Cache',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.user.update({
+      where: { id: seller.user.id },
+      data: { subscriptionPlan: 'ENTERPRISE' },
+    });
+
+    for (let i = 0; i < FREE_MAX_SMART_ALERTS; i++) {
+      await request(app.getHttpServer())
+        .post('/api/saved-searches')
+        .set(authHeader(seller.token))
+        .send({
+          name: `Enterprise cache ${i + 1}`,
+          category: 'AUTOS',
+          filters: { ...bmwMiamiFilters, location: `Ent ${i}` },
+        })
+        .expect(201);
+    }
+
+    await request(app.getHttpServer())
+      .post('/api/saved-searches')
+      .set(authHeader(seller.token))
+      .send({
+        name: 'Enterprise cache blocked',
+        category: 'AUTOS',
+        filters: { ...bmwMiamiFilters, location: 'Ent blocked' },
+      })
+      .expect(400);
+  });
+
+  it('allows Plus via ACTIVE Subscription beyond FREE limits (not plan cache)', async () => {
     await withOfferLimitTestClock(async () => {
     const buyer = await registerUser(app, {
       email: `plan-buyer-plus-${runId}@test.buyseekk.com`,
@@ -201,9 +444,15 @@ describe('Subscription plan limits (e2e)', () => {
       country: 'US',
     });
 
-    await prisma.user.update({
-      where: { id: seller.user.id },
-      data: { subscriptionPlan: 'PLUS' },
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerSubscriptionId: `sub_plus_limits_${runId}`,
+        status: 'ACTIVE',
+        currentPeriodStart: new Date('2026-06-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-07-01T00:00:00.000Z'),
+      },
     });
 
     for (let i = 0; i < FREE_MAX_SMART_ALERTS + 1; i++) {
@@ -273,5 +522,48 @@ describe('Subscription plan limits (e2e)', () => {
       })
       .expect(201);
     });
+  });
+
+  it('syncPlanCacheFromEntitlements mirrors FREE/PLUS from Subscription rows', async () => {
+    const { SubscriptionService } = await import('../src/subscription/subscription.service');
+    const service = app.get(SubscriptionService);
+    const seller = await registerUser(app, {
+      email: `plan-sync-cache-${runId}@test.buyseekk.com`,
+      password,
+      name: 'Seller Sync Cache',
+      role: 'SELLER',
+      country: 'US',
+    });
+
+    await prisma.user.update({
+      where: { id: seller.user.id },
+      data: { subscriptionPlan: 'ENTERPRISE' },
+    });
+
+    const now = new Date('2026-08-26T15:00:00.000Z');
+    const cleared = await service.syncPlanCacheFromEntitlements(seller.user.id, now);
+    expect(cleared).toBe('FREE');
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: seller.user.id } })).subscriptionPlan,
+    ).toBe('FREE');
+
+    await prisma.subscription.create({
+      data: {
+        userId: seller.user.id,
+        provider: 'STRIPE',
+        providerSubscriptionId: `sub_sync_${runId}`,
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date('2026-09-26T15:00:00.000Z'),
+      },
+    });
+
+    const plus = await service.syncPlanCacheFromEntitlements(seller.user.id, now);
+    expect(plus).toBe('PLUS');
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: seller.user.id } })).subscriptionPlan,
+    ).toBe('PLUS');
+
+    const again = await service.syncPlanCacheFromEntitlements(seller.user.id, now);
+    expect(again).toBe('PLUS');
   });
 });
