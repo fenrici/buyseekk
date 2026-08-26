@@ -82,13 +82,14 @@ describe('Security config', () => {
     expect(() => validateEnv(prodEnv({ REDIS_URL: 'http://localhost:6379' }))).toThrow(/REDIS_URL/);
   });
 
-  it('requires Stripe keys and WEB_URL when STRIPE_BILLING_ENABLED=true', () => {
+  it('requires Stripe keys, WEB_URL and webhook secret when STRIPE_BILLING_ENABLED=true', () => {
     expect(() =>
       validateEnv(
         baseEnv({
           STRIPE_BILLING_ENABLED: 'true',
           STRIPE_SECRET_KEY: 'sk_test_x',
           STRIPE_PRICE_PLUS_MONTHLY: 'price_x',
+          STRIPE_WEBHOOK_SECRET: 'whsec_x',
           WEB_URL: 'http://localhost:3000',
         }),
       ),
@@ -107,6 +108,16 @@ describe('Security config', () => {
         }),
       ),
     ).toThrow(/WEB_URL/);
+    expect(() =>
+      validateEnv(
+        baseEnv({
+          STRIPE_BILLING_ENABLED: 'true',
+          STRIPE_SECRET_KEY: 'sk_test_x',
+          STRIPE_PRICE_PLUS_MONTHLY: 'price_x',
+          WEB_URL: 'http://localhost:3000',
+        }),
+      ),
+    ).toThrow(/STRIPE_WEBHOOK_SECRET/);
   });
 
   it('requires R2 in production and HTTPS public URL', () => {

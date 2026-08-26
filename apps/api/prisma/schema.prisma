@@ -288,6 +288,10 @@ model Subscription {
   currentPeriodEnd       DateTime?
   cancelAtPeriodEnd      Boolean              @default(false)
   canceledAt             DateTime?
+  /// Stripe/Apple/Google event.created (unix→Date). Blocks older events from overwriting newer state.
+  lastProviderEventAt    DateTime?
+  /// Last applied provider event id (tie-break when event.created is equal).
+  lastProviderEventId    String?
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
 
@@ -299,12 +303,15 @@ model Subscription {
 
 /// Idempotency ledger for provider webhooks (Stripe/Apple/Google).
 model BillingEvent {
-  id              String               @id @default(cuid())
-  provider        SubscriptionProvider
-  providerEventId String
-  type            String
-  processedAt     DateTime?
-  createdAt       DateTime             @default(now())
+  id                   String               @id @default(cuid())
+  provider             SubscriptionProvider
+  providerEventId      String
+  type                 String
+  /// Set while a worker owns the claim. Stale leases can be reclaimed after BILLING_EVENT_LEASE_MS.
+  processingStartedAt  DateTime?
+  processedAt          DateTime?
+  attemptCount         Int                  @default(0)
+  createdAt            DateTime             @default(now())
 
   @@unique([provider, providerEventId])
   @@index([provider, createdAt])

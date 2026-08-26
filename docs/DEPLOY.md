@@ -59,6 +59,7 @@ En **Variables** del servicio API, agregá:
 | `STRIPE_BILLING_ENABLED` | `false` (default) / `true` | Hosted Checkout web. Con `true` exige keys de test + `WEB_URL` |
 | `STRIPE_SECRET_KEY` | `sk_test_...` | Solo API. Nunca en web / Vercel |
 | `STRIPE_PRICE_PLUS_MONTHLY` | `price_...` | Price ID de Buyseek Plus mensual (Dashboard Stripe) |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Signing secret del endpoint webhook (Test mode) |
 | `NOTIFICATION_EMAILS_ENABLED` | `true` | Emails automáticos de notificaciones |
 | `REDIS_URL` | URL Redis | Obligatorio si escalás a 2+ réplicas API |
 | `SENTRY_DSN` | URL Sentry | Opcional — monitoreo de errores |
@@ -83,9 +84,12 @@ Para probar Upgrade to Plus en web:
    - `STRIPE_BILLING_ENABLED=true`
    - `STRIPE_SECRET_KEY=sk_test_...`
    - `STRIPE_PRICE_PLUS_MONTHLY=price_...`
+   - `STRIPE_WEBHOOK_SECRET=whsec_...` (Developers → Webhooks → endpoint signing secret)
    - `WEB_URL` = URL pública de la web (success/cancel)
    - `PLUS_FEATURES_UNLOCKED=false` si querés que el checkout no choque con el bypass de lanzamiento
-5. Webhooks y Customer Portal: **FASE 3** (todavía no). El return `?checkout=success` **no** otorga Plus.
+5. Webhook endpoint: `POST https://<api>/api/billing/webhooks/stripe`
+   - Eventos: `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`
+6. Customer Portal: **FASE 4**. El return `?checkout=success` **no** otorga Plus; el webhook sí sincroniza Subscription.
 
 #### 2.4.0 Rate limiting y seguridad (opcional)
 

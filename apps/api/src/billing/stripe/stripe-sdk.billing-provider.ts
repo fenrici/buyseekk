@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { requireStripeSecretKey } from '../billing.config';
+import { requireStripeSecretKey, requireStripeWebhookSecret } from '../billing.config';
 import type {
   CreateStripeCheckoutSessionInput,
   CreateStripeCustomerInput,
+  NormalizedStripeSubscription,
   StripeBillingProvider,
   StripeCheckoutSessionResult,
   StripeCustomerResult,
 } from './stripe-billing.provider';
+import { normalizeStripeSubscription } from './stripe-subscription.mapper';
 
 @Injectable()
 export class StripeSdkBillingProvider implements StripeBillingProvider {
@@ -69,5 +71,18 @@ export class StripeSdkBillingProvider implements StripeBillingProvider {
       url: session.url,
       expiresAtUnix: session.expires_at ?? null,
     };
+  }
+
+  constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event {
+    return this.stripe().webhooks.constructEvent(
+      payload,
+      signature,
+      requireStripeWebhookSecret(this.config),
+    );
+  }
+
+  async retrieveSubscription(subscriptionId: string): Promise<NormalizedStripeSubscription> {
+    const sub = await this.stripe().subscriptions.retrieve(subscriptionId);
+    return normalizeStripeSubscription(sub);
   }
 }

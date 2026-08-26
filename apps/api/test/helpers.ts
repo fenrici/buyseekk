@@ -32,7 +32,7 @@ export async function createTestApp(options?: {
 
   const moduleRef = await builder.compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication({ rawBody: true });
   configureApp(app);
   await app.init();
   registerMulterErrorHandler(app);
@@ -46,7 +46,7 @@ export async function createThrottledTestApp(): Promise<INestApplication<App>> {
     imports: [AppModule],
   }).compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication({ rawBody: true });
   configureApp(app);
   await app.init();
   registerMulterErrorHandler(app);

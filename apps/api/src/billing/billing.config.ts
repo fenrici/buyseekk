@@ -25,6 +25,14 @@ export function requireStripePlusPriceId(config: ConfigService): string {
   return priceId;
 }
 
+export function requireStripeWebhookSecret(config: ConfigService): string {
+  const secret = config.get<string>('STRIPE_WEBHOOK_SECRET')?.trim();
+  if (!secret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is required when STRIPE_BILLING_ENABLED=true');
+  }
+  return secret;
+}
+
 export function requireWebUrl(config: ConfigService): string {
   const webUrl = config.get<string>('WEB_URL')?.trim()?.replace(/\/$/, '');
   if (!webUrl) {
@@ -57,3 +65,10 @@ export function stripeCheckoutIdempotencyKey(billingCheckoutSessionId: string): 
 
 /** Default OPEN checkout TTL (Stripe sessions last up to 24h). */
 export const BILLING_CHECKOUT_TTL_MS = 23 * 60 * 60 * 1000;
+
+/**
+ * How long a BillingEvent claim is exclusive.
+ * After this, another replica may reclaim if processedAt is still null
+ * (worker crash / failed attempt without clearing the lease).
+ */
+export const BILLING_EVENT_LEASE_MS = 2 * 60 * 1000;

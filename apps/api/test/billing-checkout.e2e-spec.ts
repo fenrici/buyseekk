@@ -78,6 +78,12 @@ function createMockStripe(): MockStripe {
       mock.checkoutsByKey.set(input.idempotencyKey, result);
       return result;
     },
+    constructWebhookEvent() {
+      throw new Error('constructWebhookEvent not used in checkout tests');
+    },
+    async retrieveSubscription() {
+      throw new Error('retrieveSubscription not used in checkout tests');
+    },
   };
   return mock;
 }
@@ -91,6 +97,7 @@ async function createBillingTestApp(options: {
     STRIPE_BILLING_ENABLED: 'true',
     STRIPE_SECRET_KEY: 'sk_test_mock',
     STRIPE_PRICE_PLUS_MONTHLY: 'price_plus_monthly_test',
+    STRIPE_WEBHOOK_SECRET: 'whsec_test_mock',
     WEB_URL: 'http://localhost:3000',
     PLUS_FEATURES_UNLOCKED: 'false',
     ...options.env,
@@ -112,7 +119,7 @@ async function createBillingTestApp(options: {
     .useValue(stripe)
     .compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication({ rawBody: true });
   configureApp(app);
   await app.init();
   registerMulterErrorHandler(app);

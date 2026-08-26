@@ -105,6 +105,11 @@ class EnvironmentVariables {
   @IsString()
   STRIPE_PRICE_PLUS_MONTHLY?: string;
 
+  /** Stripe webhook signing secret (whsec_...). Required when billing enabled. */
+  @IsOptional()
+  @IsString()
+  STRIPE_WEBHOOK_SECRET?: string;
+
   @IsOptional()
   @IsString()
   WEB_URL?: string;
@@ -181,6 +186,9 @@ export function validateEnv(config: Record<string, unknown>) {
     }
     if (!validated.WEB_URL?.trim()) {
       throw new Error('STRIPE_BILLING_ENABLED=true requiere WEB_URL (success/cancel Checkout URLs)');
+    }
+    if (!validated.STRIPE_WEBHOOK_SECRET?.trim()) {
+      throw new Error('STRIPE_BILLING_ENABLED=true requiere STRIPE_WEBHOOK_SECRET');
     }
   }
 
