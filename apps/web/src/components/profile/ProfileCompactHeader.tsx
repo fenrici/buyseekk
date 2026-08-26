@@ -45,7 +45,11 @@ export function ProfileCompactHeader({ user, isSeller, onEditProfile }: Props) {
           />
           <div className="profile-compact__info">
             <h1 className="profile-compact__name">
-              <UserDisplayName name={user.name} subscriptionPlan={user.subscriptionPlan} />
+              <UserDisplayName
+                name={user.name}
+                subscriptionPlan={user.subscriptionPlan}
+                className="user-display-name--hide-plus-desktop"
+              />
             </h1>
             <p className="profile-compact__email">{user.email}</p>
             {sellerIdentity ? (

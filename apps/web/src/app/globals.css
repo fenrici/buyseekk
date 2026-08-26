@@ -299,6 +299,48 @@ html:has(.public-content-page) body {
   filter: drop-shadow(0 0 18px rgba(129, 140, 248, 0.5));
 }
 
+.portal-logo-text--plus {
+  letter-spacing: -0.035em;
+}
+
+.brand-plus-mark {
+  display: inline-block;
+  margin-left: 0.02em;
+  font-size: 0.52em;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  vertical-align: super;
+  position: relative;
+  top: -0.06em;
+  background: linear-gradient(135deg, #e9d5ff 0%, #a5b4fc 45%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.45));
+}
+
+.buyseek-brand--light {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.buyseek-brand__icon {
+  color: var(--primary);
+}
+
+.buyseek-brand--plus .brand-plus-mark {
+  background: linear-gradient(135deg, #818cf8 0%, #6366f1 55%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: none;
+}
+
 .portal-header-actions {
   display: none;
   align-items: center;
@@ -4073,6 +4115,132 @@ button.portal-mobile-link {
   box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.08);
   flex-shrink: 0;
   vertical-align: middle;
+}
+
+@media (min-width: 768px) {
+  .user-display-name--hide-plus-desktop .plus-membership-badge {
+    display: none;
+  }
+}
+
+/* Profile desktop sidebar — premium plan card */
+.profile-plan-sidecard {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.profile-plan-sidecard--plus {
+  border-color: rgba(129, 140, 248, 0.3);
+  background: linear-gradient(165deg, rgba(49, 46, 129, 0.38) 0%, rgba(15, 23, 42, 0.88) 62%);
+  box-shadow: inset 0 1px 0 rgba(167, 139, 250, 0.08);
+}
+
+.profile-plan-sidecard__open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.15rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.profile-plan-sidecard__open:hover {
+  background: rgba(99, 102, 241, 0.07);
+}
+
+.profile-plan-sidecard__open:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.55);
+  outline-offset: -2px;
+}
+
+.profile-plan-sidecard__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-plan-sidecard__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.profile-plan-sidecard--plus .profile-plan-sidecard__eyebrow {
+  color: #a5b4fc;
+}
+
+.profile-plan-sidecard__title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+}
+
+.profile-plan-sidecard__plan {
+  margin: 0;
+  font-size: 1.32rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #f8fafc;
+}
+
+.profile-plan-sidecard--plus .profile-plan-sidecard__plan {
+  background: linear-gradient(120deg, #f8fafc 0%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.profile-plan-sidecard__status {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.profile-plan-sidecard--plus .profile-plan-sidecard__status {
+  color: #a5b4fc;
+}
+
+.profile-plan-sidecard__meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.profile-plan-sidecard--plus .profile-plan-sidecard__meta {
+  color: #cbd5e1;
+}
+
+.profile-plan-sidecard__chevron {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #64748b;
+}
+
+.profile-plan-sidecard--plus .profile-plan-sidecard__chevron {
+  color: #818cf8;
+}
+
+.profile-plan-sidecard .profile-plan-teaser__upgrade {
+  margin: 0 1.15rem 1rem;
+  width: calc(100% - 2.3rem);
 }
 
 .profile-menu {

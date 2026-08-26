@@ -7,9 +7,10 @@ import { avatarUrlForMode, resolveNavMode } from '@buyseekk/shared';
 import { api, normalizePaginated } from '@/lib/api';
 import { getAppHomePath } from '@/lib/auth';
 import { Avatar } from '@/components/Avatar';
-import { UserDisplayName } from '@/components/UserDisplayName';
+import { BuyseekBrand } from '@/components/BuyseekBrand';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useT } from '@/lib/i18n';
+import { showsPlusMembershipBadge } from '@/lib/subscription-display';
 import { OfferItem, PaginatedResult, PendingRatingItem } from '@/lib/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { useChatUnread } from '@/hooks/useChatUnread';
@@ -31,6 +32,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
   // Navegación según el modo activo (sin mezclar comprador/vendedor).
   const navMode = user ? resolveNavMode({ role: user.role, activeMode: user.activeMode }) : null;
   const appHome = getAppHomePath(user);
+  const brandPlus = showsPlusMembershipBadge(user?.subscriptionPlan);
 
   useEffect(() => {
     if (!user || user.role === 'ADMIN') {
@@ -117,7 +119,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
             href={appHome}
             className={`portal-logo ${user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''}`}
           >
-            <span className="portal-logo-text">Buyseek</span>
+            <BuyseekBrand plus={brandPlus} />
           </Link>
         ) : (
           <Link
@@ -126,7 +128,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
               user ? 'max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2' : ''
             }`}
           >
-            <span className="text-[var(--primary)]">⇄</span> Buyseek
+            <BuyseekBrand plus={brandPlus} variant="light" />
           </Link>
         )}
 
@@ -151,9 +153,7 @@ export function Header({ variant = 'light' }: HeaderProps) {
                 <span className="header-profile__avatar">
                   <Avatar name={user.name} url={avatarUrlForMode(user)} size={32} />
                 </span>
-                <span>
-                  <UserDisplayName name={user.name} subscriptionPlan={user.subscriptionPlan} />
-                </span>
+                <span>{user.name}</span>
               </Link>
             </>
           ) : (

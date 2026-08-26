@@ -22,7 +22,50 @@ export function ProfilePlanTeaser({
 }: Props) {
   const t = useT();
   const isSidebar = variant === 'sidebar';
+  const isPlusPlan = plan === 'PLUS' || plan === 'ENTERPRISE';
   const cardClass = `profile-plan-teaser card${onOpenPlan ? ' profile-plan-teaser--interactive' : ''}${className ? ` ${className}` : ''}`;
+
+  const upgradeButton =
+    plan === 'FREE' && showUpgrade && onUpgrade ? (
+      <button type="button" className="profile-plan-teaser__upgrade" onClick={onUpgrade}>
+        {t('subscription.upgradeCta')}
+      </button>
+    ) : null;
+
+  if (isSidebar) {
+    return (
+      <section
+        className={`profile-plan-sidecard card${isPlusPlan ? ' profile-plan-sidecard--plus' : ''}`}
+        aria-labelledby="profile-plan-sidebar-title"
+      >
+        <button
+          type="button"
+          className="profile-plan-sidecard__open"
+          onClick={onOpenPlan}
+          aria-label={t('profile.openPlanBilling')}
+        >
+          <div className="profile-plan-sidecard__body">
+            <p id="profile-plan-sidebar-title" className="profile-plan-sidecard__eyebrow">
+              {t('profile.planSectionLabel')}
+            </p>
+            <div className="profile-plan-sidecard__title-row">
+              <p className="profile-plan-sidecard__plan">{t(`subscription.plan.${plan}`)}</p>
+              <span className="profile-plan-sidecard__status">{t('subscription.currentPlan')}</span>
+            </div>
+            <p className="profile-plan-sidecard__meta">
+              {plan === 'FREE'
+                ? `${t('profile.hubOfferLimit')} · ${t('profile.hubAlertLimit')}`
+                : t(`subscription.tagline.${plan === 'ENTERPRISE' ? 'PLUS' : plan}`)}
+            </p>
+          </div>
+          <span className="profile-plan-sidecard__chevron" aria-hidden>
+            ›
+          </span>
+        </button>
+        {upgradeButton}
+      </section>
+    );
+  }
 
   const head = (
     <div className="profile-plan-teaser__head">
@@ -63,30 +106,10 @@ export function ProfilePlanTeaser({
     openBody
   );
 
-  const upgradeButton =
-    plan === 'FREE' && showUpgrade && onUpgrade ? (
-      <button type="button" className="profile-plan-teaser__upgrade" onClick={onUpgrade}>
-        {t('subscription.upgradeCta')}
-      </button>
-    ) : null;
-
-  const content = (
-    <>
+  return (
+    <div className={cardClass}>
       {openControl}
       {upgradeButton}
-    </>
+    </div>
   );
-
-  if (isSidebar) {
-    return (
-      <section className="profile-side-card card" aria-labelledby="profile-plan-sidebar-title">
-        <h2 id="profile-plan-sidebar-title" className="profile-side-card__title">
-          {t('profile.planSectionLabel')}
-        </h2>
-        {content}
-      </section>
-    );
-  }
-
-  return <div className={cardClass}>{content}</div>;
 }
