@@ -8,7 +8,8 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "EXPO_PUBLIC_API_URL=https://api.buyseek.us npx ts-node -P tsconfig.tests.json --transpile-only src/lib/api/errors.test.ts && EXPO_PUBLIC_API_URL=https://api.buyseek.us npx ts-node -P tsconfig.tests.json --transpile-only src/lib/auth/secure-session.test.ts && EXPO_PUBLIC_API_URL=https://api.buyseek.us npx ts-node -P tsconfig.tests.json --transpile-only src/lib/auth/session-refresh.test.ts && EXPO_PUBLIC_API_URL=https://api.buyseek.us npx ts-node -P tsconfig.tests.json --transpile-only src/lib/api/client.refresh.test.ts && EXPO_PUBLIC_API_URL=https://api.buyseek.us npx ts-node -P tsconfig.tests.json --transpile-only src/lib/api/session-flow.test.ts"
   },
   "dependencies": {
     "@buyseekk/shared": "*",
