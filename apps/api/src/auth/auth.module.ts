@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { EmailModule } from '../email/email.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthController } from './auth.controller';
+import { AuthMobileController } from './auth-mobile.controller';
 import { AuthService } from './auth.service';
 import { AuthTokenCleanupScheduler } from './auth-token-cleanup.scheduler';
 import { JwtStrategy } from './jwt.strategy';
@@ -27,7 +28,7 @@ import { SecurityLogService } from './security-log.service';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthMobileController],
   providers: [AuthService, JwtStrategy, SecurityLogService, AuthTokenCleanupScheduler],
   exports: [AuthService, JwtModule, SecurityLogService],
 })

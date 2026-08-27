@@ -8,7 +8,7 @@ import {
 import { JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Country, Currency, Locale, SecurityEvent, User, UserMode, UserRole } from '@prisma/client';
+import { Country, Currency, Locale, RefreshClientType, SecurityEvent, User, UserMode, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { defaultLocaleForCountry, resolveSessionActiveMode } from '@buyseekk/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +20,8 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
 } from './auth.dto';
+import type { RefreshSessionMeta } from './auth-mobile.dto';
+import { WEB_REFRESH_SESSION } from './auth-mobile.dto';
 import { canonicalizeEmail } from './email-canonicalize';
 import { parseDurationMs } from './refresh-cookie';
 import { EmailService } from './email.service';
@@ -83,19 +85,32 @@ export class AuthService {
     );
   }
 
-  private async issueRefreshToken(userId: string): Promise<string> {
+  private async issueRefreshToken(
+    userId: string,
+    meta: RefreshSessionMeta = WEB_REFRESH_SESSION,
+  ): Promise<string> {
     const plain = generateSecureToken();
     const tokenHash = hashToken(plain);
     const expiresAt = new Date(Date.now() + parseDurationMs(this.getRefreshExpiresIn()));
     await this.prisma.refreshToken.create({
-      data: { userId, tokenHash, expiresAt },
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+        clientType: meta.clientType,
+        deviceId: meta.deviceId ?? null,
+        deviceLabel: meta.deviceLabel ?? null,
+      },
     });
     return plain;
   }
 
-  private async issueTokens(user: User): Promise<AuthTokens> {
+  private async issueTokens(
+    user: User,
+    meta: RefreshSessionMeta = WEB_REFRESH_SESSION,
+  ): Promise<AuthTokens> {
     const token = this.signAccessToken(user);
-    const refreshToken = await this.issueRefreshToken(user.id);
+    const refreshToken = await this.issueRefreshToken(user.id, meta);
     return { token, refreshToken };
   }
 
@@ -136,7 +151,11 @@ export class AuthService {
     });
   }
 
-  async register(dto: RegisterDto, ctx: SecurityContext = {}) {
+  async register(
+    dto: RegisterDto,
+    ctx: SecurityContext = {},
+    sessionMeta: RefreshSessionMeta = WEB_REFRESH_SESSION,
+  ) {
     const email = canonicalizeEmail(dto.email);
     const existing = await this.findUserByEmail(email);
     if (existing) throw new ConflictException('Email ya registrado');
@@ -186,7 +205,7 @@ export class AuthService {
       metadata: { email: user.email },
     });
 
-    const tokens = await this.issueTokens(user);
+    const tokens = await this.issueTokens(user, sessionMeta);
     return { user: this.toPublicUser(user), ...tokens };
   }
 
@@ -199,7 +218,11 @@ export class AuthService {
     });
   }
 
-  async login(dto: LoginDto, ctx: SecurityContext = {}) {
+  async login(
+    dto: LoginDto,
+    ctx: SecurityContext = {},
+    sessionMeta: RefreshSessionMeta = WEB_REFRESH_SESSION,
+  ) {
     const email = canonicalizeEmail(dto.email);
     const user = await this.findUserByEmail(email);
     if (!user) {
@@ -233,11 +256,15 @@ export class AuthService {
 
     const sessionUser = await this.normalizeSessionUser(user);
 
-    const tokens = await this.issueTokens(sessionUser);
+    const tokens = await this.issueTokens(sessionUser, sessionMeta);
     return { user: this.toPublicUser(sessionUser), ...tokens };
   }
 
-  async refresh(plainToken: string | undefined, ctx: SecurityContext = {}) {
+  async refresh(
+    plainToken: string | undefined,
+    ctx: SecurityContext = {},
+    sessionPatch?: Pick<RefreshSessionMeta, 'deviceId' | 'deviceLabel'>,
+  ) {
     if (!plainToken) {
       throw new UnauthorizedException('Sesión expirada. Volvé a iniciar sesión');
     }
@@ -256,11 +283,16 @@ export class AuthService {
 
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), lastUsedAt: new Date() },
     });
 
     const sessionUser = await this.normalizeSessionUser(stored.user);
-    const tokens = await this.issueTokens(sessionUser);
+    const nextSession: RefreshSessionMeta = {
+      clientType: stored.clientType,
+      deviceId: sessionPatch?.deviceId ?? stored.deviceId ?? undefined,
+      deviceLabel: sessionPatch?.deviceLabel ?? stored.deviceLabel ?? undefined,
+    };
+    const tokens = await this.issueTokens(sessionUser, nextSession);
     return { user: this.toPublicUser(sessionUser), ...tokens };
   }
 

@@ -16,6 +16,7 @@ export * from './offer-highlights';
 export * from './offer-negotiation';
 export * from './subscription';
 export * from './billing-status';
+export * from './mobile-auth';
 export * from './notification-preferences';
 export * from './notification-routing';
 export * from './account-profiles';
