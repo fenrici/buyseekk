@@ -85,4 +85,14 @@ export class StripeSdkBillingProvider implements StripeBillingProvider {
     const sub = await this.stripe().subscriptions.retrieve(subscriptionId);
     return normalizeStripeSubscription(sub);
   }
+
+  async setCancelAtPeriodEnd(
+    subscriptionId: string,
+    cancelAtPeriodEnd: boolean,
+  ): Promise<NormalizedStripeSubscription> {
+    const sub = await this.stripe().subscriptions.update(subscriptionId, {
+      cancel_at_period_end: cancelAtPeriodEnd,
+    });
+    return normalizeStripeSubscription(sub);
+  }
 }

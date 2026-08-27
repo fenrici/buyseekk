@@ -49,4 +49,8 @@ export interface StripeBillingProvider {
   createCheckoutSession(input: CreateStripeCheckoutSessionInput): Promise<StripeCheckoutSessionResult>;
   constructWebhookEvent(payload: Buffer, signature: string): Stripe.Event;
   retrieveSubscription(subscriptionId: string): Promise<NormalizedStripeSubscription>;
+  setCancelAtPeriodEnd(
+    subscriptionId: string,
+    cancelAtPeriodEnd: boolean,
+  ): Promise<NormalizedStripeSubscription>;
 }

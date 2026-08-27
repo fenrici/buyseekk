@@ -256,7 +256,6 @@ export default function ProfilePage() {
         >
           <ProfilePlanBillingScreen
             user={account}
-            isSeller={isSeller}
             checkoutReturn={checkoutReturn}
           />
         </ProfileSubLayout>

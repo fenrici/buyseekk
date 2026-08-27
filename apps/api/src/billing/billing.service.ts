@@ -11,7 +11,9 @@ import {
   BillingCheckoutStatus,
   Prisma,
   SubscriptionProvider,
+  SubscriptionStatus,
 } from '@prisma/client';
+import type { BillingStatusResponse } from '@buyseekk/shared';
 import {
   BILLING_CHECKOUT_TTL_MS,
   isStripeBillingEnabled,
@@ -25,6 +27,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { isDefinitiveStripeBillingError } from './stripe/stripe-billing.errors';
+import { StripeWebhookService } from './stripe-webhook.service';
 import {
   STRIPE_BILLING_PROVIDER,
   type StripeBillingProvider,
@@ -39,7 +42,23 @@ export const ALREADY_PLUS_MESSAGE =
 export const CHECKOUT_PROVIDER_FAILED_MESSAGE =
   'No pudimos iniciar el checkout con el proveedor de pagos. Intentá de nuevo.';
 
+export const NO_MANAGEABLE_SUBSCRIPTION_MESSAGE =
+  'No encontramos una suscripción activa que puedas administrar desde Buyseek.';
+
+export const CANCEL_ALREADY_SCHEDULED_MESSAGE =
+  'La cancelación de Plus ya está programada para el final del período.';
+
+export const RESUME_NOT_SCHEDULED_MESSAGE =
+  'Tu suscripción Plus no tiene una cancelación programada.';
+
 const PLUS_PLAN = 'PLUS';
+
+const MANAGEABLE_STATUSES: SubscriptionStatus[] = [
+  SubscriptionStatus.ACTIVE,
+  SubscriptionStatus.TRIALING,
+  SubscriptionStatus.PAST_DUE,
+  SubscriptionStatus.CANCELED,
+];
 
 @Injectable()
 export class BillingService {
@@ -47,6 +66,7 @@ export class BillingService {
     private config: ConfigService,
     private prisma: PrismaService,
     private subscriptions: SubscriptionService,
+    private webhooks: StripeWebhookService,
     @Inject(STRIPE_BILLING_PROVIDER) private stripe: StripeBillingProvider,
   ) {}
 
@@ -88,6 +108,161 @@ export class BillingService {
     });
 
     return { url: open.checkoutUrl!, sessionId: open.providerSessionId! };
+  }
+
+  /** Provider-agnostic billing snapshot for Plan & Billing UI. */
+  async getBillingStatus(userId: string): Promise<BillingStatusResponse> {
+    return this.buildBillingStatus(userId);
+  }
+
+  /**
+   * Schedule Stripe cancel_at_period_end=true for the authenticated user's subscription.
+   * Does not revoke Plus immediately — webhook remains source of truth for cache/entitlement.
+   */
+  async scheduleCancelAtPeriodEnd(userId: string): Promise<BillingStatusResponse> {
+    this.assertBillingEnabled();
+    const row = await this.requireManageableStripeSubscription(userId);
+
+    if (!(await this.subscriptions.hasPlusEntitlement({ id: userId }))) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'NO_PLUS_ENTITLEMENT',
+        message: NO_MANAGEABLE_SUBSCRIPTION_MESSAGE,
+      });
+    }
+
+    if (row.cancelAtPeriodEnd) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'CANCEL_ALREADY_SCHEDULED',
+        message: CANCEL_ALREADY_SCHEDULED_MESSAGE,
+      });
+    }
+
+    try {
+      const updated = await this.stripe.setCancelAtPeriodEnd(row.providerSubscriptionId, true);
+      await this.syncManagementSnapshot(updated, 'cancel');
+    } catch {
+      throw new BadGatewayException({
+        statusCode: 502,
+        code: 'BILLING_PROVIDER_FAILED',
+        message: CHECKOUT_PROVIDER_FAILED_MESSAGE,
+      });
+    }
+
+    return this.buildBillingStatus(userId);
+  }
+
+  /**
+   * Undo scheduled cancellation (cancel_at_period_end=false).
+   */
+  async resumeSubscription(userId: string): Promise<BillingStatusResponse> {
+    this.assertBillingEnabled();
+    const row = await this.requireManageableStripeSubscription(userId);
+
+    if (!row.cancelAtPeriodEnd) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'RESUME_NOT_SCHEDULED',
+        message: RESUME_NOT_SCHEDULED_MESSAGE,
+      });
+    }
+
+    try {
+      const updated = await this.stripe.setCancelAtPeriodEnd(row.providerSubscriptionId, false);
+      await this.syncManagementSnapshot(updated, 'resume');
+    } catch {
+      throw new BadGatewayException({
+        statusCode: 502,
+        code: 'BILLING_PROVIDER_FAILED',
+        message: CHECKOUT_PROVIDER_FAILED_MESSAGE,
+      });
+    }
+
+    return this.buildBillingStatus(userId);
+  }
+
+  private assertBillingEnabled() {
+    if (!this.billingEnabled()) {
+      throw new ServiceUnavailableException({
+        statusCode: 503,
+        code: 'BILLING_UNAVAILABLE',
+        message: BILLING_UNAVAILABLE_MESSAGE,
+      });
+    }
+  }
+
+  private async buildBillingStatus(userId: string): Promise<BillingStatusResponse> {
+    const hasPlus = await this.subscriptions.hasPlusEntitlement({ id: userId });
+    const row = await this.findPrimaryStripeSubscription(userId);
+
+    if (!hasPlus || !row) {
+      return {
+        plan: 'FREE',
+        status: null,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
+        canCancelInBuyseek: false,
+        canResumeInBuyseek: false,
+        managementProvider: null,
+      };
+    }
+
+    const canManageStripe =
+      row.provider === SubscriptionProvider.STRIPE && !!row.providerSubscriptionId;
+
+    return {
+      plan: 'PLUS',
+      status: row.status,
+      cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+      currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
+      canCancelInBuyseek: canManageStripe && !row.cancelAtPeriodEnd,
+      canResumeInBuyseek: canManageStripe && row.cancelAtPeriodEnd,
+      managementProvider: canManageStripe ? 'STRIPE' : null,
+    };
+  }
+
+  private findPrimaryStripeSubscription(userId: string) {
+    return this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        provider: SubscriptionProvider.STRIPE,
+        status: { in: MANAGEABLE_STATUSES },
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  private async requireManageableStripeSubscription(userId: string) {
+    const row = await this.findPrimaryStripeSubscription(userId);
+    if (!row?.providerSubscriptionId) {
+      throw new NotFoundException({
+        statusCode: 404,
+        code: 'NO_MANAGEABLE_SUBSCRIPTION',
+        message: NO_MANAGEABLE_SUBSCRIPTION_MESSAGE,
+      });
+    }
+    if (row.userId !== userId) {
+      throw new NotFoundException({
+        statusCode: 404,
+        code: 'NO_MANAGEABLE_SUBSCRIPTION',
+        message: NO_MANAGEABLE_SUBSCRIPTION_MESSAGE,
+      });
+    }
+    return row;
+  }
+
+  /**
+   * Persist Stripe cancel/resume via central sync so lastProviderEventAt/Id
+   * participate in Phase 3 ordering and stale webhooks cannot undo API state.
+   */
+  private async syncManagementSnapshot(
+    snapshot: Awaited<ReturnType<StripeBillingProvider['setCancelAtPeriodEnd']>>,
+    operation: 'cancel' | 'resume',
+  ) {
+    const syncAt = new Date();
+    const syncId = `api:${operation}:${snapshot.id}:${syncAt.getTime()}`;
+    await this.webhooks.syncStripeSubscription(snapshot, syncAt, syncId);
   }
 
   /**

@@ -84,6 +84,9 @@ function createMockStripe(): MockStripe {
       if (!sub) throw new Error(`Unknown subscription ${id}`);
       return sub;
     },
+    async setCancelAtPeriodEnd() {
+      throw new Error('setCancelAtPeriodEnd not used in webhook tests');
+    },
   };
   return mock;
 }

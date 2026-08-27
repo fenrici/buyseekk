@@ -8,66 +8,86 @@ function featureList(raw: string) {
   return raw.split('|').map((line) => line.trim()).filter(Boolean);
 }
 
+export type PricingCardAction =
+  | 'none'
+  | 'current'
+  | 'upgrade'
+  | 'downgrade'
+  | 'resume';
+
 type Props = {
   plan: PublicSubscriptionPlan;
   currentPlan: PublicSubscriptionPlan | SubscriptionPlan;
   highlighted?: boolean;
-  /** When set, Plus CTA starts Hosted Checkout (server decides entitlement). */
-  onUpgrade?: () => void;
-  upgradeLoading?: boolean;
-  upgradeDisabled?: boolean;
+  action?: PricingCardAction;
+  actionLoading?: boolean;
+  onAction?: () => void;
+  statusPrimary?: string | null;
+  statusSecondary?: string | null;
 };
 
 export function ProfilePricingCard({
   plan,
   currentPlan,
   highlighted = false,
-  onUpgrade,
-  upgradeLoading = false,
-  upgradeDisabled = false,
+  action = 'none',
+  actionLoading = false,
+  onAction,
+  statusPrimary = null,
+  statusSecondary = null,
 }: Props) {
   const t = useT();
-  const isCurrent = plan === currentPlan;
+  const isCurrent = plan === currentPlan || (plan === 'PLUS' && currentPlan === 'ENTERPRISE');
   const features = featureList(t(`subscription.pricingFeatures.${plan}`));
+  const price = plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
 
-  let ctaLabel = t('subscription.upgradeCta');
-  let ctaVariant: 'primary' | 'ghost' | 'current' = 'primary';
+  let ctaLabel = '';
+  let ctaVariant: 'primary' | 'ghost' | 'current' | 'danger' = 'primary';
   let ctaDisabled = true;
-  let showSoon = false;
+  let showCta = false;
 
-  if (plan === 'FREE') {
+  if (action === 'current') {
     ctaLabel = t('subscription.currentPlan');
     ctaVariant = 'current';
     ctaDisabled = true;
-  } else if (plan === 'PLUS') {
-    if (onUpgrade) {
-      // Stale User.subscriptionPlan=PLUS must still be able to start Checkout; server enforces real Plus.
-      ctaLabel = upgradeLoading ? t('subscription.checkoutLoading') : t('subscription.upgradeCta');
-      ctaVariant = 'primary';
-      ctaDisabled = upgradeLoading || upgradeDisabled;
-      showSoon = false;
-    } else {
-      ctaLabel = isCurrent ? t('subscription.currentPlan') : t('subscription.upgradeCta');
-      ctaVariant = isCurrent ? 'current' : 'primary';
-      ctaDisabled = true;
-      showSoon = !isCurrent;
-    }
+    showCta = true;
+  } else if (action === 'upgrade') {
+    ctaLabel = actionLoading ? t('subscription.checkoutLoading') : t('subscription.upgradeCta');
+    ctaVariant = 'primary';
+    ctaDisabled = actionLoading;
+    showCta = true;
+  } else if (action === 'downgrade') {
+    ctaLabel = actionLoading ? t('subscription.cancelLoading') : t('subscription.downgradeCta');
+    ctaVariant = 'danger';
+    ctaDisabled = actionLoading;
+    showCta = true;
+  } else if (action === 'resume') {
+    ctaLabel = actionLoading ? t('subscription.resumeLoading') : t('subscription.resumeCta');
+    ctaVariant = 'primary';
+    ctaDisabled = actionLoading;
+    showCta = true;
   }
-
-  const price = plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
-  const showCta = plan === 'PLUS' || isCurrent;
 
   return (
     <article
       className={`pricing-card card ${highlighted ? 'pricing-card--featured' : ''} ${isCurrent ? 'pricing-card--current' : ''}`}
     >
-      {highlighted && (
+      {highlighted && !isCurrent && (
         <span className="pricing-card__badge">{t('profile.billingMostPopular')}</span>
+      )}
+      {isCurrent && (
+        <span className="pricing-card__badge pricing-card__badge--current">{t('subscription.currentPlan')}</span>
       )}
       <header className="pricing-card__head">
         <h3 className="pricing-card__name">{t(`subscription.plan.${plan}`)}</h3>
         <p className="pricing-card__price">{price}</p>
       </header>
+      {(statusPrimary || statusSecondary) && (
+        <div className="pricing-card__status">
+          {statusPrimary && <p className="pricing-card__status-primary">{statusPrimary}</p>}
+          {statusSecondary && <p className="pricing-card__status-secondary">{statusSecondary}</p>}
+        </div>
+      )}
       <ul className="pricing-card__features">
         {features.map((line) => (
           <li key={line}>{line}</li>
@@ -76,14 +96,11 @@ export function ProfilePricingCard({
       {showCta && (
         <button
           type="button"
-          className={`pricing-card__cta pricing-card__cta--${ctaVariant}${upgradeLoading ? ' pricing-card__cta--loading' : ''}`}
+          className={`pricing-card__cta pricing-card__cta--${ctaVariant}${actionLoading ? ' pricing-card__cta--loading' : ''}`}
           disabled={ctaDisabled}
-          onClick={plan === 'PLUS' && onUpgrade && !ctaDisabled ? onUpgrade : undefined}
+          onClick={onAction && !ctaDisabled ? onAction : undefined}
         >
           <span>{ctaLabel}</span>
-          {showSoon && (
-            <span className="pricing-card__soon">{t('subscription.comingSoon')}</span>
-          )}
         </button>
       )}
     </article>

@@ -84,6 +84,9 @@ function createMockStripe(): MockStripe {
     async retrieveSubscription() {
       throw new Error('retrieveSubscription not used in checkout tests');
     },
+    async setCancelAtPeriodEnd() {
+      throw new Error('setCancelAtPeriodEnd not used in checkout tests');
+    },
   };
   return mock;
 }
