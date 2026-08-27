@@ -2,7 +2,7 @@
 
 import type { PublicSubscriptionPlan, SubscriptionPlan } from '@buyseekk/shared';
 import { planPriceLabel } from '@/lib/subscription-display';
-import { useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 
 function featureList(raw: string) {
   return raw.split('|').map((line) => line.trim()).filter(Boolean);
@@ -39,9 +39,10 @@ export function ProfilePricingCard({
   reserveStatusSpace = false,
 }: Props) {
   const t = useT();
+  const locale = useLocale();
   const isCurrent = plan === currentPlan || (plan === 'PLUS' && currentPlan === 'ENTERPRISE');
   const features = featureList(t(`subscription.pricingFeatures.${plan}`));
-  const price = plan === 'FREE' ? t('subscription.priceZero') : planPriceLabel(plan, t);
+  const price = planPriceLabel(plan, locale);
 
   let ctaLabel = '';
   let ctaVariant: 'primary' | 'ghost' | 'current' | 'danger' = 'primary';

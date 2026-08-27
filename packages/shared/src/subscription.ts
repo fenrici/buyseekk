@@ -31,18 +31,45 @@ export const SUBSCRIPTION_LIMIT_MESSAGES = {
   smartAlerts: 'Buyseek Plus permite alertas inteligentes ilimitadas.',
 } as const;
 
+/** Precio mensual Buyseek Plus en USD (display + alineado a Stripe; no se lee en runtime). */
+export const PLUS_MONTHLY_PRICE_USD = 19.99;
+
 /** Precios mensuales en USD (solo UI; cobro Stripe en fases siguientes). */
 export const SUBSCRIPTION_PRICES_USD: Record<PublicSubscriptionPlan, number> = {
   FREE: 0,
-  PLUS: 20,
+  PLUS: PLUS_MONTHLY_PRICE_USD,
 };
 
 /** @deprecated Prefer SUBSCRIPTION_PRICES_USD + PUBLIC_SUBSCRIPTION_PLANS. Enterprise not sold. */
 export const LEGACY_SUBSCRIPTION_PRICES_USD: Record<SubscriptionPlan, number> = {
   FREE: 0,
-  PLUS: 20,
+  PLUS: PLUS_MONTHLY_PRICE_USD,
   ENTERPRISE: 100,
 };
+
+/** Single source of truth for public plan price strings in UI (ES/EN). */
+export function formatPublicPlanPriceDisplay(
+  plan: PublicSubscriptionPlan,
+  locale: 'ES' | 'EN' = 'ES',
+): string {
+  if (plan === 'FREE') {
+    return locale === 'ES' ? 'US$0/mes' : 'US$0/mo';
+  }
+  const amount = PLUS_MONTHLY_PRICE_USD.toFixed(2);
+  return locale === 'ES' ? `US$${amount}/mes` : `US$${amount}/mo`;
+}
+
+/** Display price for any subscription plan, including legacy ENTERPRISE. */
+export function formatSubscriptionPlanPriceDisplay(
+  plan: SubscriptionPlan,
+  locale: 'ES' | 'EN' = 'ES',
+): string {
+  if (plan === 'FREE' || plan === 'PLUS') {
+    return formatPublicPlanPriceDisplay(plan, locale);
+  }
+  const amount = LEGACY_SUBSCRIPTION_PRICES_USD.ENTERPRISE.toFixed(2);
+  return locale === 'ES' ? `US$${amount}/mes` : `US$${amount}/mo`;
+}
 
 export type SubscriptionUser = {
   subscriptionPlan: SubscriptionPlan;

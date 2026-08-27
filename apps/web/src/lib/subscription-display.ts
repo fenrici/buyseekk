@@ -1,6 +1,5 @@
 import {
-  LEGACY_SUBSCRIPTION_PRICES_USD,
-  SUBSCRIPTION_PRICES_USD,
+  formatSubscriptionPlanPriceDisplay,
   type SubscriptionPlan,
 } from '@buyseekk/shared';
 
@@ -11,15 +10,7 @@ export function showsPlusMembershipBadge(
   return plan === 'PLUS';
 }
 
-type PriceT = {
-  (key: 'subscription.priceMonth', vars: { amount: string }): string;
-};
-
-/** Public plans use SUBSCRIPTION_PRICES_USD; legacy ENTERPRISE falls back for display only. */
-export function planPriceLabel(plan: SubscriptionPlan, t: PriceT) {
-  const amount =
-    plan === 'FREE' || plan === 'PLUS'
-      ? SUBSCRIPTION_PRICES_USD[plan]
-      : LEGACY_SUBSCRIPTION_PRICES_USD[plan];
-  return t('subscription.priceMonth', { amount: String(amount) });
+/** Public + legacy plan price label — uses shared formatter (US$19.99/mo). */
+export function planPriceLabel(plan: SubscriptionPlan, locale: 'ES' | 'EN') {
+  return formatSubscriptionPlanPriceDisplay(plan, locale);
 }

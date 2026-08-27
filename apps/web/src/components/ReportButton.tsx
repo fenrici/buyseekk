@@ -64,8 +64,8 @@ export function ReportButton({ target, className, label, variant = 'link' }: Pro
 
   const triggerClass =
     variant === 'button'
-      ? 'inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50'
-      : 'inline-flex items-center gap-1 text-xs font-medium text-slate-400 transition hover:text-red-500';
+      ? 'report-trigger report-trigger--button'
+      : 'report-trigger';
 
   return (
     <>
@@ -84,37 +84,35 @@ export function ReportButton({ target, className, label, variant = 'link' }: Pro
 
       {open && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 py-6"
+          className="report-backdrop"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="report-dialog-title"
           onClick={close}
         >
-          <div
-            className="report-dialog mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h2 className="text-base font-bold text-slate-900">{t('report.title')}</h2>
-              <button type="button" onClick={close} className="text-slate-400 hover:text-slate-600" aria-label={t('report.cancel')}>
+          <div className="report-dialog card" onClick={(e) => e.stopPropagation()}>
+            <div className="report-dialog__head">
+              <h2 id="report-dialog-title" className="report-dialog__title">{t('report.title')}</h2>
+              <button type="button" onClick={close} className="report-dialog__close" aria-label={t('report.cancel')}>
                 ✕
               </button>
             </div>
 
             {done ? (
-              <div className="px-5 py-8 text-center">
-                <p className="text-sm text-slate-700">{t('report.success')}</p>
-                <button type="button" onClick={close} className="btn btn-primary mt-5 px-6 py-2.5 text-sm font-semibold">
+              <div className="report-dialog__done">
+                <p>{t('report.success')}</p>
+                <button type="button" onClick={close} className="btn btn-primary report-dialog__submit">
                   {t('report.cancel')}
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-4 px-5 py-5">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('report.reasonLabel')}</span>
+              <div className="report-dialog__body">
+                <label className="report-dialog__field">
+                  <span className="report-dialog__label">{t('report.reasonLabel')}</span>
                   <select
                     value={reason}
                     onChange={(e) => setReason(e.target.value as ReportReason)}
-                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-slate-400 focus:outline-none"
+                    className="report-dialog__select"
                   >
                     {REPORT_REASONS.map((r) => (
                       <option key={r} value={r}>
@@ -124,25 +122,30 @@ export function ReportButton({ target, className, label, variant = 'link' }: Pro
                   </select>
                 </label>
 
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('report.detailsLabel')}</span>
+                <label className="report-dialog__field">
+                  <span className="report-dialog__label">{t('report.detailsLabel')}</span>
                   <textarea
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
                     rows={4}
                     maxLength={2000}
                     placeholder={t('report.detailsPlaceholder')}
-                    className="resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-slate-400 focus:outline-none"
+                    className="report-dialog__textarea"
                   />
                 </label>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="report-dialog__error">{error}</p>}
 
-                <div className="flex gap-2.5">
-                  <button type="button" onClick={close} disabled={busy} className="btn btn-ghost flex-1 border border-slate-200 py-2.5 text-sm font-semibold">
+                <div className="report-dialog__actions">
+                  <button type="button" onClick={close} disabled={busy} className="report-dialog__cancel">
                     {t('report.cancel')}
                   </button>
-                  <button type="button" onClick={() => void submit()} disabled={busy} className="btn btn-primary flex-1 py-2.5 text-sm font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => void submit()}
+                    disabled={busy}
+                    className="btn btn-primary report-dialog__submit"
+                  >
                     {t('report.submit')}
                   </button>
                 </div>

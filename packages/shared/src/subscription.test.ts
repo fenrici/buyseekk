@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {
   PUBLIC_SUBSCRIPTION_PLANS,
   SUBSCRIPTION_PRICES_USD,
+  formatPublicPlanPriceDisplay,
+  formatSubscriptionPlanPriceDisplay,
   anySubscriptionGrantsPlus,
   canUseEnterpriseFeatures,
   canUsePlusFeatures,
@@ -17,8 +19,12 @@ const past = new Date('2026-07-26T15:00:00.000Z');
 
 assert.deepEqual([...PUBLIC_SUBSCRIPTION_PLANS], ['FREE', 'PLUS']);
 assert.equal(SUBSCRIPTION_PRICES_USD.FREE, 0);
-assert.equal(SUBSCRIPTION_PRICES_USD.PLUS, 20);
+assert.equal(SUBSCRIPTION_PRICES_USD.PLUS, 19.99);
 assert.equal('ENTERPRISE' in SUBSCRIPTION_PRICES_USD, false);
+assert.equal(formatPublicPlanPriceDisplay('PLUS', 'ES'), 'US$19.99/mes');
+assert.equal(formatPublicPlanPriceDisplay('PLUS', 'EN'), 'US$19.99/mo');
+assert.equal(formatPublicPlanPriceDisplay('FREE', 'EN'), 'US$0/mo');
+assert.equal(formatSubscriptionPlanPriceDisplay('ENTERPRISE', 'ES'), 'US$100.00/mes');
 
 assert.equal(subscriptionGrantsPlus({ status: 'ACTIVE' }, now), true);
 assert.equal(subscriptionGrantsPlus({ status: 'TRIALING' }, now), true);

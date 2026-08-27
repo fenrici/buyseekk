@@ -8,7 +8,7 @@ import {
   type SubscriptionPlan,
 } from '@buyseekk/shared';
 import { api } from '@/lib/api';
-import { useT } from '@/lib/i18n';
+import { useT, useLocale } from '@/lib/i18n';
 import { planPriceLabel } from '@/lib/subscription-display';
 import type { User } from '@/lib/types';
 
@@ -31,6 +31,7 @@ type Props = {
 
 export function ProfilePlanPanel({ user, isSeller }: Props) {
   const t = useT();
+  const locale = useLocale();
   const plan = (user.subscriptionPlan ?? 'FREE') as SubscriptionPlan;
   const isFree = plan === 'FREE';
   const hasPlus = plan === 'PLUS' || plan === 'ENTERPRISE';
@@ -84,7 +85,7 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
       {isFree && (
         <section className="profile-upgrade card" aria-labelledby="profile-upgrade-title">
           <div className="profile-upgrade__glow" aria-hidden />
-          <p className="profile-upgrade__eyebrow">Buyseek Plus · {planPriceLabel('PLUS', t)}</p>
+          <p className="profile-upgrade__eyebrow">Buyseek Plus · {planPriceLabel('PLUS', locale)}</p>
           <h2 id="profile-upgrade-title" className="profile-upgrade__title">
             {t('subscription.upgradeTitle')}
           </h2>
@@ -95,7 +96,7 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
             <li>{t('subscription.upgradeBenefit3')}</li>
           </ul>
           <button type="button" className="profile-upgrade__cta" disabled title={t('subscription.comingSoon')}>
-            {t('subscription.upgradeCta')} · {planPriceLabel('PLUS', t)}
+            {t('subscription.upgradeCta')} · {planPriceLabel('PLUS', locale)}
             <span className="profile-upgrade__soon">{t('subscription.comingSoon')}</span>
           </button>
         </section>
@@ -110,7 +111,7 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
             {t(`subscription.plan.${plan}`)}
           </span>
         </div>
-        <p className="profile-plan-card__price">{planPriceLabel(plan, t)}</p>
+        <p className="profile-plan-card__price">{planPriceLabel(plan, locale)}</p>
         <p className="profile-plan-card__tagline">
           {t(`subscription.tagline.${plan === 'ENTERPRISE' ? 'PLUS' : plan}`)}
         </p>
@@ -174,7 +175,7 @@ export function ProfilePlanPanel({ user, isSeller }: Props) {
                 className={`profile-compare-card ${active ? 'profile-compare-card--active' : ''}`}
               >
                 <h3 className="profile-compare-card__name">{t(`subscription.plan.${tier}`)}</h3>
-                <p className="profile-compare-card__price">{planPriceLabel(tier, t)}</p>
+                <p className="profile-compare-card__price">{planPriceLabel(tier, locale)}</p>
                 <ul>
                   {featureList(t(`subscription.compare.${tier}`)).map((line) => (
                     <li key={line}>{line}</li>
