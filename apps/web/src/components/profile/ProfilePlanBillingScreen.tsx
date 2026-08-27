@@ -59,7 +59,9 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
     void loadBilling();
   }, [loadBilling, user.id]);
 
-  const isPlus = billing?.plan === 'PLUS';
+  const planFromUser =
+    user.subscriptionPlan === 'PLUS' || user.subscriptionPlan === 'ENTERPRISE';
+  const isPlus = billing ? billing.plan === 'PLUS' : planFromUser;
   const periodEndLabel = formatBillingPeriodEnd(billing?.currentPeriodEnd ?? null, locale);
 
   async function handleUpgrade() {
@@ -122,6 +124,7 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
           onAction: undefined,
           statusPrimary: null,
           statusSecondary: null,
+          reserveStatusSpace: false,
         };
       }
       return {
@@ -131,10 +134,21 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
         actionLoading: checkoutLoading,
         statusPrimary: null,
         statusSecondary: null,
+        reserveStatusSpace: false,
       };
     }
 
     if (plan === 'PLUS') {
+      if (billingLoading) {
+        return {
+          action: 'current' as PricingCardAction,
+          highlighted: true,
+          onAction: undefined,
+          statusPrimary: null,
+          statusSecondary: null,
+          reserveStatusSpace: true,
+        };
+      }
       const statusPrimary =
         periodEndLabel != null ? t('subscription.plusActiveUntil', { date: periodEndLabel }) : null;
       const statusSecondary = billing?.cancelAtPeriodEnd ? t('subscription.cancelScheduled') : null;
@@ -145,6 +159,19 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
         actionLoading: resumeLoading,
         statusPrimary,
         statusSecondary,
+        reserveStatusSpace: true,
+      };
+    }
+
+    if (billingLoading) {
+      return {
+        action: 'none' as PricingCardAction,
+        highlighted: false,
+        onAction: undefined,
+        actionLoading: false,
+        statusPrimary: null,
+        statusSecondary: null,
+        reserveStatusSpace: false,
       };
     }
 
@@ -155,6 +182,7 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
       actionLoading: cancelLoading,
       statusPrimary: null,
       statusSecondary: null,
+      reserveStatusSpace: false,
     };
   }
 
@@ -176,13 +204,11 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
         </p>
       )}
 
-      {billingLoading && (
-        <p className="pricing-page__loading" role="status">
-          {t('common.loading')}
-        </p>
-      )}
-
-      <section className="pricing-grid pricing-grid--plans" aria-label={t('subscription.compareTitle')}>
+      <section
+        className="pricing-grid pricing-grid--plans"
+        aria-label={t('subscription.compareTitle')}
+        aria-busy={billingLoading}
+      >
         {PRICING_PLANS.map((plan) => {
           const props = cardProps(plan);
           return (
@@ -196,6 +222,7 @@ export function ProfilePlanBillingScreen({ user, checkoutReturn = null }: Props)
               onAction={props.onAction}
               statusPrimary={props.statusPrimary}
               statusSecondary={props.statusSecondary}
+              reserveStatusSpace={props.reserveStatusSpace}
             />
           );
         })}

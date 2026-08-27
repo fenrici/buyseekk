@@ -24,6 +24,7 @@ type Props = {
   onAction?: () => void;
   statusPrimary?: string | null;
   statusSecondary?: string | null;
+  reserveStatusSpace?: boolean;
 };
 
 export function ProfilePricingCard({
@@ -35,6 +36,7 @@ export function ProfilePricingCard({
   onAction,
   statusPrimary = null,
   statusSecondary = null,
+  reserveStatusSpace = false,
 }: Props) {
   const t = useT();
   const isCurrent = plan === currentPlan || (plan === 'PLUS' && currentPlan === 'ENTERPRISE');
@@ -82,8 +84,10 @@ export function ProfilePricingCard({
         <h3 className="pricing-card__name">{t(`subscription.plan.${plan}`)}</h3>
         <p className="pricing-card__price">{price}</p>
       </header>
-      {(statusPrimary || statusSecondary) && (
-        <div className="pricing-card__status">
+      {(statusPrimary || statusSecondary || reserveStatusSpace) && (
+        <div
+          className={`pricing-card__status${reserveStatusSpace ? ' pricing-card__status--reserved' : ''}`}
+        >
           {statusPrimary && <p className="pricing-card__status-primary">{statusPrimary}</p>}
           {statusSecondary && <p className="pricing-card__status-secondary">{statusSecondary}</p>}
         </div>
@@ -93,16 +97,18 @@ export function ProfilePricingCard({
           <li key={line}>{line}</li>
         ))}
       </ul>
-      {showCta && (
-        <button
-          type="button"
-          className={`pricing-card__cta pricing-card__cta--${ctaVariant}${actionLoading ? ' pricing-card__cta--loading' : ''}`}
-          disabled={ctaDisabled}
-          onClick={onAction && !ctaDisabled ? onAction : undefined}
-        >
-          <span>{ctaLabel}</span>
-        </button>
-      )}
+      <div className="pricing-card__cta-slot">
+        {showCta && (
+          <button
+            type="button"
+            className={`pricing-card__cta pricing-card__cta--${ctaVariant}${actionLoading ? ' pricing-card__cta--loading' : ''}`}
+            disabled={ctaDisabled}
+            onClick={onAction && !ctaDisabled ? onAction : undefined}
+          >
+            <span>{ctaLabel}</span>
+          </button>
+        )}
+      </div>
     </article>
   );
 }

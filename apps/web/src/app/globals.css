@@ -4741,6 +4741,17 @@ a.profile-menu-row {
   gap: 0.2rem;
 }
 
+.pricing-card__status--reserved {
+  min-height: 2.75rem;
+}
+
+.pricing-card__cta-slot {
+  min-height: 2.875rem;
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+}
+
 .pricing-card__status-primary {
   margin: 0;
   font-size: 0.84rem;
